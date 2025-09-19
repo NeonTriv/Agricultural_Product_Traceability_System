@@ -1,0 +1,11 @@
+# Node.js
+node_modules/
+dist/
+.env
+
+# SQL Server local files
+*.mdf
+*.ldf
+
+# VSCode
+.vscode/
