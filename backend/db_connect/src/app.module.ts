@@ -1,27 +1,32 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ContactModule } from './student/student.module';
-import { Student } from './student/student.entity';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { VegetableModule } from './vegetable/vegetable.module';
+import { Vegetable } from './vegetable/vegetable.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'mssql',
-      host: 'localhost',
-      port: 1433,
-      username: 'your-db-username',
-      password: 'your-db-password',
-      database: 'contact_form_db',
-      entities: [Student],  // entity
+      host: process.env.DB_HOST ?? 'localhost',
+      port: parseInt(process.env.DB_PORT ?? '1433', 10),
+      username: process.env.DB_USERNAME ?? 'test',
+      password: process.env.DB_PASSWORD ?? 'test',
+      database: process.env.DB_NAME ?? 'Vegetable',
+      // autoLoadEntities: true,
+      entities: [Vegetable],
       synchronize: true,
       options: {
-        encrypt: true,
-        trustServerCertificate: true,
-      },
+      encrypt: false,
+      trustServerCertificate: true,
+      //instanceName: 'SQLEXPRESS' 
+    },
+      // logging: true,
     }),
-    ContactModule,
+    VegetableModule,
   ],
-  controllers: [],
-  providers: [],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
