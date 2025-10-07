@@ -16,7 +16,7 @@ import { Vegetable } from './vegetable/vegetable.entity';
       database: process.env.DB_NAME ?? 'Vegetable',
       // autoLoadEntities: true,
       entities: [Vegetable],
-      synchronize: true,
+      synchronize: false,
       options: {
       encrypt: false,
       trustServerCertificate: true,
