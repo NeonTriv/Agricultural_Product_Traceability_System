@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Patch, ParseIntPipe } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Patch, Delete, ParseIntPipe } from '@nestjs/common';
 import { VegetableService } from './vegetable.service';
 import { Vegetable } from './vegetable.entity';
 import type { EditPayload } from './vegetable.enum';
@@ -29,5 +29,8 @@ export class VegetableController {
     return this.service.updateByType(ID, body);
   }
 
-  
-}
+  @Delete(':ID')
+  remove(@Param('ID', ParseIntPipe) ID: number): Promise<void> {
+    return this.service.remove(ID);
+  }
+} 

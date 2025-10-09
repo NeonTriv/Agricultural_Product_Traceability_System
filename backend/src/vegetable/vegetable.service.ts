@@ -16,7 +16,7 @@ export class VegetableService {
     return this.VegetableRepo.save(entity);
   }
 
-  findAll(): Promise<Vegetable[]> {
+  async findAll(): Promise<Vegetable[]> {
     return this.VegetableRepo.find();
   }
 
@@ -31,7 +31,7 @@ export class VegetableService {
 
     switch (body.editType) {
       case EditType.Rename:
-        vegetable.Name = body.name;
+        vegetable.Name = body.name.trim();
         break;
       case EditType.SetQuantity:
         vegetable.Quantity = Number(body.quantity);
@@ -45,5 +45,15 @@ export class VegetableService {
     }
 
     return this.VegetableRepo.save(vegetable);
+  }
+
+  async remove(ID: number): Promise<void> {
+    const vegetable = await this.findOne(ID); // Reuse findOne to handle not found case
+    if (vegetable) {
+      await this.VegetableRepo.remove(vegetable);
+      return Promise.resolve();
+    } else {
+      throw new NotFoundException('Vegetable not found');
+    }
   }
 }
