@@ -3,6 +3,11 @@ import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
+  @Get('health') // KHÔNG thêm 'api/' ở đây vì đã có globalPrefix
+  health() {
+    return { ok: true };
+  }
+
   constructor(private readonly appService: AppService) {}
 
   @Get()

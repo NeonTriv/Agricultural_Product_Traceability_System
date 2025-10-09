@@ -1,0 +1,18 @@
+{
+  "name": "DB-repo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": ["frontend", "backend"],
+  "devDependencies": {
+    "concurrently": "^9.0.1",
+    "dotenv-cli": "^7.4.2"
+  },
+  "scripts": {
+    "setup": "npm install",
+    "dev": "concurrently -n FE,BE -c green,cyan \"npm run dev:fe\" \"npm run dev:be\"",
+    "dev:fe": "dotenv -e ./config/config.env -- npm --workspace frontend run start",
+    "dev:be": "dotenv -e ./config/config.env -- npm --workspace backend run start:dev",
+    "build:fe": "dotenv -e ./config/config.env -- npm --workspace frontend run build"
+  },
+  "engines": { "node": ">=20" }
+}
