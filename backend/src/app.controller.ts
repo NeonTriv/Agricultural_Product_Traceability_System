@@ -3,7 +3,7 @@ import { AppService } from './app.service';
 
 @Controller()
 export class AppController {
-  @Get('health') // KHÔNG thêm 'api/' ở đây vì đã có globalPrefix
+  @Get('health') 
   health() {
     return { ok: true };
   }
