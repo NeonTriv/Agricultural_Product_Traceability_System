@@ -1,15 +1,19 @@
 export enum EditType {
-  Rename = 'rename',
-  SetQuantity = 'setQuantity',
-  IncQuantity = 'incQuantity',
-  DecQuantity = 'decQuantity',
+  Rename = 'Rename',
+  SetQuantity = 'SetQuantity',
+  IncQuantity = 'IncQuantity',
+  DecQuantity = 'DecQuantity',
 }
 
-export type EditPayload =
-  | { editType: EditType.Rename; name: string }
-  | { editType: EditType.SetQuantity; quantity: number }
-  | { editType: EditType.IncQuantity; by: number }
-  | { editType: EditType.DecQuantity; by: number };
+export type UpdatePayload = {
+  type?: EditType | string | number;  
+  value?: string | number;            
+
+  editType?: EditType | string | number;
+  name?: string;
+  quantity?: number;
+  by?: number;
+};
 
 export class CreateVegetableDto {
   Name!: string;

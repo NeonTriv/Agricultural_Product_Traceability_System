@@ -10,9 +10,9 @@
   "scripts": {
     "setup": "npm install",
     "dev": "concurrently -n FE,BE -c green,cyan \"npm run dev:fe\" \"npm run dev:be\"",
-    "dev:fe": "dotenv -e ./frontend/config.env -- npm --workspace frontend run start",
-    "dev:be": "dotenv -e ./backend/config.env -- npm --workspace backend run start:dev",
-    "build:fe": "dotenv -e ./frontend/config.env -- npm --workspace frontend run build"
+    "dev:fe": "npm --workspace ./frontend run dev",
+    "dev:be": "dotenv -e ./config/config.env -- npm --workspace ./backend run start:dev",
+    "build:fe": "npm --workspace ./frontend run build"
   },
   "engines": { "node": ">=20" }
 }
