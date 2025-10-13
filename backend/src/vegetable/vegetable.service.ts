@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Vegetable } from './vegetable.entity';
-import { EditPayload, EditType } from './vegetable.enum';
+import { EditType, UpdatePayload } from './vegetable.enum';
 
 @Injectable()
 export class VegetableService {
@@ -26,34 +26,55 @@ export class VegetableService {
     return vegetable;
   }
 
-  async updateByType(ID: number, body: EditPayload): Promise<Vegetable> {
-    const vegetable = await this.findOne(ID); // Reuse findOne to handle not found case
+  private normalizeEditType(v: unknown): EditType | null {
+  if (v == null) return null;
+  const s = String(v).trim();
+  const lower = s.toLowerCase();
+  const map: Record<string, EditType> = {
+    rename: EditType.Rename,
+    setquantity: EditType.SetQuantity,
+    incquantity: EditType.IncQuantity,
+    '0': EditType.Rename,
+    '1': EditType.SetQuantity,
+    '2': EditType.IncQuantity,
+  };
+  return (EditType as any)[s] ?? map[lower] ?? null;
+}
 
-    switch (body.editType) {
-      case EditType.Rename:
-        vegetable.Name = body.name.trim();
-        break;
-      case EditType.SetQuantity:
-        vegetable.Quantity = Number(body.quantity);
-        break;
-      case EditType.IncQuantity:
-        vegetable.Quantity = (vegetable.Quantity ?? 0) + Number(body.by);
-        break;
-      case EditType.DecQuantity:
-        vegetable.Quantity = Math.max(0, (vegetable.Quantity ?? 0) - Number(body.by));
-        break;
+  async updateByType(ID: number, payload: UpdatePayload) {
+  const v = await this.findOne(ID);
+
+  const type = this.normalizeEditType(payload.type ?? payload.editType);
+  if (!type) throw new BadRequestException(`Unsupported type/editType: ${String(payload.type ?? payload.editType)}`);
+
+  const raw = payload.value ?? payload.name ?? payload.quantity ?? payload.by;
+
+  switch (type) {
+    case EditType.Rename: {
+      const n = String(raw ?? '').trim();
+      if (!n) throw new BadRequestException('value/name is required');
+      v.Name = n;
+      break;
     }
-
-    return this.VegetableRepo.save(vegetable);
+    case EditType.SetQuantity: {
+      const q = Number(raw);
+      if (!Number.isFinite(q) || q < 0) throw new BadRequestException('value/quantity must be >= 0');
+      v.Quantity = q;
+      break;
+    }
+    case EditType.IncQuantity: {
+      const d = Number(raw ?? 1);
+      if (!Number.isFinite(d) || d <= 0) throw new BadRequestException('value/by must be > 0');
+      v.Quantity = (v.Quantity ?? 0) + d;
+      break;
+    }
   }
 
+  return this.VegetableRepo.save(v);
+}
+
   async remove(ID: number): Promise<void> {
-    const vegetable = await this.findOne(ID); // Reuse findOne to handle not found case
-    if (vegetable) {
-      await this.VegetableRepo.remove(vegetable);
-      return Promise.resolve();
-    } else {
-      throw new NotFoundException('Vegetable not found');
-    }
+    const vegetable = await this.findOne(ID);
+    await this.VegetableRepo.remove(vegetable);
   }
 }
