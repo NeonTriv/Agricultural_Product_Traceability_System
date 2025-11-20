@@ -24,8 +24,8 @@ import { Price } from './trace/entities/price.entity';
       type: 'mssql',
       host: process.env.DB_HOST ?? 'localhost',
       port: parseInt(process.env.DB_PORT ?? '1433', 10),
-      username: process.env.DB_USERNAME ?? 'test',
-      password: process.env.DB_PASSWORD ?? 'test',
+      username: process.env.DB_USERNAME ?? 'dbuser',
+      password: process.env.DB_PASSWORD ?? 'dbpass123',
       database: process.env.DB_NAME ?? 'Traceability_DB',
       entities: [
         Vegetable,
