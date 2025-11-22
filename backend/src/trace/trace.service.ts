@@ -3,8 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AgricultureProduct } from './entities/agriculture-product.entity';
 import { Batch } from './entities/batch.entity';
-import { Garden } from './entities/garden.entity';
+import { Farm } from './entities/farm.entity';
+import { FarmCertification } from './entities/farm-certification.entity';
 import { Type } from './entities/type.entity';
+import { Province } from './entities/province.entity';
+import { Country } from './entities/country.entity';
 import { Processing } from './entities/processing.entity';
 import { ProcessingFacility } from './entities/processing-facility.entity';
 import { VendorProduct } from './entities/vendor-product.entity';
@@ -27,8 +30,10 @@ export class TraceService {
     private readonly productRepo: Repository<AgricultureProduct>,
     @InjectRepository(Batch)
     private readonly batchRepo: Repository<Batch>,
-    @InjectRepository(Garden)
-    private readonly gardenRepo: Repository<Garden>,
+    @InjectRepository(Farm)
+    private readonly farmRepo: Repository<Farm>,
+    @InjectRepository(FarmCertification)
+    private readonly farmCertRepo: Repository<FarmCertification>,
     @InjectRepository(Type)
     private readonly typeRepo: Repository<Type>,
     @InjectRepository(Processing)
@@ -46,95 +51,127 @@ export class TraceService {
   /**
    * OPTIMIZED QUERY: Fetch product traceability by QR code
    *
-   * OPTIMIZATION TECHNIQUES APPLIED:
-   * 1. Single query with JOINs instead of N+1 queries
-   * 2. Select only required columns (avoid SELECT *)
-   * 3. Use index on Qr_Code_Url for fast lookup
-   * 4. LEFT JOIN for optional relationships
+   * KEY SCHEMA CHANGES:
+   * - QR code is now in BATCH table (Qr_Code_URL column)
+   * - BATCH links to AGRICULTURE_PRODUCT via AP_ID
+   * - BATCH links to FARM via Farm_ID
+   * - FARM links to PROVINCE via P_ID
+   * - PROVINCE links to COUNTRY via C_ID
    *
-   * PERFORMANCE:
-   * - Without optimization: ~250ms (7 separate queries)
-   * - With optimization: ~8ms (1 query with JOINs)
-   * - Improvement: 96.8% faster (31x speedup)
+   * OPTIMIZATION TECHNIQUES:
+   * 1. Single query with JOINs instead of N+1 queries
+   * 2. Select only required columns
+   * 3. Use index on Qr_Code_URL for fast lookup
    */
   async getTraceByCode(qrCodeUrl: string): Promise<TraceResponseDto> {
-    // OPTIMIZED APPROACH: Single query with all JOINs
-    // This eliminates the N+1 query problem
-    const result = await this.productRepo
-      .createQueryBuilder('product')
+    // Start from BATCH table since QR code is there
+    const batch = await this.batchRepo
+      .createQueryBuilder('batch')
       .select([
-        // Product fields
-        'product.agricultureProductId',
-        'product.qrCodeUrl',
-        'product.expiredDate',
-        // Type fields
-        'type.name',
-        'type.variety',
-        'type.imageUrl',
-        'type.category',
         // Batch fields
-        'batch.batchId',
+        'batch.id',
         'batch.harvestDate',
         'batch.grade',
-        // Garden fields
-        'garden.name',
-        'garden.address',
-        'garden.country',
-        'garden.province',
+        'batch.qrCodeUrl',
+        'batch.createdBy',
+        'batch.seedBatch',
+        // Agriculture Product fields
+        'product.id',
+        'product.name',
+        'product.imageUrl',
+        // Type fields
+        'type.id',
+        'type.name',
+        'type.variety',
+        // Farm fields
+        'farm.id',
+        'farm.name',
+        'farm.ownerName',
+        'farm.contactInfo',
+        'farm.longitude',
+        'farm.latitude',
+        // Province fields
+        'province.id',
+        'province.name',
+        // Country fields
+        'country.id',
+        'country.name',
       ])
-      // CRITICAL: This uses the idx_qr_code_url index for O(log n) lookup
-      .where('product.qrCodeUrl = :qrCodeUrl', { qrCodeUrl })
-      // JOIN Type (always required)
-      .innerJoin('product.type', 'type')
-      // LEFT JOIN for optional relationships
-      .leftJoin('product.batch', 'batch')
-      .leftJoin('batch.garden', 'garden')
+      .where('batch.qrCodeUrl = :qrCodeUrl', { qrCodeUrl })
+      // Join agriculture product
+      .leftJoin('batch.agricultureProduct', 'product')
+      // Join type
+      .leftJoin('product.type', 'type')
+      // Join farm
+      .leftJoin('batch.farm', 'farm')
+      // Join province
+      .leftJoin('farm.province', 'province')
+      // Join country
+      .leftJoin('province.country', 'country')
       .getOne();
 
-    if (!result) {
+    if (!batch) {
       throw new NotFoundException(
         `Product with QR code "${qrCodeUrl}" not found`,
       );
     }
 
-    // Fetch processing info separately (if batch exists)
-    let processingDto: ProcessingDto | undefined;
-    if (result.batch) {
-      const processing = await this.processingRepo
-        .createQueryBuilder('p')
-        .select([
-          'p.packagingDate',
-          'p.processedBy',
-          'p.packagingType',
-          'facility.name',
-        ])
-        .leftJoin('p.facility', 'facility')
-        .where('p.batchId = :batchId', { batchId: result.batch.batchId })
-        .getOne();
-
-      if (processing) {
-        processingDto = {
-          facility: processing.facility?.name,
-          packedAt: processing.packagingDate
-            ? new Date(processing.packagingDate).toISOString().split('T')[0]
-            : undefined,
-          processedBy: processing.processedBy,
-          packagingType: processing.packagingType,
-        };
-      }
+    // Fetch farm certifications
+    let certifications: string[] = [];
+    if (batch.farm) {
+      const certs = await this.farmCertRepo.find({
+        where: { farmId: batch.farm.id },
+      });
+      certifications = certs.map((c) => c.farmCertifications);
     }
 
-    // Now fetch vendor and price info (separate query as it's not directly linked to product)
-    // We need to find vendor product by type
+    // Fetch processing info
+    let processingDto: ProcessingDto | undefined;
+    const processing = await this.processingRepo
+      .createQueryBuilder('p')
+      .select([
+        'p.id',
+        'p.packagingDate',
+        'p.processedBy',
+        'p.packagingType',
+        'p.processingDate',
+        'facility.id',
+        'facility.name',
+      ])
+      .leftJoin('p.facility', 'facility')
+      .where('p.batchId = :batchId', { batchId: batch.id })
+      .getOne();
+
+    if (processing) {
+      processingDto = {
+        facility: processing.facility?.name,
+        packedAt: processing.packagingDate
+          ? new Date(processing.packagingDate).toISOString().split('T')[0]
+          : undefined,
+        processedBy: processing.processedBy,
+        packagingType: processing.packagingType,
+      };
+    }
+
+    // Fetch vendor and price info
+    // Find vendor product by agriculture product ID
     let distributorDto: DistributorDto | undefined;
     let priceDto: PriceDto | undefined;
 
-    if (result.type) {
+    if (batch.agricultureProduct) {
       const vendorProduct = await this.vendorProductRepo
         .createQueryBuilder('vp')
-        .select(['vp.vendorProductId', 'vendor.name', 'vendor.address'])
+        .select([
+          'vp.id',
+          'vp.unit',
+          'vendor.tin',
+          'vendor.name',
+          'vendor.address',
+        ])
         .leftJoin('vp.vendor', 'vendor')
-        .where('vp.typeId = :typeId', { typeId: result.type.typeId })
+        .where('vp.agricultureProductId = :apId', {
+          apId: batch.agricultureProduct.id,
+        })
         .getOne();
 
       if (vendorProduct) {
@@ -145,7 +182,7 @@ export class TraceService {
 
         // Fetch price
         const price = await this.priceRepo.findOne({
-          where: { vendorProductId: vendorProduct.vendorProductId },
+          where: { vendorProductId: vendorProduct.id },
         });
 
         if (price) {
@@ -157,34 +194,30 @@ export class TraceService {
       }
     }
 
-    // Map to DTO
+    // Map to DTOs
     const productDto: ProductDto = {
-      id: result.agricultureProductId,
-      name: result.type?.name || 'Unknown',
-      imageUrl: result.type?.imageUrl,
+      id: batch.agricultureProduct?.id?.toString() || 'unknown',
+      name: batch.agricultureProduct?.name || 'Unknown Product',
+      imageUrl: batch.agricultureProduct?.imageUrl,
     };
 
-    let batchDto: BatchDto | undefined;
-    if (result.batch) {
-      batchDto = {
-        id: result.batch.batchId,
-        farmName: result.batch.garden?.name || 'Unknown Farm',
-        harvestDate: result.batch.harvestDate
-          ? new Date(result.batch.harvestDate).toISOString().split('T')[0]
-          : undefined,
-        grade: result.batch.grade,
-      };
-    }
+    const batchDto: BatchDto = {
+      id: batch.id.toString(),
+      farmName: batch.farm?.name || 'Unknown Farm',
+      harvestDate: batch.harvestDate
+        ? new Date(batch.harvestDate).toISOString().split('T')[0]
+        : undefined,
+      grade: batch.grade,
+    };
 
     let farmDto: FarmDto | undefined;
-    if (result.batch?.garden) {
+    if (batch.farm) {
       farmDto = {
-        name: result.batch.garden.name,
-        address: result.batch.garden.address,
-        country: result.batch.garden.country,
-        province: result.batch.garden.province,
-        // Note: certifications would come from GARDEN_CERTIFICATIONS table
-        certifications: [],
+        name: batch.farm.name,
+        address: `${batch.farm.province?.name || ''}, ${batch.farm.province?.country?.name || ''}`.trim(),
+        country: batch.farm.province?.country?.name,
+        province: batch.farm.province?.name,
+        certifications,
       };
     }
 
@@ -200,80 +233,101 @@ export class TraceService {
   }
 
   /**
-   * Get all products (for testing)
+   * Get all batches with QR codes (for testing)
    * OPTIMIZED: Select only necessary columns
    */
-  async getAllProducts(): Promise<ProductDto[]> {
-    const products = await this.productRepo
-      .createQueryBuilder('product')
+  async getAllProducts(): Promise<any[]> {
+    const batches = await this.batchRepo
+      .createQueryBuilder('batch')
       .select([
-        'product.agricultureProductId',
-        'product.qrCodeUrl',
-        'product.batchId',
-        'product.typeId',
-        'type.name',
-        'type.imageUrl',
+        'batch.id',
+        'batch.qrCodeUrl',
+        'batch.harvestDate',
+        'batch.grade',
+        'product.id',
+        'product.name',
+        'product.imageUrl',
+        'farm.id',
+        'farm.name',
       ])
-      .leftJoin('product.type', 'type')
+      .leftJoin('batch.agricultureProduct', 'product')
+      .leftJoin('batch.farm', 'farm')
       .take(100) // Limit for performance
       .getMany();
 
-    return products.map((p) => ({
-      id: p.agricultureProductId,
-      name: p.type?.name || 'Unknown',
-      imageUrl: p.type?.imageUrl,
-      qrCodeUrl: p.qrCodeUrl,
-      batchId: p.batchId,
-      typeId: p.typeId,
+    return batches.map((b) => ({
+      batchId: b.id,
+      qrCodeUrl: b.qrCodeUrl,
+      productName: b.agricultureProduct?.name || 'Unknown',
+      productImageUrl: b.agricultureProduct?.imageUrl,
+      farmName: b.farm?.name || 'Unknown Farm',
+      harvestDate: b.harvestDate,
+      grade: b.grade,
     }));
   }
 
   /**
-   * Create a new product
+   * Create a new batch
    */
-  async createProduct(data: { qrCodeUrl: string; batchId: string; typeId: string }) {
-    // Generate new ID
-    const id = `PROD_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    const product = this.productRepo.create({
-      agricultureProductId: id,
+  async createProduct(data: {
+    qrCodeUrl: string;
+    farmId: number;
+    agricultureProductId: number;
+    harvestDate: Date;
+    grade?: string;
+  }) {
+    const batch = this.batchRepo.create({
       qrCodeUrl: data.qrCodeUrl,
-      batchId: data.batchId,
-      typeId: data.typeId,
+      farmId: data.farmId,
+      agricultureProductId: data.agricultureProductId,
+      harvestDate: data.harvestDate,
+      grade: data.grade,
     });
 
-    const saved = await this.productRepo.save(product);
-    return { success: true, id: saved.agricultureProductId };
+    const saved = await this.batchRepo.save(batch);
+    return { success: true, id: saved.id };
   }
 
   /**
-   * Update an existing product
+   * Update an existing batch
    */
-  async updateProduct(id: string, data: { qrCodeUrl?: string; batchId?: string; typeId?: string }) {
-    const product = await this.productRepo.findOne({
-      where: { agricultureProductId: id },
+  async updateProduct(
+    id: number,
+    data: {
+      qrCodeUrl?: string;
+      farmId?: number;
+      agricultureProductId?: number;
+      harvestDate?: Date;
+      grade?: string;
+    },
+  ) {
+    const batch = await this.batchRepo.findOne({
+      where: { id },
     });
 
-    if (!product) {
-      throw new NotFoundException(`Product with ID "${id}" not found`);
+    if (!batch) {
+      throw new NotFoundException(`Batch with ID "${id}" not found`);
     }
 
-    if (data.qrCodeUrl) product.qrCodeUrl = data.qrCodeUrl;
-    if (data.batchId) product.batchId = data.batchId;
-    if (data.typeId) product.typeId = data.typeId;
+    if (data.qrCodeUrl) batch.qrCodeUrl = data.qrCodeUrl;
+    if (data.farmId) batch.farmId = data.farmId;
+    if (data.agricultureProductId)
+      batch.agricultureProductId = data.agricultureProductId;
+    if (data.harvestDate) batch.harvestDate = data.harvestDate;
+    if (data.grade) batch.grade = data.grade;
 
-    await this.productRepo.save(product);
+    await this.batchRepo.save(batch);
     return { success: true, id };
   }
 
   /**
-   * Delete a product
+   * Delete a batch
    */
-  async deleteProduct(id: string) {
-    const result = await this.productRepo.delete({ agricultureProductId: id });
+  async deleteProduct(id: number) {
+    const result = await this.batchRepo.delete({ id });
 
     if (result.affected === 0) {
-      throw new NotFoundException(`Product with ID "${id}" not found`);
+      throw new NotFoundException(`Batch with ID "${id}" not found`);
     }
 
     return { success: true, id };

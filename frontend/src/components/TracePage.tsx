@@ -6,10 +6,54 @@ export default function TracePage() {
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null)
 
   const products = [
-    { label: 'Grapefruit', code: 'sample_qr_code_123', emoji: '🍊' },
-    { label: 'Dragon Fruit', code: 'QR_DRAGON_001', emoji: '🐉' },
-    { label: 'Mango', code: 'QR_MANGO_001', emoji: '🥭' },
-    { label: 'Durian', code: 'test_product_qr_001', emoji: '🌰' },
+    {
+      label: 'Organic Lettuce',
+      code: 'QR_BATCH_00001',
+      emoji: '🥬',
+      grade: 'B',
+      color: '#3b82f6', // Blue for Grade B
+      bgColor: '#dbeafe'
+    },
+    {
+      label: 'Fresh Carrot',
+      code: 'QR_BATCH_00002',
+      emoji: '🥕',
+      grade: 'C',
+      color: '#f59e0b', // Orange for Grade C
+      bgColor: '#fef3c7'
+    },
+    {
+      label: 'Premium Strawberry',
+      code: 'QR_BATCH_00003',
+      emoji: '🍓',
+      grade: 'A',
+      color: '#10b981', // Green for Grade A
+      bgColor: '#d1fae5'
+    },
+    {
+      label: 'Sweet Orange',
+      code: 'QR_BATCH_00004',
+      emoji: '🍊',
+      grade: 'B',
+      color: '#3b82f6', // Blue for Grade B
+      bgColor: '#dbeafe'
+    },
+    {
+      label: 'Tropical Mango',
+      code: 'QR_BATCH_00005',
+      emoji: '🥭',
+      grade: 'C',
+      color: '#f59e0b', // Orange for Grade C
+      bgColor: '#fef3c7'
+    },
+    {
+      label: 'Grapefruit',
+      code: 'QR_BATCH_00006',
+      emoji: '🍊',
+      grade: 'A',
+      color: '#10b981', // Green for Grade A
+      bgColor: '#d1fae5'
+    },
   ]
 
   const handleProductClick = (code: string) => {
@@ -90,44 +134,73 @@ export default function TracePage() {
         <div style={{ marginBottom: 16, color: '#374151', fontSize: 18, fontWeight: 600 }}>
           Select Product:
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
-          {products.map(product => (
-            <button
-              key={product.code}
-              onClick={() => handleProductClick(product.code)}
-              style={{
-                padding: '20px',
-                background: selectedProduct === product.code ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
-                color: selectedProduct === product.code ? 'white' : '#374151',
-                border: selectedProduct === product.code ? 'none' : '2px solid #e5e7eb',
-                borderRadius: 12,
-                fontSize: 16,
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.3s',
-                boxShadow: selectedProduct === product.code ? '0 4px 6px rgba(102,126,234,0.4)' : 'none',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 8
-              }}
-              onMouseEnter={e => {
-                if (selectedProduct !== product.code) {
-                  e.currentTarget.style.borderColor = '#667eea'
-                  e.currentTarget.style.transform = 'translateY(-2px)'
-                }
-              }}
-              onMouseLeave={e => {
-                if (selectedProduct !== product.code) {
-                  e.currentTarget.style.borderColor = '#e5e7eb'
-                  e.currentTarget.style.transform = 'translateY(0)'
-                }
-              }}
-            >
-              <span style={{ fontSize: 32 }}>{product.emoji}</span>
-              <span>{product.label}</span>
-            </button>
-          ))}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+          {products.map(product => {
+            const isSelected = selectedProduct === product.code
+            return (
+              <button
+                key={product.code}
+                onClick={() => handleProductClick(product.code)}
+                style={{
+                  padding: '24px',
+                  background: isSelected ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'white',
+                  color: isSelected ? 'white' : '#374151',
+                  border: isSelected ? 'none' : `2px solid ${product.bgColor}`,
+                  borderRadius: 16,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  boxShadow: isSelected ? '0 8px 16px rgba(102,126,234,0.3)' : '0 2px 8px rgba(0,0,0,0.05)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 12,
+                  position: 'relative' as const,
+                  overflow: 'hidden'
+                }}
+                onMouseEnter={e => {
+                  if (!isSelected) {
+                    e.currentTarget.style.borderColor = product.color
+                    e.currentTarget.style.transform = 'translateY(-4px) scale(1.02)'
+                    e.currentTarget.style.boxShadow = `0 8px 16px ${product.color}40`
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!isSelected) {
+                    e.currentTarget.style.borderColor = product.bgColor
+                    e.currentTarget.style.transform = 'translateY(0) scale(1)'
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.05)'
+                  }
+                }}
+              >
+                <div style={{
+                  position: 'absolute',
+                  top: 12,
+                  right: 12,
+                  background: isSelected ? 'rgba(255,255,255,0.3)' : product.bgColor,
+                  color: isSelected ? 'white' : product.color,
+                  padding: '4px 12px',
+                  borderRadius: 999,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.5px'
+                }}>
+                  GRADE {product.grade}
+                </div>
+                <span style={{ fontSize: 48, marginTop: 8 }}>{product.emoji}</span>
+                <span style={{ fontSize: 18, fontWeight: 700 }}>{product.label}</span>
+                <span style={{
+                  fontSize: 12,
+                  opacity: isSelected ? 0.9 : 0.6,
+                  fontFamily: 'monospace',
+                  marginTop: 4
+                }}>
+                  {product.code}
+                </span>
+              </button>
+            )
+          })}
         </div>
 
         {selectedProduct && (

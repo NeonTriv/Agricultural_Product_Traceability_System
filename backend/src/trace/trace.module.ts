@@ -5,8 +5,12 @@ import { ProductController } from './product.controller';
 import { TraceService } from './trace.service';
 import { AgricultureProduct } from './entities/agriculture-product.entity';
 import { Batch } from './entities/batch.entity';
-import { Garden } from './entities/garden.entity';
+import { Farm } from './entities/farm.entity';
+import { FarmCertification } from './entities/farm-certification.entity';
 import { Type } from './entities/type.entity';
+import { Category } from './entities/category.entity';
+import { Country } from './entities/country.entity';
+import { Province } from './entities/province.entity';
 import { Processing } from './entities/processing.entity';
 import { ProcessingFacility } from './entities/processing-facility.entity';
 import { VendorProduct } from './entities/vendor-product.entity';
@@ -18,8 +22,12 @@ import { Price } from './entities/price.entity';
     TypeOrmModule.forFeature([
       AgricultureProduct,
       Batch,
-      Garden,
+      Farm,
+      FarmCertification,
       Type,
+      Category,
+      Country,
+      Province,
       Processing,
       ProcessingFacility,
       VendorProduct,

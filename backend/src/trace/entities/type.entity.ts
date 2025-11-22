@@ -1,23 +1,30 @@
-import { Entity, Column, PrimaryColumn } from 'typeorm';
+import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Category } from './category.entity';
+import { AgricultureProduct } from './agriculture-product.entity';
 
 /**
  * TYPE Entity
- * Represents product types/categories (fruit, vegetable, grain, etc.)
+ * Represents product types (e.g., Tomato, Carrot)
  */
 @Entity('TYPE')
 export class Type {
-  @PrimaryColumn({ name: 'Type_ID', length: 50 })
-  typeId: string;
+  @PrimaryColumn({ name: 'ID', type: 'int' })
+  id: number;
 
-  @Column({ name: 'Name', length: 200 })
+  @Column({ name: 'Name', type: 'nvarchar', length: 100 })
   name: string;
 
-  @Column({ name: 'Variety', length: 200 })
+  @Column({ name: 'Variety', type: 'nvarchar', length: 100, nullable: true })
   variety: string;
 
-  @Column({ name: 'Image_Url', length: 500, nullable: true })
-  imageUrl: string;
+  @Column({ name: 'C_ID', type: 'int' })
+  categoryId: number;
 
-  @Column({ name: 'Category', length: 100 })
-  category: string;
+  // Relationships
+  @ManyToOne(() => Category, (category) => category.types)
+  @JoinColumn({ name: 'C_ID' })
+  category: Category;
+
+  @OneToMany(() => AgricultureProduct, (product) => product.type)
+  products: AgricultureProduct[];
 }

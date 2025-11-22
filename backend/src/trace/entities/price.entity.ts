@@ -3,21 +3,21 @@ import { VendorProduct } from './vendor-product.entity';
 
 /**
  * PRICE Entity
- * Stores pricing information for vendor products
+ * Represents prices for vendor products
  */
 @Entity('PRICE')
 export class Price {
-  @PrimaryColumn({ name: 'VendorProduct_ID', length: 50 })
-  vendorProductId: string;
+  @PrimaryColumn({ name: 'V_ID', type: 'int' })
+  vendorProductId: number;
 
-  @Column({ name: 'Value', type: 'decimal', precision: 15, scale: 2 })
+  @Column({ name: 'Value', type: 'decimal', precision: 18, scale: 0 })
   value: number;
 
-  @Column({ name: 'Currency', length: 10, default: 'VND' })
+  @Column({ name: 'Currency', type: 'varchar', length: 3 })
   currency: string;
 
   // Relationships
-  @ManyToOne(() => VendorProduct, (vendorProduct) => vendorProduct.vendorProductId)
-  @JoinColumn({ name: 'VendorProduct_ID' })
+  @ManyToOne(() => VendorProduct, (vendorProduct) => vendorProduct.prices)
+  @JoinColumn({ name: 'V_ID' })
   vendorProduct: VendorProduct;
 }

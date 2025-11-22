@@ -1,23 +1,28 @@
-import { Entity, Column, PrimaryColumn } from 'typeorm';
+import { Entity, Column, PrimaryColumn, OneToMany } from 'typeorm';
+import { Processing } from './processing.entity';
 
 /**
  * PROCESSING_FACILITY Entity
- * Represents facilities where products are processed/packaged
+ * Represents facilities where products are processed and packaged
  */
 @Entity('PROCESSING_FACILITY')
 export class ProcessingFacility {
-  @PrimaryColumn({ name: 'Facility_ID', length: 50 })
-  facilityId: string;
+  @PrimaryColumn({ name: 'ID', type: 'int' })
+  id: number;
 
-  @Column({ name: 'Name', length: 200 })
+  @Column({ name: 'Name', type: 'nvarchar', length: 255 })
   name: string;
 
-  @Column({ name: 'Address', length: 500 })
+  @Column({ name: 'Address', type: 'nvarchar', length: 255 })
   address: string;
 
-  @Column({ name: 'Contact_Info', length: 200 })
+  @Column({ name: 'Contact_Info', type: 'varchar', length: 255, nullable: true })
   contactInfo: string;
 
-  @Column({ name: 'License_Number', length: 100 })
+  @Column({ name: 'License_Number', type: 'varchar', length: 100 })
   licenseNumber: string;
+
+  // Relationships
+  @OneToMany(() => Processing, (processing) => processing.facility)
+  processings: Processing[];
 }

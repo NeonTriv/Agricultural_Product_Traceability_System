@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchTraceByCode } from '../api/trace'
 import type { TraceResponse } from '../types/trace'
+import { parseTargets } from '../lib/networks'
 
 export default function ProductInfo() {
   const params = new URLSearchParams(window.location.search)
@@ -16,7 +17,10 @@ export default function ProductInfo() {
     setLoading(true)
     setError(null)
 
-    const baseUrl = 'http://localhost:5000'
+    // Use LAN target from environment variables for mobile access
+    const targets = parseTargets()
+    const lanTarget = targets.find(t => t.label === 'LAN') || targets[0]
+    const baseUrl = lanTarget.url
 
     fetchTraceByCode(baseUrl, code)
       .then(d => setData(d))

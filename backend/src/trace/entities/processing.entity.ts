@@ -4,43 +4,40 @@ import { ProcessingFacility } from './processing-facility.entity';
 
 /**
  * PROCESSING Entity
- * Represents processing/packaging activities for agricultural products
+ * Represents processing operations on batches
  */
 @Entity('PROCESSING')
 export class Processing {
-  @PrimaryColumn({ name: 'Processing_ID', length: 50 })
-  processingId: string;
+  @PrimaryColumn({ name: 'ID', type: 'int' })
+  id: number;
 
-  @Column({ name: 'Packaging_Date', type: 'date' })
+  @Column({ name: 'Packaging_Date', type: 'datetimeoffset' })
   packagingDate: Date;
 
-  @Column({ name: 'Weight_Per_Unit', type: 'decimal', precision: 10, scale: 2 })
+  @Column({ name: 'Weight_per_unit', type: 'decimal', precision: 18, scale: 0 })
   weightPerUnit: number;
 
-  @Column({ name: 'Processed_By', length: 200 })
+  @Column({ name: 'Processed_By', type: 'nvarchar', length: 100, nullable: true })
   processedBy: string;
 
-  @Column({ name: 'Packaging_Type', length: 100 })
+  @Column({ name: 'Packaging_Type', type: 'nvarchar', length: 100, nullable: true })
   packagingType: string;
 
-  @Column({ name: 'Processing_Date', type: 'date' })
+  @Column({ name: 'Processing_Date', type: 'datetimeoffset', nullable: true })
   processingDate: Date;
 
-  @Column({ name: 'Step', type: 'text', nullable: true })
-  step: string;
+  @Column({ name: 'Facility_ID', type: 'int' })
+  facilityId: number;
 
-  @Column({ name: 'Facility_ID', length: 50 })
-  facilityId: string;
-
-  @Column({ name: 'Batch_ID', length: 50 })
-  batchId: string;
+  @Column({ name: 'Batch_ID', type: 'int' })
+  batchId: number;
 
   // Relationships
-  @ManyToOne(() => ProcessingFacility, (facility) => facility.facilityId)
+  @ManyToOne(() => ProcessingFacility, (facility) => facility.processings)
   @JoinColumn({ name: 'Facility_ID' })
   facility: ProcessingFacility;
 
-  @ManyToOne(() => Batch, (batch) => batch.batchId)
+  @ManyToOne(() => Batch, (batch) => batch.processings)
   @JoinColumn({ name: 'Batch_ID' })
   batch: Batch;
 }
