@@ -4,90 +4,72 @@ Automated backup and recovery system for Traceability Database.
 
 ---
 
-## Quick Commands
+## Quick Start
 
-### Backup Now (Manual)
-
+### 1. Manual Backup
 ```bash
 cd database\backup-recovery\scripts
 sqlcmd -S localhost -E -i manual_backup.sql
 ```
+Output: `C:\Backup\Traceability_FULL.bak`
 
-**Output**: `C:\Backup\Traceability_DB_FULL_YYYYMMDD_HHMMSS.bak`
-
-### Setup Automated Daily Backup
-
+### 2. Setup Automated Backup
 ```powershell
 # Run as Administrator
 cd database\backup-recovery\scripts
 powershell -ExecutionPolicy Bypass -File schedule_backup.ps1
 ```
+Schedule: Daily at 2:00 AM
 
-**Schedule**: Daily at 2:00 AM
-
-### Restore from Backup
-
+### 3. Restore Database
 ```bash
-# 1. Edit restore_full.sql and update backup file path
-# 2. Run restore
+# Edit restore_full.sql to update backup file path, then run:
 sqlcmd -S localhost -E -i restore_full.sql
 ```
 
 ---
 
-## Files Overview
+## Test Cases
 
-### Scripts (`scripts/`)
+### Test Case 1: Full Backup & Restore
+```bash
+sqlcmd -S localhost -E -i testcase1_full_backup_restore.sql
+```
 
-| File | Purpose |
-|------|---------|
-| `manual_backup.sql` | Create full backup manually |
-| `differential_backup.sql` | Create differential backup |
-| `transaction_log_backup.sql` | Backup transaction log |
-| `restore_full.sql` | Restore from full backup |
-| `restore_point_in_time.sql` | Restore to specific time |
-| `automated_backup.bat` | Windows batch script for automation |
-| `schedule_backup.ps1` | Create Windows scheduled task |
+### Test Case 2: Point-in-Time Recovery
+```bash
+sqlcmd -S localhost -E -i testcase2_point_in_time_recovery.sql
+```
 
-### Documentation
-
-- **[BACKUP_RECOVERY_GUIDE.md](BACKUP_RECOVERY_GUIDE.md)** - Complete guide
+### Test Case 3: Tail-Log Recovery
+```bash
+sqlcmd -S localhost -E -i testcase3_taillog_recovery.sql
+```
 
 ---
 
-## Backup Types
+## Scripts
 
-| Type | When | File Size | Recovery |
-|------|------|-----------|----------|
-| **Full** | Daily | ~500KB | Complete database |
-| **Differential** | As needed | Smaller | Since last full |
-| **Transaction Log** | Hourly (optional) | Small | Point-in-time |
+| File | Purpose |
+|------|---------|
+| `manual_backup.sql` | Full backup |
+| `differential_backup.sql` | Differential backup |
+| `transaction_log_backup.sql` | Transaction log backup |
+| `restore_full.sql` | Full restore |
+| `restore_point_in_time.sql` | Point-in-Time restore |
+| `testcase1_full_backup_restore.sql` | Test full backup/restore |
+| `testcase2_point_in_time_recovery.sql` | Test PITR |
+| `testcase3_taillog_recovery.sql` | Test tail-log recovery |
 
 ---
 
 ## Backup Strategy
 
-- ✅ Full backup: **Daily at 2 AM**
-- ✅ Retention: **30 days**
-- ✅ Compression: **Enabled**
-- ✅ Verification: **Automatic**
-- ✅ Location: **C:\Backup\**
+- Full backup: **Daily at 2 AM**
+- Retention: **30 days**
+- Compression: **Enabled**
+- Location: **C:\Backup\**
 
 ---
 
-## Testing
-
-Backup has been tested successfully:
-- ✅ Full backup created: `572KB`
-- ✅ Verification passed
-- ✅ Database: `Traceability_DB`
-
----
-
-## Support
-
-See [BACKUP_RECOVERY_GUIDE.md](BACKUP_RECOVERY_GUIDE.md) for:
-- Detailed procedures
-- Point-in-time recovery
-- Troubleshooting
-- Best practices
+For detailed documentation, see `BACKUP_RECOVERY_GUIDE.md`
