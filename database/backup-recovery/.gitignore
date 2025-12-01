@@ -1,0 +1,12 @@
+# Ignore actual backup files
+backups/*.bak
+backups/*.trn
+backups/*.dif
+
+# Ignore log files
+logs/*.txt
+logs/*.log
+
+# Keep directory structure
+!backups/.gitkeep
+!logs/.gitkeep

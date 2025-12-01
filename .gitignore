@@ -46,3 +46,5 @@ frontend/Desktop.ini
 
 # Bun specific
 frontend/.bun
+# Claude Code
+.claude/

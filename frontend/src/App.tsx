@@ -1,7 +1,17 @@
-import Products from './components/Products'
+import TracePage from './components/TracePage'
 import ProductInfo from './components/ProductInfo'
+import AdminPage from './components/AdminPage'
 
-export default function App(){
+export default function App() {
   const path = window.location.pathname
-  return path.startsWith('/product') ? <ProductInfo /> : <div className="container"><Products/></div>
+
+  if (path.startsWith('/admin')) {
+    return <AdminPage />
+  }
+
+  if (path.startsWith('/product')) {
+    return <ProductInfo />
+  }
+
+  return <TracePage />
 }
