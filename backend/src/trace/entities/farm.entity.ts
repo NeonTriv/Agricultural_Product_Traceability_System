@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryColumn, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Province } from './province.entity';
 import { Batch } from './batch.entity';
 import { FarmCertification } from './farm-certification.entity';
@@ -9,7 +9,7 @@ import { FarmCertification } from './farm-certification.entity';
  */
 @Entity('FARM')
 export class Farm {
-  @PrimaryColumn({ name: 'ID', type: 'int' })
+  @PrimaryGeneratedColumn('increment', { name: 'ID' })
   id: number;
 
   @Column({ name: 'Name', type: 'nvarchar', length: 255 })

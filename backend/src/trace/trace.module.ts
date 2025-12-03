@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { TraceController } from './trace.controller';
 import { ProductController } from './product.controller';
+import { FarmController } from './farm.controller';
 import { TraceService } from './trace.service';
 import { AgricultureProduct } from './entities/agriculture-product.entity';
 import { Batch } from './entities/batch.entity';
@@ -35,7 +36,7 @@ import { Price } from './entities/price.entity';
       Price,
     ]),
   ],
-  controllers: [TraceController, ProductController],
+  controllers: [TraceController, ProductController, FarmController],
   providers: [TraceService],
   exports: [TraceService],
 })

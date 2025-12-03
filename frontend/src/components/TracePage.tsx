@@ -146,6 +146,8 @@ export default function TracePage() {
           bgColor: getBgColorForGrade(item.grade),
           variety: item.variety || '-',
           origin: item.farmName || '-',
+          province: item.province,
+          country: item.country,
           harvestDate: item.harvestDate ? new Date(item.harvestDate).toISOString().split('T')[0] : '',
           expirationDate: '',
           certifications: '-',
@@ -459,7 +461,7 @@ export default function TracePage() {
                       </div>
                     </div>
 
-                    {/* Origin */}
+                    {/* Farm / Origin / Location */}
                     <div>
                       <label style={{
                         display: 'block',
@@ -472,9 +474,16 @@ export default function TracePage() {
                       }}>
                         Origin
                       </label>
-                      <p style={{ margin: 0, fontSize: 16, color: '#374151' }}>
+                      <p style={{ margin: 0, fontSize: 16, color: '#374151', marginBottom: 4 }}>
                         📍 {product.origin}
                       </p>
+                      {(product.province || product.country) && (
+                        <p style={{ margin: 0, fontSize: 14, color: '#6b7280' }}>
+                          {product.province && `${product.province}`}
+                          {product.province && product.country && ', '}
+                          {product.country && `${product.country}`}
+                        </p>
+                      )}
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>

@@ -7,9 +7,30 @@ interface Product {
   variety?: string
   grade?: string
   harvestDate?: string
-  origin?: string
-  certifications?: string
-  description?: string
+}
+
+interface Farm {
+  id: number
+  name: string
+  ownerName?: string
+  contactInfo?: string
+  longitude?: number
+  latitude?: number
+  provinceId: number
+  provinceName?: string
+  countryName?: string
+}
+
+interface Province {
+  id: number
+  name: string
+  countryId: number
+  countryName: string
+}
+
+interface Country {
+  id: number
+  name: string
 }
 
 // Mock admin credentials - Ready to connect to DB later
@@ -23,6 +44,9 @@ export default function AdminPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loginForm, setLoginForm] = useState({ username: '', password: '' })
   const [loginError, setLoginError] = useState('')
+
+  // Tab management
+  const [activeTab, setActiveTab] = useState<'products' | 'farms'>('products')
 
   // Product management state
   const [products, setProducts] = useState<Product[]>([])
@@ -41,10 +65,23 @@ export default function AdminPage() {
     grade: '',
     harvestDate: '',
     farmId: '',
-    agricultureProductId: '',
-    origin: '',
-    certifications: '',
-    description: ''
+    agricultureProductId: ''
+  })
+
+  // Farm management state
+  const [farmsList, setFarmsList] = useState<Farm[]>([])
+  const [provinces, setProvinces] = useState<Province[]>([])
+  const [countries, setCountries] = useState<Country[]>([])
+  const [showFarmForm, setShowFarmForm] = useState(false)
+  const [selectedProvince, setSelectedProvince] = useState<Province | null>(null)
+
+  const [farmFormData, setFarmFormData] = useState({
+    name: '',
+    ownerName: '',
+    contactInfo: '',
+    longitude: '',
+    latitude: '',
+    provinceId: ''
   })
 
   const baseUrl = 'http://localhost:5000'
@@ -62,6 +99,9 @@ export default function AdminPage() {
       loadProducts()
       loadFarms()
       loadAgricultureProducts()
+      loadProvinces()
+      loadCountries()
+      loadFarmsList()
     }
   }, [isAuthenticated])
 
@@ -81,6 +121,82 @@ export default function AdminPage() {
     } catch (e: any) {
       console.error('Failed to load agriculture products:', e)
     }
+  }
+
+  const loadProvinces = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/api/products/provinces`)
+      setProvinces(response.data)
+    } catch (e: any) {
+      console.error('Failed to load provinces:', e)
+    }
+  }
+
+  const loadCountries = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/api/products/countries`)
+      setCountries(response.data)
+    } catch (e: any) {
+      console.error('Failed to load countries:', e)
+    }
+  }
+
+  const loadFarmsList = async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await axios.get(`${baseUrl}/api/farms`)
+      setFarmsList(response.data)
+    } catch (e: any) {
+      setError(e?.response?.data?.message || e?.message || 'Failed to load farms')
+      console.error('API Error:', e)
+      setFarmsList([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleFarmSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    try {
+      const createData = {
+        name: farmFormData.name,
+        ownerName: farmFormData.ownerName || undefined,
+        contactInfo: farmFormData.contactInfo || undefined,
+        longitude: farmFormData.longitude ? parseFloat(farmFormData.longitude) : undefined,
+        latitude: farmFormData.latitude ? parseFloat(farmFormData.latitude) : undefined,
+        provinceId: parseInt(farmFormData.provinceId),
+      }
+      await axios.post(`${baseUrl}/api/farms`, createData)
+      await loadFarmsList()
+      resetFarmForm()
+    } catch (e: any) {
+      setError(e?.response?.data?.message || e?.message || 'Failed to create farm')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const resetFarmForm = () => {
+    setFarmFormData({
+      name: '',
+      ownerName: '',
+      contactInfo: '',
+      longitude: '',
+      latitude: '',
+      provinceId: ''
+    })
+    setSelectedProvince(null)
+    setShowFarmForm(false)
+  }
+
+  const handleProvinceChange = (provinceId: string) => {
+    setFarmFormData({ ...farmFormData, provinceId })
+    const province = provinces.find(p => p.id === parseInt(provinceId))
+    setSelectedProvince(province || null)
   }
 
   // Handle login
@@ -196,10 +312,7 @@ export default function AdminPage() {
       grade: product.grade || '',
       harvestDate: product.harvestDate || '',
       farmId: '',
-      agricultureProductId: '',
-      origin: product.origin || '',
-      certifications: product.certifications || '',
-      description: product.description || ''
+      agricultureProductId: ''
     })
     setShowForm(true)
   }
@@ -211,10 +324,7 @@ export default function AdminPage() {
       grade: '',
       harvestDate: '',
       farmId: '',
-      agricultureProductId: '',
-      origin: '',
-      certifications: '',
-      description: ''
+      agricultureProductId: ''
     })
     setEditingProduct(null)
     setShowForm(false)
@@ -442,6 +552,57 @@ export default function AdminPage() {
         </button>
       </div>
 
+      {/* Tab Switcher */}
+      <div style={{
+        display: 'flex',
+        gap: 16,
+        marginBottom: 24,
+        borderBottom: '2px solid #e5e7eb'
+      }}>
+        <button
+          onClick={() => {
+            setActiveTab('products')
+            setShowForm(false)
+            setShowFarmForm(false)
+          }}
+          style={{
+            padding: '12px 24px',
+            background: activeTab === 'products' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent',
+            color: activeTab === 'products' ? 'white' : '#6b7280',
+            border: 'none',
+            borderBottom: activeTab === 'products' ? '3px solid #667eea' : 'none',
+            borderRadius: '8px 8px 0 0',
+            fontSize: 16,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          Products / Sản phẩm
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('farms')
+            setShowForm(false)
+            setShowFarmForm(false)
+          }}
+          style={{
+            padding: '12px 24px',
+            background: activeTab === 'farms' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent',
+            color: activeTab === 'farms' ? 'white' : '#6b7280',
+            border: 'none',
+            borderBottom: activeTab === 'farms' ? '3px solid #667eea' : 'none',
+            borderRadius: '8px 8px 0 0',
+            fontSize: 16,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          Farms / Trang trại
+        </button>
+      </div>
+
       <div style={{
         display: 'flex',
         justifyContent: 'space-between',
@@ -456,10 +617,10 @@ export default function AdminPage() {
           fontWeight: 700,
           margin: 0
         }}>
-          Product Information Management
+          {activeTab === 'products' ? 'Product Information Management' : 'Farm Management'}
         </h1>
         <button
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => activeTab === 'products' ? setShowForm(!showForm) : setShowFarmForm(!showFarmForm)}
           style={{
             padding: '12px 24px',
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -472,7 +633,9 @@ export default function AdminPage() {
             boxShadow: '0 2px 4px rgba(102,126,234,0.4)'
           }}
         >
-          {showForm ? 'Cancel' : '+ Add New Product'}
+          {activeTab === 'products'
+            ? (showForm ? 'Cancel' : '+ Add New Product')
+            : (showFarmForm ? 'Cancel' : '+ Add New Farm')}
         </button>
       </div>
 
@@ -489,8 +652,8 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Form */}
-      {showForm && (
+      {/* Product Form */}
+      {activeTab === 'products' && showForm && (
         <div style={{
           background: 'white',
           padding: 24,
@@ -568,26 +731,6 @@ export default function AdminPage() {
                 </select>
               </div>
 
-              {/* Origin */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                  Origin / Xuất xứ
-                </label>
-                <input
-                  type="text"
-                  value={formData.origin}
-                  onChange={e => setFormData({ ...formData, origin: e.target.value })}
-                  placeholder="e.g., Mekong Delta, Vietnam"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: 8,
-                    fontSize: 16
-                  }}
-                />
-              </div>
-
               {/* Harvest Date */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
@@ -663,49 +806,7 @@ export default function AdminPage() {
               )}
             </div>
 
-            {/* Certifications */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                Certifications / Chứng nhận
-              </label>
-              <input
-                type="text"
-                value={formData.certifications}
-                onChange={e => setFormData({ ...formData, certifications: e.target.value })}
-                placeholder="e.g., USDA Organic, GlobalG.A.P, VietGAP"
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '2px solid #e5e7eb',
-                  borderRadius: 8,
-                  fontSize: 16
-                }}
-              />
-            </div>
-
-            {/* Description */}
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                Description / Mô tả
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={e => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Enter product description..."
-                rows={3}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '2px solid #e5e7eb',
-                  borderRadius: 8,
-                  fontSize: 16,
-                  fontFamily: 'inherit',
-                  resize: 'vertical'
-                }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
               <button
                 type="submit"
                 disabled={loading}
@@ -744,13 +845,14 @@ export default function AdminPage() {
       )}
 
       {/* Products List */}
-      <div style={{
-        background: 'white',
-        borderRadius: 12,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        overflow: 'hidden'
-      }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      {activeTab === 'products' && (
+        <div style={{
+          background: 'white',
+          borderRadius: 12,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          overflow: 'hidden'
+        }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
               <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Product Name</th>
@@ -843,6 +945,262 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
+      )}
+
+      {/* Farm Form */}
+      {activeTab === 'farms' && showFarmForm && (
+        <div style={{
+          background: 'white',
+          padding: 24,
+          borderRadius: 12,
+          marginBottom: 24,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+        }}>
+          <h2 style={{ marginTop: 0, color: '#374151' }}>Add New Farm</h2>
+          <form onSubmit={handleFarmSubmit}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              {/* Farm Name */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                  Farm Name / Tên trang trại *
+                </label>
+                <input
+                  type="text"
+                  value={farmFormData.name}
+                  onChange={e => setFarmFormData({ ...farmFormData, name: e.target.value })}
+                  required
+                  placeholder="e.g., Green Valley Farm"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: 8,
+                    fontSize: 16
+                  }}
+                />
+              </div>
+
+              {/* Owner Name */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                  Owner Name / Chủ trang trại
+                </label>
+                <input
+                  type="text"
+                  value={farmFormData.ownerName}
+                  onChange={e => setFarmFormData({ ...farmFormData, ownerName: e.target.value })}
+                  placeholder="e.g., Nguyen Van A"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: 8,
+                    fontSize: 16
+                  }}
+                />
+              </div>
+
+              {/* Contact Info */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                  Contact Info / Thông tin liên hệ
+                </label>
+                <input
+                  type="text"
+                  value={farmFormData.contactInfo}
+                  onChange={e => setFarmFormData({ ...farmFormData, contactInfo: e.target.value })}
+                  placeholder="Phone, email, etc."
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: 8,
+                    fontSize: 16
+                  }}
+                />
+              </div>
+
+              {/* Province Selection */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                  Province / Tỉnh thành *
+                </label>
+                <select
+                  value={farmFormData.provinceId}
+                  onChange={e => handleProvinceChange(e.target.value)}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: 8,
+                    fontSize: 16
+                  }}
+                >
+                  <option value="">Select a province...</option>
+                  {provinces.map(province => (
+                    <option key={province.id} value={province.id}>
+                      {province.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Country (Auto-filled) */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                  Country / Quốc gia
+                </label>
+                <input
+                  type="text"
+                  value={selectedProvince?.countryName || ''}
+                  disabled
+                  placeholder="Auto-filled from province"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: 8,
+                    fontSize: 16,
+                    background: '#f9fafb',
+                    color: '#6b7280'
+                  }}
+                />
+              </div>
+
+              {/* Longitude */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                  Longitude / Kinh độ
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={farmFormData.longitude}
+                  onChange={e => setFarmFormData({ ...farmFormData, longitude: e.target.value })}
+                  placeholder="e.g., 105.8342"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: 8,
+                    fontSize: 16
+                  }}
+                />
+              </div>
+
+              {/* Latitude */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                  Latitude / Vĩ độ
+                </label>
+                <input
+                  type="number"
+                  step="any"
+                  value={farmFormData.latitude}
+                  onChange={e => setFarmFormData({ ...farmFormData, latitude: e.target.value })}
+                  placeholder="e.g., 21.0285"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: 8,
+                    fontSize: 16
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 16, marginTop: 24 }}>
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  padding: '12px 24px',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  opacity: loading ? 0.6 : 1
+                }}
+              >
+                {loading ? 'Creating...' : 'Create Farm'}
+              </button>
+              <button
+                type="button"
+                onClick={resetFarmForm}
+                style={{
+                  padding: '12px 24px',
+                  background: 'white',
+                  color: '#6b7280',
+                  border: '2px solid #e5e7eb',
+                  borderRadius: 8,
+                  fontSize: 16,
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Farms List */}
+      {activeTab === 'farms' && (
+        <div style={{
+          background: 'white',
+          borderRadius: 12,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          overflow: 'hidden'
+        }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
+                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Farm Name</th>
+                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Owner</th>
+                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Contact</th>
+                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Province</th>
+                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Country</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && !farmsList.length ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: 24, textAlign: 'center', color: '#6b7280' }}>
+                    Loading farms...
+                  </td>
+                </tr>
+              ) : farmsList.length === 0 ? (
+                <tr>
+                  <td colSpan={5} style={{ padding: 24, textAlign: 'center', color: '#6b7280' }}>
+                    No farms found. Add your first farm!
+                  </td>
+                </tr>
+              ) : (
+                farmsList.map((farm, index) => (
+                  <tr
+                    key={farm.id}
+                    style={{
+                      borderBottom: index < farmsList.length - 1 ? '1px solid #e5e7eb' : 'none'
+                    }}
+                  >
+                    <td style={{ padding: 16, fontWeight: 600 }}>{farm.name}</td>
+                    <td style={{ padding: 16, color: '#6b7280' }}>{farm.ownerName || '-'}</td>
+                    <td style={{ padding: 16, color: '#6b7280' }}>{farm.contactInfo || '-'}</td>
+                    <td style={{ padding: 16, color: '#6b7280' }}>{farm.provinceName || '-'}</td>
+                    <td style={{ padding: 16, color: '#6b7280' }}>{farm.countryName || '-'}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   )
 }

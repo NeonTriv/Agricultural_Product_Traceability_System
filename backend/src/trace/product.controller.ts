@@ -17,6 +17,18 @@ export class ProductController {
     return this.traceService.getAllAgricultureProducts();
   }
 
+  @Get('provinces')
+  @HttpCode(HttpStatus.OK)
+  async getAllProvinces() {
+    return this.traceService.getAllProvinces();
+  }
+
+  @Get('countries')
+  @HttpCode(HttpStatus.OK)
+  async getAllCountries() {
+    return this.traceService.getAllCountries();
+  }
+
   @Get()
   @HttpCode(HttpStatus.OK)
   async getAllProducts() {
