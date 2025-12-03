@@ -5,6 +5,36 @@ import { TraceService } from './trace.service';
 export class ProductController {
   constructor(private readonly traceService: TraceService) {}
 
+  @Get('farms')
+  @HttpCode(HttpStatus.OK)
+  async getAllFarms() {
+    return this.traceService.getAllFarms();
+  }
+
+  @Get('agriculture-products')
+  @HttpCode(HttpStatus.OK)
+  async getAllAgricultureProducts() {
+    return this.traceService.getAllAgricultureProducts();
+  }
+
+  @Get('provinces')
+  @HttpCode(HttpStatus.OK)
+  async getAllProvinces() {
+    return this.traceService.getAllProvinces();
+  }
+
+  @Get('countries')
+  @HttpCode(HttpStatus.OK)
+  async getAllCountries() {
+    return this.traceService.getAllCountries();
+  }
+
+  @Get()
+  @HttpCode(HttpStatus.OK)
+  async getAllProducts() {
+    return this.traceService.getAllProducts();
+  }
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createProduct(
@@ -31,6 +61,7 @@ export class ProductController {
       agricultureProductId?: number;
       harvestDate?: Date;
       grade?: string;
+      seedBatch?: string;
     },
   ) {
     return this.traceService.updateProduct(parseInt(id), body);

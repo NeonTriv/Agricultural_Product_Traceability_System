@@ -36,6 +36,10 @@ export class TraceService {
     private readonly farmCertRepo: Repository<FarmCertification>,
     @InjectRepository(Type)
     private readonly typeRepo: Repository<Type>,
+    @InjectRepository(Province)
+    private readonly provinceRepo: Repository<Province>,
+    @InjectRepository(Country)
+    private readonly countryRepo: Repository<Country>,
     @InjectRepository(Processing)
     private readonly processingRepo: Repository<Processing>,
     @InjectRepository(ProcessingFacility)
@@ -244,14 +248,21 @@ export class TraceService {
         'batch.qrCodeUrl',
         'batch.harvestDate',
         'batch.grade',
+        'batch.seedBatch',
         'product.id',
         'product.name',
         'product.imageUrl',
         'farm.id',
         'farm.name',
+        'province.id',
+        'province.name',
+        'country.id',
+        'country.name',
       ])
       .leftJoin('batch.agricultureProduct', 'product')
       .leftJoin('batch.farm', 'farm')
+      .leftJoin('farm.province', 'province')
+      .leftJoin('province.country', 'country')
       .take(100) // Limit for performance
       .getMany();
 
@@ -261,8 +272,11 @@ export class TraceService {
       productName: b.agricultureProduct?.name || 'Unknown',
       productImageUrl: b.agricultureProduct?.imageUrl,
       farmName: b.farm?.name || 'Unknown Farm',
+      province: b.farm?.province?.name,
+      country: b.farm?.province?.country?.name,
       harvestDate: b.harvestDate,
       grade: b.grade,
+      variety: b.seedBatch,
     }));
   }
 
@@ -299,6 +313,7 @@ export class TraceService {
       agricultureProductId?: number;
       harvestDate?: Date;
       grade?: string;
+      seedBatch?: string;
     },
   ) {
     const batch = await this.batchRepo.findOne({
@@ -315,6 +330,7 @@ export class TraceService {
       batch.agricultureProductId = data.agricultureProductId;
     if (data.harvestDate) batch.harvestDate = data.harvestDate;
     if (data.grade) batch.grade = data.grade;
+    if (data.seedBatch !== undefined) batch.seedBatch = data.seedBatch;
 
     await this.batchRepo.save(batch);
     return { success: true, id };
@@ -331,5 +347,92 @@ export class TraceService {
     }
 
     return { success: true, id };
+  }
+
+  /**
+   * Get all farms for dropdown selection
+   */
+  async getAllFarms() {
+    const farms = await this.farmRepo.find({
+      relations: ['province', 'province.country'],
+      take: 100,
+    });
+    return farms.map((f) => ({
+      id: f.id,
+      name: f.name,
+      ownerName: f.ownerName,
+      contactInfo: f.contactInfo,
+      longitude: f.longitude,
+      latitude: f.latitude,
+      provinceId: f.provinceId,
+      provinceName: f.province?.name || 'Unknown',
+      countryName: f.province?.country?.name || 'Unknown',
+    }));
+  }
+
+  /**
+   * Get all agriculture products for dropdown selection
+   */
+  async getAllAgricultureProducts() {
+    const products = await this.productRepo.find({
+      take: 100,
+    });
+    return products.map((p) => ({
+      id: p.id,
+      name: p.name,
+    }));
+  }
+
+  /**
+   * Get all provinces with their country information
+   */
+  async getAllProvinces() {
+    const provinces = await this.provinceRepo.find({
+      relations: ['country'],
+      take: 100,
+    });
+    return provinces.map((p) => ({
+      id: p.id,
+      name: p.name,
+      countryId: p.countryId,
+      countryName: p.country?.name || 'Unknown',
+    }));
+  }
+
+  /**
+   * Get all countries for dropdown selection
+   */
+  async getAllCountries() {
+    const countries = await this.countryRepo.find({
+      take: 100,
+    });
+    return countries.map((c) => ({
+      id: c.id,
+      name: c.name,
+    }));
+  }
+
+  /**
+   * Create a new farm
+   */
+  async createFarm(data: {
+    name: string;
+    ownerName?: string;
+    contactInfo?: string;
+    longitude?: number;
+    latitude?: number;
+    provinceId: number;
+  }) {
+    const farm = this.farmRepo.create({
+      name: data.name,
+      ownerName: data.ownerName,
+      contactInfo: data.contactInfo,
+      longitude: data.longitude || 0,
+      latitude: data.latitude || 0,
+      provinceId: data.provinceId,
+    });
+
+    const saved = await this.farmRepo.save(farm);
+    return { success: true, id: saved.id };
   }
 }
