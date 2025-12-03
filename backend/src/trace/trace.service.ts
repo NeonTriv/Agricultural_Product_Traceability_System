@@ -244,6 +244,7 @@ export class TraceService {
         'batch.qrCodeUrl',
         'batch.harvestDate',
         'batch.grade',
+        'batch.seedBatch',
         'product.id',
         'product.name',
         'product.imageUrl',
@@ -263,6 +264,7 @@ export class TraceService {
       farmName: b.farm?.name || 'Unknown Farm',
       harvestDate: b.harvestDate,
       grade: b.grade,
+      variety: b.seedBatch,
     }));
   }
 
@@ -299,6 +301,7 @@ export class TraceService {
       agricultureProductId?: number;
       harvestDate?: Date;
       grade?: string;
+      seedBatch?: string;
     },
   ) {
     const batch = await this.batchRepo.findOne({
@@ -315,6 +318,7 @@ export class TraceService {
       batch.agricultureProductId = data.agricultureProductId;
     if (data.harvestDate) batch.harvestDate = data.harvestDate;
     if (data.grade) batch.grade = data.grade;
+    if (data.seedBatch !== undefined) batch.seedBatch = data.seedBatch;
 
     await this.batchRepo.save(batch);
     return { success: true, id };
@@ -331,5 +335,31 @@ export class TraceService {
     }
 
     return { success: true, id };
+  }
+
+  /**
+   * Get all farms for dropdown selection
+   */
+  async getAllFarms() {
+    const farms = await this.farmRepo.find({
+      take: 100,
+    });
+    return farms.map((f) => ({
+      id: f.id,
+      name: f.name,
+    }));
+  }
+
+  /**
+   * Get all agriculture products for dropdown selection
+   */
+  async getAllAgricultureProducts() {
+    const products = await this.productRepo.find({
+      take: 100,
+    });
+    return products.map((p) => ({
+      id: p.id,
+      name: p.name,
+    }));
   }
 }

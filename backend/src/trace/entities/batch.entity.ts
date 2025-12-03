@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryColumn, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Farm } from './farm.entity';
 import { AgricultureProduct } from './agriculture-product.entity';
 import { Processing } from './processing.entity';
@@ -11,7 +11,7 @@ import { StoredIn } from './stored-in.entity';
  */
 @Entity('BATCH')
 export class Batch {
-  @PrimaryColumn({ name: 'ID', type: 'int' })
+  @PrimaryGeneratedColumn('increment', { name: 'ID' })
   id: number;
 
   @Column({ name: 'Harvest_Date', type: 'datetimeoffset' })
