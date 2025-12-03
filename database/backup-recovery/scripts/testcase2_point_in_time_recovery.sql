@@ -57,13 +57,25 @@ SELECT @MinBatchID = MIN(ID) FROM BATCH;
 IF @MinBatchID IS NULL
 BEGIN
     PRINT 'No BATCH records found. Inserting test data...';
+    
+    -- SỬA LỖI: Lấy ID của Farm và Product có sẵn để làm khóa ngoại
+    DECLARE @FarmID INT, @ProductID INT;
+    SELECT TOP 1 @FarmID = ID FROM FARM;
+    SELECT TOP 1 @ProductID = ID FROM AGRICULTURE_PRODUCT;
 
-    -- Insert test BATCH records for demonstration
-    INSERT INTO BATCH (Qr_Code_URL, Harvest_Date, Grade, Created_By)
+    -- Kiểm tra nếu chưa có master data
+    IF @FarmID IS NULL OR @ProductID IS NULL
+    BEGIN
+        PRINT 'ERROR: Master data (Farm/Product) missing. Run INSERT_MASTER_DATA.sql first.';
+        RETURN;
+    END
+
+    -- Insert test BATCH records for demonstration (SỬA: Thêm Farm_ID, AP_ID)
+    INSERT INTO BATCH (Qr_Code_URL, Harvest_Date, Grade, Created_By, Farm_ID, AP_ID)
     VALUES
-        ('https://qr.test/batch001', GETDATE(), 'A', 'TestUser'),
-        ('https://qr.test/batch002', GETDATE(), 'B', 'TestUser'),
-        ('https://qr.test/batch003', GETDATE(), 'A', 'TestUser');
+        ('https://qr.test/batch001', GETDATE(), 'A', 'TestUser', @FarmID, @ProductID),
+        ('https://qr.test/batch002', GETDATE(), 'B', 'TestUser', @FarmID, @ProductID),
+        ('https://qr.test/batch003', GETDATE(), 'A', 'TestUser', @FarmID, @ProductID);
 
     SELECT @MinBatchID = MIN(ID) FROM BATCH;
     PRINT 'Test data inserted successfully';
@@ -112,7 +124,10 @@ PRINT '';
 DECLARE @DeletedCount INT;
 
 -- Delete referenced records first (to avoid FK constraint violations)
+-- SHIP_BATCH, PROCESSING, STORED_IN nếu có tham chiếu đến Batch này
 DELETE FROM SHIP_BATCH WHERE B_ID BETWEEN @MinBatchID AND @MaxTargetID;
+DELETE FROM PROCESSING WHERE Batch_ID BETWEEN @MinBatchID AND @MaxTargetID;
+DELETE FROM STORED_IN WHERE B_ID BETWEEN @MinBatchID AND @MaxTargetID;
 
 -- Now delete BATCH records in the target range
 DELETE FROM BATCH WHERE ID BETWEEN @MinBatchID AND @MaxTargetID;

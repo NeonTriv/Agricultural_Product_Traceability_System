@@ -46,7 +46,8 @@ END;
 IF @TypeId IS NULL
 BEGIN
     PRINT 'Creating dummy TYPE record...';
-    INSERT INTO [TYPE] (Name, C_ID) VALUES (N'Test Type', @CategoryId);
+    -- SỬA: Bỏ Name, chỉ dùng Variety
+    INSERT INTO [TYPE] (Variety, C_ID) VALUES (N'Test Type', @CategoryId);
     SELECT TOP 1 @TypeId = ID FROM [TYPE] ORDER BY ID;
 END;
 
@@ -73,10 +74,11 @@ END;
 IF @FarmIdA IS NULL
 BEGIN
     PRINT 'Creating dummy FARM records...';
-    INSERT INTO FARM (Name, Owner_Name, Contact_Info, Longitude, Latitude, P_ID)
+    -- SỬA: Thêm Address_detail
+    INSERT INTO FARM (Name, Owner_Name, Contact_Info, Address_detail, Longitude, Latitude, P_ID)
     VALUES
-        (N'Test Farm A', N'Owner A', '0123456789', 106.123456, 10.123456, @ProvinceId),
-        (N'Test Farm B', N'Owner B', '0123456789', 106.234567, 10.234567, @ProvinceId);
+        (N'Test Farm A', N'Owner A', '0123456789', N'Address A', 106.123456, 10.123456, @ProvinceId),
+        (N'Test Farm B', N'Owner B', '0123456789', N'Address B', 106.234567, 10.234567, @ProvinceId);
 END;
 
 PRINT '';

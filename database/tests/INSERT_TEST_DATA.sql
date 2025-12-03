@@ -44,14 +44,7 @@ BEGIN
 END
 
 -- Insert CARRIER COMPANY
-IF NOT EXISTS (SELECT * FROM CARRIERCOMPANY WHERE V_TIN = 'CARRIER001')
-BEGIN
-    INSERT INTO CARRIERCOMPANY (V_TIN, Name, Address, Contact_Info)
-    VALUES
-        ('CARRIER001', N'Fast Logistics Co.', N'123 Transport St., HCMC', '0901234567'),
-        ('CARRIER002', N'Green Delivery Ltd.', N'456 Shipping Ave., Hanoi', '0987654321');
-    PRINT '✓ Inserted: CARRIERCOMPANY (2 records)';
-END
+-- Removed: CARRIERCOMPANY direct inserts; must insert into VENDOR first, then child CARRIERCOMPANY
 
 GO
 
@@ -89,15 +82,16 @@ PRINT '--- STEP 3: Inserting TYPE ---';
 DECLARE @VegCategoryID INT = (SELECT ID FROM CATEGORY WHERE Name = N'Vegetables');
 DECLARE @FruitCategoryID INT = (SELECT ID FROM CATEGORY WHERE Name = N'Fruits');
 
-IF NOT EXISTS (SELECT * FROM [TYPE] WHERE Name = N'Leafy Greens')
+IF NOT EXISTS (SELECT * FROM [TYPE] WHERE Variety = N'Lettuce')
 BEGIN
-    INSERT INTO [TYPE] (Name, Variety, C_ID) VALUES
-        (N'Leafy Greens', N'Lettuce', @VegCategoryID),
-        (N'Root Vegetables', N'Carrot', @VegCategoryID),
-        (N'Cruciferous', N'Cabbage', @VegCategoryID),
-        (N'Berries', N'Strawberry', @FruitCategoryID),
-        (N'Citrus', N'Orange', @FruitCategoryID),
-        (N'Tropical Fruits', N'Mango', @FruitCategoryID);
+    -- Updated: TYPE has only Variety and C_ID
+    INSERT INTO [TYPE] (Variety, C_ID) VALUES
+        (N'Lettuce', @VegCategoryID),
+        (N'Carrot', @VegCategoryID),
+        (N'Cabbage', @VegCategoryID),
+        (N'Strawberry', @FruitCategoryID),
+        (N'Orange', @FruitCategoryID),
+        (N'Mango', @FruitCategoryID);
     PRINT '✓ Inserted: TYPE (6 records)';
 END
 
@@ -118,12 +112,12 @@ DECLARE @LamDongID INT = (SELECT ID FROM PROVINCE WHERE Name = N'Lam Dong');
 
 IF NOT EXISTS (SELECT * FROM FARM WHERE Name = N'Green Valley Farm')
 BEGIN
-    INSERT INTO FARM (Name, Owner_Name, Contact_Info, Longitude, Latitude, P_ID) VALUES
-        (N'Green Valley Farm', N'Nguyen Van A', '0901111111', 106.660172, 10.762622, @HCMID),
-        (N'Organic Highlands', N'Tran Thi B', '0902222222', 108.220833, 16.047079, @DaNangID),
-        (N'Delta Fresh Farm', N'Le Van C', '0903333333', 105.787120, 21.028511, @HanoiID),
-        (N'Mekong Produce', N'Pham Thi D', '0904444444', 105.766670, 10.033333, @CanThoID),
-        (N'Mountain View Farm', N'Vo Van E', '0905555555', 108.433333, 11.933333, @LamDongID);
+    INSERT INTO FARM (Name, Owner_Name, Contact_Info, Address_detail, Longitude, Latitude, P_ID) VALUES
+        (N'Green Valley Farm', N'Nguyen Van A', '0901111111', N'Cu Chi, HCM', 106.660172, 10.762622, @HCMID),
+        (N'Organic Highlands', N'Tran Thi B', '0902222222', N'Son Tra, DN', 108.220833, 16.047079, @DaNangID),
+        (N'Delta Fresh Farm', N'Le Van C', '0903333333', N'Soc Son, HN', 105.787120, 21.028511, @HanoiID),
+        (N'Mekong Produce', N'Pham Thi D', '0904444444', N'Ninh Kieu, CT', 105.766670, 10.033333, @CanThoID),
+        (N'Mountain View Farm', N'Vo Van E', '0905555555', N'Da Lat, LD', 108.433333, 11.933333, @LamDongID);
     PRINT '✓ Inserted: FARM (5 records)';
 END
 
@@ -164,10 +158,10 @@ PRINT '--- STEP 6: Inserting VENDOR & DISTRIBUTOR ---';
 
 IF NOT EXISTS (SELECT * FROM VENDOR WHERE TIN = 'DIST001')
 BEGIN
-    INSERT INTO VENDOR (TIN, Name, Address, Contact_Info) VALUES
-        ('DIST001', N'Metro Distribution', N'789 Commerce Blvd., HCMC', '0281234567'),
-        ('DIST002', N'Fresh Supply Chain', N'321 Business Park, Hanoi', '0241234567'),
-        ('DIST003', N'Green Network Ltd.', N'555 Industrial Zone, Da Nang', '0236123456');
+    INSERT INTO VENDOR (TIN, Name, Address_detail, Contact_Info) VALUES
+        ('DIST001', N'Metro Distribution', N'789 Commerce Blvd.', '0281234567'),
+        ('DIST002', N'Fresh Supply Chain', N'321 Business Park', '0241234567'),
+        ('DIST003', N'Green Network Ltd.', N'555 Industrial Zone', '0236123456');
     PRINT '✓ Inserted: VENDOR (3 records)';
 
     INSERT INTO DISTRIBUTOR (Vendor_TIN, Type) VALUES
@@ -190,15 +184,15 @@ IF NOT EXISTS (SELECT * FROM SHIPMENT WHERE ID = 1)
 BEGIN
     SET IDENTITY_INSERT SHIPMENT ON;
 
-    INSERT INTO SHIPMENT (ID, Status, Departured_Time, Arrival_Time, Destination, Distributor_TIN) VALUES
-        (1, 'In-Transit', '2025-11-14T08:00:00+07:00', NULL, N'HCMC Warehouse A', 'DIST001'),
-        (2, 'Delivered', '2025-11-13T09:00:00+07:00', '2025-11-13T15:30:00+07:00', N'Hanoi Hub B', 'DIST002'),
-        (3, 'In-Transit', '2025-11-15T07:00:00+07:00', NULL, N'Da Nang Center C', 'DIST003'),
-        (4, 'Pending', NULL, NULL, N'HCMC Warehouse D', 'DIST001'),
-        (5, 'Delivered', '2025-11-12T10:00:00+07:00', '2025-11-12T18:00:00+07:00', N'Can Tho Hub E', 'DIST002'),
-        (6, 'In-Transit', '2025-11-14T11:00:00+07:00', NULL, N'HCMC Warehouse F', 'DIST001'),
-        (7, 'In-Transit', '2025-11-15T08:30:00+07:00', NULL, N'Hanoi Hub G', 'DIST002'),
-        (8, 'Delivered', '2025-11-11T06:00:00+07:00', '2025-11-11T14:00:00+07:00', N'Da Nang Center H', 'DIST003');
+    INSERT INTO SHIPMENT (ID, Status, Destination, Distributor_TIN) VALUES
+        (1, 'In-Transit', N'HCMC Warehouse A', 'DIST001'),
+        (2, 'Delivered',  N'Hanoi Hub B', 'DIST002'),
+        (3, 'In-Transit', N'Da Nang Center C', 'DIST003'),
+        (4, 'Pending',    N'HCMC Warehouse D', 'DIST001'),
+        (5, 'Delivered',  N'Can Tho Hub E', 'DIST002'),
+        (6, 'In-Transit', N'HCMC Warehouse F', 'DIST001'),
+        (7, 'In-Transit', N'Hanoi Hub G', 'DIST002'),
+        (8, 'Delivered',  N'Da Nang Center H', 'DIST003');
 
     SET IDENTITY_INSERT SHIPMENT OFF;
     PRINT '✓ Inserted: SHIPMENT (8 records)';
@@ -217,14 +211,14 @@ IF NOT EXISTS (SELECT * FROM TRANSPORLEG WHERE ID = 1)
 BEGIN
     SET IDENTITY_INSERT TRANSPORLEG ON;
 
-    INSERT INTO TRANSPORLEG (ID, Shipment_ID, Driver_Name, Temperature_Profile, Start_Location, To_Location, CarrierCompany_TIN) VALUES
-        (1, 1, N'Nguyen Van X', '2-8°C', N'Green Valley Farm', N'HCMC Warehouse A', 'CARRIER001'),
-        (2, 2, N'Tran Van Y', '0-5°C', N'Organic Highlands', N'Hanoi Hub B', 'CARRIER002'),
-        (3, 3, N'Le Van Z', '2-8°C', N'Delta Fresh Farm', N'Da Nang Center C', 'CARRIER001'),
-        (4, 5, N'Pham Van W', '0-5°C', N'Mekong Produce', N'Can Tho Hub E', 'CARRIER002'),
-        (5, 6, N'Vo Van V', '2-8°C', N'Mountain View Farm', N'HCMC Warehouse F', 'CARRIER001'),
-        (6, 7, N'Hoang Van U', '0-5°C', N'Green Valley Farm', N'Hanoi Hub G', 'CARRIER002'),
-        (7, 8, N'Dang Van T', '2-8°C', N'Organic Highlands', N'Da Nang Center H', 'CARRIER001');
+    INSERT INTO TRANSPORLEG (ID, Shipment_ID, Driver_Name, Temperature_Profile, Start_Location, To_Location, CarrierCompany_TIN, D_Time, A_Time) VALUES
+        (1, 1, N'Nguyen Van X', '2-8°C', N'Green Valley', N'HCMC A', 'CARRIER001', '2025-11-14T08:00:00+07:00', NULL),
+        (2, 2, N'Tran Van Y', '0-5°C', N'Organic High', N'Hanoi B', 'CARRIER002', '2025-11-13T09:00:00+07:00', '2025-11-13T15:30:00+07:00'),
+        (3, 3, N'Le Van Z', '2-8°C', N'Delta Fresh', N'Da Nang C', 'CARRIER001', '2025-11-15T07:00:00+07:00', NULL),
+        (4, 5, N'Pham Van W', '0-5°C', N'Mekong Prod', N'Can Tho E', 'CARRIER002', '2025-11-12T10:00:00+07:00', '2025-11-12T18:00:00+07:00'),
+        (5, 6, N'Vo Van V', '2-8°C', N'Mountain View', N'HCMC F', 'CARRIER001', '2025-11-14T11:00:00+07:00', NULL),
+        (6, 7, N'Hoang Van U', '0-5°C', N'Green Valley', N'Hanoi G', 'CARRIER002', '2025-11-15T08:30:00+07:00', NULL),
+        (7, 8, N'Dang Van T', '2-8°C', N'Organic High', N'Da Nang H', 'CARRIER001', '2025-11-11T06:00:00+07:00', '2025-11-11T14:00:00+07:00');
 
     SET IDENTITY_INSERT TRANSPORLEG OFF;
     PRINT '✓ Inserted: TRANSPORLEG (7 records)';
@@ -241,10 +235,10 @@ PRINT '--- STEP 9: Inserting PROCESSING_FACILITY ---';
 
 IF NOT EXISTS (SELECT * FROM PROCESSING_FACILITY WHERE License_Number = 'LIC-001')
 BEGIN
-    INSERT INTO PROCESSING_FACILITY (Name, Address, Contact_Info, License_Number) VALUES
-        (N'Central Processing Plant', N'100 Industrial Rd., HCMC', '0281111111', 'LIC-001'),
-        (N'Fresh Pack Facility', N'200 Factory St., Hanoi', '0242222222', 'LIC-002'),
-        (N'Clean Packaging Co.', N'300 Processing Ave., Da Nang', '0236333333', 'LIC-003');
+    INSERT INTO PROCESSING_FACILITY (Name, Address_detail, Contact_Info, License_Number) VALUES
+        (N'Central Processing Plant', N'100 Industrial Rd.', '0281111111', 'LIC-001'),
+        (N'Fresh Pack Facility', N'200 Factory St.', '0242222222', 'LIC-002'),
+        (N'Clean Packaging Co.', N'300 Processing Ave.', '0236333333', 'LIC-003');
     PRINT '✓ Inserted: PROCESSING_FACILITY (3 records)';
 END
 

@@ -213,7 +213,7 @@ IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_shipment_status_distr
 BEGIN
     CREATE NONCLUSTERED INDEX idx_shipment_status_distributor
     ON SHIPMENT ([Status], Distributor_TIN)
-    INCLUDE (ID, Departured_Time, Arrival_Time, Destination);
+    INCLUDE (ID, Destination);
 
     PRINT '✓ Index created: idx_shipment_status_distributor (COMPOSITE)';
 END
