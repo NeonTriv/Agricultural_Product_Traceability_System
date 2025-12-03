@@ -218,7 +218,6 @@ PRINT '6. COMPOSITE INDEX DEMO (Test Case 2)';
 PRINT '============================================================================';
 PRINT '';
 
--- Show shipment status distribution
 PRINT 'Shipment Status Distribution:';
 SELECT
     Status,
@@ -232,11 +231,10 @@ PRINT '';
 PRINT 'Composite Index Query:';
 PRINT '';
 
--- Demo query
 SELECT
     s.ID,
     s.Status,
-    s.Departured_Time,
+     -- s.Departured_Time,  -- removed; moved to TRANSPORTLEG
     s.Destination,
     s.Distributor_TIN
 FROM SHIPMENT s
