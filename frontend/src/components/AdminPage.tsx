@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import VendorsTab from './VendorsTab'
+import ProcessingTab from './ProcessingTab'
+import LogisticsTab from './LogisticsTab'
 
 interface Product {
   id: string
@@ -33,6 +36,16 @@ interface Country {
   name: string
 }
 
+interface Vendor {
+  tin: string
+  name: string
+  address: string
+  contactInfo?: string
+  type: 'vendor' | 'distributor' | 'retail'
+  distributorType?: string
+  retailFormat?: string
+}
+
 // Mock admin credentials - Ready to connect to DB later
 const MOCK_ADMIN = {
   username: 'admin',
@@ -46,7 +59,7 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState('')
 
   // Tab management
-  const [activeTab, setActiveTab] = useState<'products' | 'farms'>('products')
+  const [activeTab, setActiveTab] = useState<'products' | 'farms' | 'vendors' | 'processing' | 'logistics'>('products')
 
   // Product management state
   const [products, setProducts] = useState<Product[]>([])
@@ -60,7 +73,6 @@ export default function AdminPage() {
   const [agricultureProducts, setAgricultureProducts] = useState<Array<{id: number, name: string}>>([])
 
   const [formData, setFormData] = useState({
-    name: '',
     variety: '',
     grade: '',
     harvestDate: '',
@@ -82,6 +94,21 @@ export default function AdminPage() {
     longitude: '',
     latitude: '',
     provinceId: ''
+  })
+
+  // Vendor management state
+  const [vendorsList, setVendorsList] = useState<Vendor[]>([])
+  const [showVendorForm, setShowVendorForm] = useState(false)
+  const [editingVendor, setEditingVendor] = useState<Vendor | null>(null)
+
+  const [vendorFormData, setVendorFormData] = useState({
+    tin: '',
+    name: '',
+    address: '',
+    contactInfo: '',
+    vendorType: '' as 'distributor' | 'retail' | '',
+    distributorType: '',
+    retailFormat: ''
   })
 
   const baseUrl = 'http://localhost:5000'
@@ -307,7 +334,6 @@ export default function AdminPage() {
   const handleEdit = (product: Product) => {
     setEditingProduct(product)
     setFormData({
-      name: product.name,
       variety: product.variety || '',
       grade: product.grade || '',
       harvestDate: product.harvestDate || '',
@@ -319,7 +345,6 @@ export default function AdminPage() {
 
   const resetForm = () => {
     setFormData({
-      name: '',
       variety: '',
       grade: '',
       harvestDate: '',
@@ -601,6 +626,69 @@ export default function AdminPage() {
         >
           Farms / Trang trại
         </button>
+        <button
+          onClick={() => {
+            setActiveTab('vendors')
+            setShowForm(false)
+            setShowFarmForm(false)
+          }}
+          style={{
+            padding: '12px 24px',
+            background: activeTab === 'vendors' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent',
+            color: activeTab === 'vendors' ? 'white' : '#6b7280',
+            border: 'none',
+            borderBottom: activeTab === 'vendors' ? '3px solid #667eea' : 'none',
+            borderRadius: '8px 8px 0 0',
+            fontSize: 16,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          Vendors / Nhà cung cấp
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('processing')
+            setShowForm(false)
+            setShowFarmForm(false)
+          }}
+          style={{
+            padding: '12px 24px',
+            background: activeTab === 'processing' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent',
+            color: activeTab === 'processing' ? 'white' : '#6b7280',
+            border: 'none',
+            borderBottom: activeTab === 'processing' ? '3px solid #667eea' : 'none',
+            borderRadius: '8px 8px 0 0',
+            fontSize: 16,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          Processing / Chế biến
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('logistics')
+            setShowForm(false)
+            setShowFarmForm(false)
+          }}
+          style={{
+            padding: '12px 24px',
+            background: activeTab === 'logistics' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent',
+            color: activeTab === 'logistics' ? 'white' : '#6b7280',
+            border: 'none',
+            borderBottom: activeTab === 'logistics' ? '3px solid #667eea' : 'none',
+            borderRadius: '8px 8px 0 0',
+            fontSize: 16,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          Logistics / Vận chuyển
+        </button>
       </div>
 
       <div style={{
@@ -617,26 +705,30 @@ export default function AdminPage() {
           fontWeight: 700,
           margin: 0
         }}>
-          {activeTab === 'products' ? 'Product Information Management' : 'Farm Management'}
+          {activeTab === 'products' ? 'Product Information Management' : activeTab === 'farms' ? 'Farm Management' : activeTab === 'vendors' ? 'Vendor Management' : activeTab === 'processing' ? 'Processing Management' : 'Logistics Management'}
         </h1>
-        <button
-          onClick={() => activeTab === 'products' ? setShowForm(!showForm) : setShowFarmForm(!showFarmForm)}
-          style={{
-            padding: '12px 24px',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            border: 'none',
-            borderRadius: 8,
-            fontSize: 16,
-            fontWeight: 600,
-            cursor: 'pointer',
-            boxShadow: '0 2px 4px rgba(102,126,234,0.4)'
-          }}
-        >
-          {activeTab === 'products'
-            ? (showForm ? 'Cancel' : '+ Add New Product')
-            : (showFarmForm ? 'Cancel' : '+ Add New Farm')}
-        </button>
+        {activeTab !== 'processing' && activeTab !== 'logistics' && (
+          <button
+            onClick={() => activeTab === 'products' ? setShowForm(!showForm) : activeTab === 'farms' ? setShowFarmForm(!showFarmForm) : activeTab === 'vendors' ? setShowVendorForm(!showVendorForm) : null}
+            style={{
+              padding: '12px 24px',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: 8,
+              fontSize: 16,
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(102,126,234,0.4)'
+            }}
+          >
+            {activeTab === 'products'
+              ? (showForm ? 'Cancel' : '+ Add New Product')
+              : activeTab === 'farms'
+              ? (showFarmForm ? 'Cancel' : '+ Add New Farm')
+              : (showVendorForm ? 'Cancel' : '+ Add New Vendor')}
+          </button>
+        )}
       </div>
 
       {error && (
@@ -666,27 +758,6 @@ export default function AdminPage() {
           </h2>
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              {/* Product Name */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                  Product Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  placeholder="e.g., Organic Jasmine Rice"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: 8,
-                    fontSize: 16
-                  }}
-                />
-              </div>
-
               {/* Variety */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
@@ -1201,6 +1272,15 @@ export default function AdminPage() {
           </table>
         </div>
       )}
+
+      {/* Vendors Tab */}
+      {activeTab === 'vendors' && <VendorsTab />}
+
+      {/* Processing Tab */}
+      {activeTab === 'processing' && <ProcessingTab />}
+
+      {/* Logistics Tab */}
+      {activeTab === 'logistics' && <LogisticsTab />}
     </div>
   )
 }

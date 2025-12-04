@@ -16,10 +16,10 @@ export class Shipment {
   status: string;
 
   @Column({ name: 'Departured_Time', type: 'datetimeoffset', nullable: true })
-  departuredTime: Date;
+  departuredTime: Date | null;
 
   @Column({ name: 'Arrival_Time', type: 'datetimeoffset', nullable: true })
-  arrivalTime: Date;
+  arrivalTime: Date | null;
 
   @Column({ name: 'Destination', type: 'nvarchar', length: 255, nullable: true })
   destination: string;

@@ -263,6 +263,7 @@ export class TraceService {
       .leftJoin('batch.farm', 'farm')
       .leftJoin('farm.province', 'province')
       .leftJoin('province.country', 'country')
+      .orderBy('batch.id', 'DESC') // Show newest products first
       .take(100) // Limit for performance
       .getMany();
 

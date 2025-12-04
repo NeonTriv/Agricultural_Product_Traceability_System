@@ -24,7 +24,7 @@ export class Processing {
   packagingType: string;
 
   @Column({ name: 'Processing_Date', type: 'datetimeoffset', nullable: true })
-  processingDate: Date;
+  processingDate: Date | null;
 
   @Column({ name: 'Facility_ID', type: 'int' })
   facilityId: number;
