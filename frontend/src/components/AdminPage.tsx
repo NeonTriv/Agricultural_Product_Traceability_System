@@ -3,6 +3,8 @@ import axios from 'axios'
 import VendorsTab from './VendorsTab'
 import ProcessingTab from './ProcessingTab'
 import LogisticsTab from './LogisticsTab'
+import StorageTab from './StorageTab'
+import PricingTab from './PricingTab'
 
 interface Product {
   id: string
@@ -59,7 +61,7 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState('')
 
   // Tab management
-  const [activeTab, setActiveTab] = useState<'products' | 'farms' | 'vendors' | 'processing' | 'logistics'>('products')
+  const [activeTab, setActiveTab] = useState<'products' | 'farms' | 'vendors' | 'processing' | 'logistics' | 'storage' | 'pricing'>('products')
 
   // Product management state
   const [products, setProducts] = useState<Product[]>([])
@@ -689,6 +691,48 @@ export default function AdminPage() {
         >
           Logistics / Vận chuyển
         </button>
+        <button
+          onClick={() => {
+            setActiveTab('storage')
+            setShowForm(false)
+            setShowFarmForm(false)
+          }}
+          style={{
+            padding: '12px 24px',
+            background: activeTab === 'storage' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent',
+            color: activeTab === 'storage' ? 'white' : '#6b7280',
+            border: 'none',
+            borderBottom: activeTab === 'storage' ? '3px solid #667eea' : 'none',
+            borderRadius: '8px 8px 0 0',
+            fontSize: 16,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          Storage / Kho lưu trữ
+        </button>
+        <button
+          onClick={() => {
+            setActiveTab('pricing')
+            setShowForm(false)
+            setShowFarmForm(false)
+          }}
+          style={{
+            padding: '12px 24px',
+            background: activeTab === 'pricing' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent',
+            color: activeTab === 'pricing' ? 'white' : '#6b7280',
+            border: 'none',
+            borderBottom: activeTab === 'pricing' ? '3px solid #667eea' : 'none',
+            borderRadius: '8px 8px 0 0',
+            fontSize: 16,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          Pricing / Giá cả
+        </button>
       </div>
 
       <div style={{
@@ -705,9 +749,9 @@ export default function AdminPage() {
           fontWeight: 700,
           margin: 0
         }}>
-          {activeTab === 'products' ? 'Product Information Management' : activeTab === 'farms' ? 'Farm Management' : activeTab === 'vendors' ? 'Vendor Management' : activeTab === 'processing' ? 'Processing Management' : 'Logistics Management'}
+          {activeTab === 'products' ? 'Product Information Management' : activeTab === 'farms' ? 'Farm Management' : activeTab === 'vendors' ? 'Vendor Management' : activeTab === 'processing' ? 'Processing Management' : activeTab === 'logistics' ? 'Logistics Management' : activeTab === 'storage' ? 'Storage Management' : 'Pricing Management'}
         </h1>
-        {activeTab !== 'processing' && activeTab !== 'logistics' && (
+        {activeTab !== 'processing' && activeTab !== 'logistics' && activeTab !== 'storage' && activeTab !== 'pricing' && (
           <button
             onClick={() => activeTab === 'products' ? setShowForm(!showForm) : activeTab === 'farms' ? setShowFarmForm(!showFarmForm) : activeTab === 'vendors' ? setShowVendorForm(!showVendorForm) : null}
             style={{
@@ -930,20 +974,19 @@ export default function AdminPage() {
               <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Variety</th>
               <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Grade</th>
               <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Harvest Date</th>
-              <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Expiration</th>
               <th style={{ padding: 16, textAlign: 'right', fontWeight: 600, color: '#374151' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading && !products.length ? (
               <tr>
-                <td colSpan={6} style={{ padding: 24, textAlign: 'center', color: '#6b7280' }}>
+                <td colSpan={5} style={{ padding: 24, textAlign: 'center', color: '#6b7280' }}>
                   Loading products...
                 </td>
               </tr>
             ) : products.length === 0 ? (
               <tr>
-                <td colSpan={6} style={{ padding: 24, textAlign: 'center', color: '#6b7280' }}>
+                <td colSpan={5} style={{ padding: 24, textAlign: 'center', color: '#6b7280' }}>
                   No products found. Add your first product!
                 </td>
               </tr>
@@ -973,9 +1016,6 @@ export default function AdminPage() {
                   </td>
                   <td style={{ padding: 16, color: '#6b7280' }}>
                     {product.harvestDate ? new Date(product.harvestDate).toLocaleDateString('vi-VN') : '-'}
-                  </td>
-                  <td style={{ padding: 16, color: '#6b7280' }}>
-                    {product.expirationDate ? new Date(product.expirationDate).toLocaleDateString('vi-VN') : '-'}
                   </td>
                   <td style={{ padding: 16, textAlign: 'right' }}>
                     <button
@@ -1281,6 +1321,12 @@ export default function AdminPage() {
 
       {/* Logistics Tab */}
       {activeTab === 'logistics' && <LogisticsTab />}
+
+      {/* Storage Tab */}
+      {activeTab === 'storage' && <StorageTab />}
+
+      {/* Pricing Tab */}
+      {activeTab === 'pricing' && <PricingTab />}
     </div>
   )
 }
