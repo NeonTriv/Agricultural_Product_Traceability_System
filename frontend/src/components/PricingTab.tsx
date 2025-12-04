@@ -12,8 +12,16 @@ interface Price {
   unit?: string
 }
 
+interface VendorProduct {
+  id: number
+  productName?: string
+  vendorName?: string
+  unit?: string
+}
+
 export default function PricingTab() {
   const [prices, setPrices] = useState<Price[]>([])
+  const [vendorProducts, setVendorProducts] = useState<VendorProduct[]>([])
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({
     vendorProductId: '',
@@ -37,8 +45,18 @@ export default function PricingTab() {
     }
   }
 
+  const fetchVendorProducts = async () => {
+    try {
+      const res = await axios.get(`${baseUrl}/api/pricing/vendor-products`)
+      setVendorProducts(res.data)
+    } catch (err: any) {
+      console.error('Failed to fetch vendor products:', err)
+    }
+  }
+
   useEffect(() => {
     fetchPrices()
+    fetchVendorProducts()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -140,12 +158,10 @@ export default function PricingTab() {
                   <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
                     Vendor Product ID *
                   </label>
-                  <input
-                    type="number"
+                  <select
                     value={formData.vendorProductId}
                     onChange={e => setFormData({ ...formData, vendorProductId: e.target.value })}
                     required
-                    placeholder="Enter vendor product ID"
                     style={{
                       width: '100%',
                       padding: '12px 16px',
@@ -153,7 +169,14 @@ export default function PricingTab() {
                       borderRadius: 8,
                       fontSize: 16
                     }}
-                  />
+                  >
+                    <option value="">Select Vendor Product</option>
+                    {vendorProducts.map(vp => (
+                      <option key={vp.id} value={vp.id}>
+                        {vp.id} - {vp.productName || 'Unknown Product'} - {vp.vendorName || 'Unknown Vendor'}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
               <div style={{ marginBottom: 16 }}>

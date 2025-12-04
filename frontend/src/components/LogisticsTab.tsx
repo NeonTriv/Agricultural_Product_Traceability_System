@@ -34,11 +34,17 @@ interface TransportLeg {
   shipmentDestination?: string
 }
 
+interface Distributor {
+  vTin: string
+  name: string
+}
+
 export default function LogisticsTab() {
   const [subTab, setSubTab] = useState<'carriers' | 'shipments' | 'transportLegs'>('carriers')
 
   // Carriers state
   const [carriers, setCarriers] = useState<CarrierCompany[]>([])
+  const [distributors, setDistributors] = useState<Distributor[]>([])
   const [showCarrierForm, setShowCarrierForm] = useState(false)
   const [carrierFormData, setCarrierFormData] = useState({
     vTin: '',
@@ -119,13 +125,25 @@ export default function LogisticsTab() {
     }
   }
 
+  const fetchDistributors = async () => {
+    try {
+      const res = await axios.get(`${baseUrl}/api/logistics/distributors`)
+      setDistributors(res.data)
+    } catch (err: any) {
+      console.error('Failed to fetch distributors:', err)
+    }
+  }
+
   useEffect(() => {
     if (subTab === 'carriers') {
       fetchCarriers()
     } else if (subTab === 'shipments') {
       fetchShipments()
+      fetchDistributors() // Need distributors for dropdown
     } else {
       fetchTransportLegs()
+      fetchCarriers() // Need carriers for dropdown
+      fetchShipments() // Need shipments for dropdown
     }
   }, [subTab])
 
@@ -611,13 +629,19 @@ export default function LogisticsTab() {
                     <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
                       Distributor TIN *
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={shipmentFormData.distributorTin}
                       onChange={e => setShipmentFormData({ ...shipmentFormData, distributorTin: e.target.value })}
                       required
                       style={{ width: '100%', padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: 8, fontSize: 16 }}
-                    />
+                    >
+                      <option value="">Select Distributor</option>
+                      {distributors.map(d => (
+                        <option key={d.vTin} value={d.vTin}>
+                          {d.vTin} - {d.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
@@ -763,13 +787,19 @@ export default function LogisticsTab() {
                     <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
                       Shipment ID *
                     </label>
-                    <input
-                      type="number"
+                    <select
                       value={transportLegFormData.shipmentId}
                       onChange={e => setTransportLegFormData({ ...transportLegFormData, shipmentId: e.target.value })}
                       required
                       style={{ width: '100%', padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: 8, fontSize: 16 }}
-                    />
+                    >
+                      <option value="">Select Shipment</option>
+                      {shipments.map(s => (
+                        <option key={s.id} value={s.id}>
+                          {s.id} - {s.destination || 'No destination'}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div style={{ marginBottom: 16 }}>
                     <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
@@ -822,13 +852,19 @@ export default function LogisticsTab() {
                     <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
                       Carrier Company TIN *
                     </label>
-                    <input
-                      type="text"
+                    <select
                       value={transportLegFormData.carrierCompanyTin}
                       onChange={e => setTransportLegFormData({ ...transportLegFormData, carrierCompanyTin: e.target.value })}
                       required
                       style={{ width: '100%', padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: 8, fontSize: 16 }}
-                    />
+                    >
+                      <option value="">Select Carrier</option>
+                      {carriers.map(c => (
+                        <option key={c.vTin} value={c.vTin}>
+                          {c.vTin} - {c.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>

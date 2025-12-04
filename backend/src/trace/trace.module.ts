@@ -6,10 +6,16 @@ import { FarmController } from './farm.controller';
 import { VendorController } from './vendor.controller';
 import { ProcessingController } from './processing.controller';
 import { LogisticsController } from './logistics.controller';
+import { StorageController } from './storage.controller';
+import { PricingController } from './pricing.controller';
+import { TraceabilityController } from './traceability.controller';
 import { TraceService } from './trace.service';
 import { VendorService } from './vendor.service';
 import { ProcessingService } from './processing.service';
 import { LogisticsService } from './logistics.service';
+import { StorageService } from './storage.service';
+import { PricingService } from './pricing.service';
+import { TraceabilityService } from './traceability.service';
 import { AgricultureProduct } from './entities/agriculture-product.entity';
 import { Batch } from './entities/batch.entity';
 import { Farm } from './entities/farm.entity';
@@ -29,6 +35,8 @@ import { Shipment } from './entities/shipment.entity';
 import { TransportLeg } from './entities/transport-leg.entity';
 import { CarrierCompany } from './entities/carrier-company.entity';
 import { ShipBatch } from './entities/ship-batch.entity';
+import { Warehouse } from './entities/warehouse.entity';
+import { StoredIn } from './entities/stored-in.entity';
 
 @Module({
   imports: [
@@ -52,10 +60,12 @@ import { ShipBatch } from './entities/ship-batch.entity';
       TransportLeg,
       CarrierCompany,
       ShipBatch,
+      Warehouse,
+      StoredIn,
     ]),
   ],
-  controllers: [TraceController, ProductController, FarmController, VendorController, ProcessingController, LogisticsController],
-  providers: [TraceService, VendorService, ProcessingService, LogisticsService],
-  exports: [TraceService, VendorService, ProcessingService, LogisticsService],
+  controllers: [TraceController, ProductController, FarmController, VendorController, ProcessingController, LogisticsController, StorageController, PricingController, TraceabilityController],
+  providers: [TraceService, VendorService, ProcessingService, LogisticsService, StorageService, PricingService, TraceabilityService],
+  exports: [TraceService, VendorService, ProcessingService, LogisticsService, StorageService, PricingService, TraceabilityService],
 })
 export class TraceModule {}

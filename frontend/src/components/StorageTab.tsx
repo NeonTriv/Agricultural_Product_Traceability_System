@@ -26,11 +26,19 @@ interface StoredIn {
   warehouseAddress?: string
 }
 
+interface Batch {
+  id: number
+  qrCodeUrl?: string
+  productName?: string
+  grade?: string
+}
+
 export default function StorageTab() {
   const [subTab, setSubTab] = useState<'warehouses' | 'storedIn'>('warehouses')
 
   // Warehouses state
   const [warehouses, setWarehouses] = useState<Warehouse[]>([])
+  const [batches, setBatches] = useState<Batch[]>([])
   const [showWarehouseForm, setShowWarehouseForm] = useState(false)
   const [warehouseFormData, setWarehouseFormData] = useState({
     id: '',
@@ -58,6 +66,7 @@ export default function StorageTab() {
   // Common state
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [storedInFormErrors, setStoredInFormErrors] = useState<{[key: string]: boolean}>({})
 
   // Fetch functions
   const fetchWarehouses = async () => {
@@ -86,11 +95,22 @@ export default function StorageTab() {
     }
   }
 
+  const fetchBatches = async () => {
+    try {
+      const res = await axios.get(`${baseUrl}/api/products/batches`)
+      setBatches(res.data)
+    } catch (err: any) {
+      console.error('Failed to fetch batches:', err)
+    }
+  }
+
   useEffect(() => {
     if (subTab === 'warehouses') {
       fetchWarehouses()
     } else {
       fetchStoredIn()
+      fetchBatches()
+      fetchWarehouses() // Need warehouses for dropdown
     }
   }, [subTab])
 
@@ -160,6 +180,19 @@ export default function StorageTab() {
   // StoredIn handlers
   const handleStoredInSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate required fields
+    const errors: {[key: string]: boolean} = {}
+    if (!editingStoredIn && !storedInFormData.batchId) errors.batchId = true
+    if (!editingStoredIn && !storedInFormData.warehouseId) errors.warehouseId = true
+    if (!storedInFormData.quantity) errors.quantity = true
+    
+    if (Object.keys(errors).length > 0) {
+      setStoredInFormErrors(errors)
+      return
+    }
+    setStoredInFormErrors({})
+    
     setLoading(true)
     try {
       if (editingStoredIn) {
@@ -182,6 +215,7 @@ export default function StorageTab() {
       }
       setShowStoredInForm(false)
       setEditingStoredIn(null)
+      setStoredInFormErrors({})
       setStoredInFormData({ batchId: '', warehouseId: '', quantity: '', startDate: '', endDate: '' })
       fetchStoredIn()
     } catch (err: any) {
@@ -486,64 +520,81 @@ export default function StorageTab() {
               </h2>
               <form onSubmit={handleStoredInSubmit}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  {/* Batch */}
                   <div style={{ marginBottom: 16 }}>
                     <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                      Batch ID *
-                    </label>
-                    <input
-                      type="number"
-                      value={storedInFormData.batchId}
-                      onChange={e => setStoredInFormData({ ...storedInFormData, batchId: e.target.value })}
-                      required
-                      disabled={!!editingStoredIn}
-                      style={{ 
-                        width: '100%', 
-                        padding: '12px 16px', 
-                        border: '2px solid #e5e7eb', 
-                        borderRadius: 8, 
-                        fontSize: 16,
-                        background: editingStoredIn ? '#f3f4f6' : 'white'
-                      }}
-                    />
-                  </div>
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                      Warehouse ID *
+                      Batch <span style={{ color: '#dc2626' }}>*</span>
                     </label>
                     <select
-                      value={storedInFormData.warehouseId}
-                      onChange={e => setStoredInFormData({ ...storedInFormData, warehouseId: e.target.value })}
-                      required
+                      value={storedInFormData.batchId}
+                      onChange={e => { setStoredInFormData({ ...storedInFormData, batchId: e.target.value }); setStoredInFormErrors({ ...storedInFormErrors, batchId: false }) }}
                       disabled={!!editingStoredIn}
-                      style={{ 
-                        width: '100%', 
-                        padding: '12px 16px', 
-                        border: '2px solid #e5e7eb', 
-                        borderRadius: 8, 
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: storedInFormErrors.batchId ? '2px solid #dc2626' : '2px solid #e5e7eb',
+                        borderRadius: 8,
                         fontSize: 16,
                         background: editingStoredIn ? '#f3f4f6' : 'white'
                       }}
                     >
-                      <option value="">Select warehouse...</option>
-                      {warehouses.map(w => (
-                        <option key={w.id} value={w.id}>{w.id} - {w.addressDetail}</option>
+                      <option value="">-- Chọn lô hàng --</option>
+                      {batches.map(b => (
+                        <option key={b.id} value={b.id}>{b.productName || 'Unknown Product'}</option>
                       ))}
                     </select>
+                    {storedInFormErrors.batchId && <span style={{ color: '#dc2626', fontSize: 12 }}>Vui lòng chọn Batch</span>}
                   </div>
+
+                  {/* Warehouse */}
                   <div style={{ marginBottom: 16 }}>
                     <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                      Quantity *
+                      Warehouse <span style={{ color: '#dc2626' }}>*</span>
+                    </label>
+                    <select
+                      value={storedInFormData.warehouseId}
+                      onChange={e => { setStoredInFormData({ ...storedInFormData, warehouseId: e.target.value }); setStoredInFormErrors({ ...storedInFormErrors, warehouseId: false }) }}
+                      disabled={!!editingStoredIn}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: storedInFormErrors.warehouseId ? '2px solid #dc2626' : '2px solid #e5e7eb',
+                        borderRadius: 8,
+                        fontSize: 16,
+                        background: editingStoredIn ? '#f3f4f6' : 'white'
+                      }}
+                    >
+                      <option value="">-- Chọn kho --</option>
+                      {warehouses.map(w => (
+                        <option key={w.id} value={w.id}>{w.addressDetail || `Warehouse ${w.id}`}</option>
+                      ))}
+                    </select>
+                    {storedInFormErrors.warehouseId && <span style={{ color: '#dc2626', fontSize: 12 }}>Vui lòng chọn Warehouse</span>}
+                  </div>
+
+                  {/* Quantity */}
+                  <div style={{ marginBottom: 16 }}>
+                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                      Quantity <span style={{ color: '#dc2626' }}>*</span>
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       value={storedInFormData.quantity}
-                      onChange={e => setStoredInFormData({ ...storedInFormData, quantity: e.target.value })}
-                      required
+                      onChange={e => { setStoredInFormData({ ...storedInFormData, quantity: e.target.value }); setStoredInFormErrors({ ...storedInFormErrors, quantity: false }) }}
                       min="0"
-                      style={{ width: '100%', padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: 8, fontSize: 16 }}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: storedInFormErrors.quantity ? '2px solid #dc2626' : '2px solid #e5e7eb',
+                        borderRadius: 8,
+                        fontSize: 16
+                      }}
                     />
+                    {storedInFormErrors.quantity && <span style={{ color: '#dc2626', fontSize: 12 }}>Vui lòng nhập số lượng</span>}
                   </div>
+
+                  {/* Start Date */}
                   <div style={{ marginBottom: 16 }}>
                     <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
                       Start Date
@@ -552,9 +603,17 @@ export default function StorageTab() {
                       type="date"
                       value={storedInFormData.startDate}
                       onChange={e => setStoredInFormData({ ...storedInFormData, startDate: e.target.value })}
-                      style={{ width: '100%', padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: 8, fontSize: 16 }}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: 8,
+                        fontSize: 16
+                      }}
                     />
                   </div>
+
+                  {/* End Date */}
                   <div style={{ marginBottom: 16 }}>
                     <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
                       End Date
@@ -563,24 +622,30 @@ export default function StorageTab() {
                       type="date"
                       value={storedInFormData.endDate}
                       onChange={e => setStoredInFormData({ ...storedInFormData, endDate: e.target.value })}
-                      style={{ width: '100%', padding: '12px 16px', border: '2px solid #e5e7eb', borderRadius: 8, fontSize: 16 }}
+                      style={{
+                        width: '100%',
+                        padding: '12px 16px',
+                        border: '2px solid #e5e7eb',
+                        borderRadius: 8,
+                        fontSize: 16
+                      }}
                     />
                   </div>
                 </div>
+
                 <div style={{ display: 'flex', gap: 12, marginTop: 16 }}>
                   <button
                     type="submit"
                     disabled={loading}
                     style={{
                       padding: '12px 24px',
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      background: loading ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                       color: 'white',
                       border: 'none',
                       borderRadius: 8,
                       fontSize: 16,
                       fontWeight: 600,
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      opacity: loading ? 0.6 : 1
+                      cursor: loading ? 'not-allowed' : 'pointer'
                     }}
                   >
                     {loading ? 'Saving...' : (editingStoredIn ? 'Update' : 'Create')}
@@ -590,6 +655,7 @@ export default function StorageTab() {
                     onClick={() => {
                       setShowStoredInForm(false)
                       setEditingStoredIn(null)
+                      setStoredInFormErrors({})
                       setStoredInFormData({ batchId: '', warehouseId: '', quantity: '', startDate: '', endDate: '' })
                     }}
                     style={{

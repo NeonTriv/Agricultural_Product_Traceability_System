@@ -10,10 +10,10 @@ export class Price {
   @PrimaryColumn({ name: 'V_ID', type: 'int' })
   vendorProductId: number;
 
-  @Column({ name: 'Value', type: 'decimal', precision: 18, scale: 0 })
+  @Column({ name: 'Value', type: 'decimal', precision: 12, scale: 2 })
   value: number;
 
-  @Column({ name: 'Currency', type: 'varchar', length: 3 })
+  @Column({ name: 'Currency', type: 'varchar', length: 3, default: 'VND' })
   currency: string;
 
   // Relationships

@@ -414,6 +414,23 @@ export class TraceService {
   }
 
   /**
+   * Get all batches for dropdown selection in Storage and Processing tabs
+   */
+  async getAllBatches() {
+    const batches = await this.batchRepo.find({
+      relations: ['agricultureProduct'],
+      take: 200,
+    });
+    return batches.map((b) => ({
+      id: b.id,
+      productName: b.agricultureProduct?.name || 'Unknown Product',
+      qrCodeUrl: b.qrCodeUrl,
+      harvestDate: b.harvestDate,
+      grade: b.grade,
+    }));
+  }
+
+  /**
    * Create a new farm
    */
   async createFarm(data: {

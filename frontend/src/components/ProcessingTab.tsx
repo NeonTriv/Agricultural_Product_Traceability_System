@@ -25,11 +25,19 @@ interface ProcessingOperation {
   productName?: string
 }
 
+interface Batch {
+  id: number
+  qrCodeUrl?: string
+  productName?: string
+  grade?: string
+}
+
 export default function ProcessingTab() {
   const [subTab, setSubTab] = useState<'facilities' | 'operations'>('facilities')
 
   // Facilities state
   const [facilities, setFacilities] = useState<ProcessingFacility[]>([])
+  const [batches, setBatches] = useState<Batch[]>([])
   const [showFacilityForm, setShowFacilityForm] = useState(false)
   const [facilityFormData, setFacilityFormData] = useState({
     id: '',
@@ -58,6 +66,7 @@ export default function ProcessingTab() {
   // Common state
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [operationFormErrors, setOperationFormErrors] = useState<{[key: string]: boolean}>({})
 
   // Fetch facilities
   const fetchFacilities = async () => {
@@ -87,11 +96,23 @@ export default function ProcessingTab() {
     }
   }
 
+  // Fetch batches
+  const fetchBatches = async () => {
+    try {
+      const res = await axios.get(`${baseUrl}/api/products/batches`)
+      setBatches(res.data)
+    } catch (err: any) {
+      console.error('Failed to fetch batches:', err)
+    }
+  }
+
   useEffect(() => {
     if (subTab === 'facilities') {
       fetchFacilities()
     } else {
       fetchOperations()
+      fetchFacilities() // Need facilities for dropdown
+      fetchBatches() // Need batches for dropdown
     }
   }, [subTab])
 
@@ -152,6 +173,21 @@ export default function ProcessingTab() {
   // Operation handlers
   const handleOperationSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate required fields
+    const errors: {[key: string]: boolean} = {}
+    if (!operationFormData.facilityId) errors.facilityId = true
+    if (!operationFormData.batchId) errors.batchId = true
+    if (!editingOperation && !operationFormData.id) errors.id = true
+    if (!operationFormData.packagingDate) errors.packagingDate = true
+    if (!operationFormData.weightPerUnit) errors.weightPerUnit = true
+    
+    if (Object.keys(errors).length > 0) {
+      setOperationFormErrors(errors)
+      return
+    }
+    setOperationFormErrors({})
+    
     setLoading(true)
     try {
       if (editingOperation) {
@@ -178,6 +214,7 @@ export default function ProcessingTab() {
       }
       setShowOperationForm(false)
       setEditingOperation(null)
+      setOperationFormErrors({})
       setOperationFormData({
         id: '', packagingDate: '', weightPerUnit: '', processedBy: '',
         packagingType: '', processingDate: '', facilityId: '', batchId: ''
@@ -564,90 +601,94 @@ export default function ProcessingTab() {
               </h2>
               <form onSubmit={handleOperationSubmit}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  {/* ID */}
+                  {/* Operation ID */}
                   {!editingOperation && (
                     <div style={{ marginBottom: 16 }}>
                       <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                        Operation ID *
+                        Operation ID <span style={{ color: '#dc2626' }}>*</span>
                       </label>
                       <input
                         type="number"
                         value={operationFormData.id}
-                        onChange={e => setOperationFormData({ ...operationFormData, id: e.target.value })}
-                        required
+                        onChange={e => { setOperationFormData({ ...operationFormData, id: e.target.value }); setOperationFormErrors({ ...operationFormErrors, id: false }) }}
                         style={{
                           width: '100%',
                           padding: '12px 16px',
-                          border: '2px solid #e5e7eb',
+                          border: operationFormErrors.id ? '2px solid #dc2626' : '2px solid #e5e7eb',
                           borderRadius: 8,
                           fontSize: 16
                         }}
                       />
+                      {operationFormErrors.id && <span style={{ color: '#dc2626', fontSize: 12 }}>Vui lòng nhập ID</span>}
                     </div>
                   )}
 
-                  {/* Facility ID */}
+                  {/* Facility */}
                   <div style={{ marginBottom: 16 }}>
                     <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                      Facility ID *
+                      Facility <span style={{ color: '#dc2626' }}>*</span>
                     </label>
                     <select
                       value={operationFormData.facilityId}
-                      onChange={e => setOperationFormData({ ...operationFormData, facilityId: e.target.value })}
-                      required
+                      onChange={e => { setOperationFormData({ ...operationFormData, facilityId: e.target.value }); setOperationFormErrors({ ...operationFormErrors, facilityId: false }) }}
                       style={{
                         width: '100%',
                         padding: '12px 16px',
-                        border: '2px solid #e5e7eb',
+                        border: operationFormErrors.facilityId ? '2px solid #dc2626' : '2px solid #e5e7eb',
                         borderRadius: 8,
                         fontSize: 16
                       }}
                     >
-                      <option value="">Select Facility</option>
+                      <option value="">-- Chọn cơ sở chế biến --</option>
                       {facilities.map(f => (
-                        <option key={f.id} value={f.id}>{f.id} - {f.name}</option>
+                        <option key={f.id} value={f.id}>{f.name}</option>
                       ))}
                     </select>
+                    {operationFormErrors.facilityId && <span style={{ color: '#dc2626', fontSize: 12 }}>Vui lòng chọn Facility</span>}
                   </div>
 
-                  {/* Batch ID */}
+                  {/* Batch */}
                   <div style={{ marginBottom: 16 }}>
                     <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                      Batch ID *
+                      Batch <span style={{ color: '#dc2626' }}>*</span>
                     </label>
-                    <input
-                      type="number"
+                    <select
                       value={operationFormData.batchId}
-                      onChange={e => setOperationFormData({ ...operationFormData, batchId: e.target.value })}
-                      required
+                      onChange={e => { setOperationFormData({ ...operationFormData, batchId: e.target.value }); setOperationFormErrors({ ...operationFormErrors, batchId: false }) }}
                       style={{
                         width: '100%',
                         padding: '12px 16px',
-                        border: '2px solid #e5e7eb',
+                        border: operationFormErrors.batchId ? '2px solid #dc2626' : '2px solid #e5e7eb',
                         borderRadius: 8,
                         fontSize: 16
                       }}
-                    />
+                    >
+                      <option value="">-- Chọn lô hàng --</option>
+                      {batches.map(b => (
+                        <option key={b.id} value={b.id}>{b.productName || 'Unknown Product'}</option>
+                      ))}
+                    </select>
+                    {operationFormErrors.batchId && <span style={{ color: '#dc2626', fontSize: 12 }}>Vui lòng chọn Batch</span>}
                   </div>
 
                   {/* Packaging Date */}
                   <div style={{ marginBottom: 16 }}>
                     <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                      Packaging Date *
+                      Packaging Date <span style={{ color: '#dc2626' }}>*</span>
                     </label>
                     <input
                       type="date"
                       value={operationFormData.packagingDate}
-                      onChange={e => setOperationFormData({ ...operationFormData, packagingDate: e.target.value })}
-                      required
+                      onChange={e => { setOperationFormData({ ...operationFormData, packagingDate: e.target.value }); setOperationFormErrors({ ...operationFormErrors, packagingDate: false }) }}
                       style={{
                         width: '100%',
                         padding: '12px 16px',
-                        border: '2px solid #e5e7eb',
+                        border: operationFormErrors.packagingDate ? '2px solid #dc2626' : '2px solid #e5e7eb',
                         borderRadius: 8,
                         fontSize: 16
                       }}
                     />
+                    {operationFormErrors.packagingDate && <span style={{ color: '#dc2626', fontSize: 12 }}>Vui lòng chọn ngày</span>}
                   </div>
 
                   {/* Processing Date */}
@@ -672,22 +713,22 @@ export default function ProcessingTab() {
                   {/* Weight Per Unit */}
                   <div style={{ marginBottom: 16 }}>
                     <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                      Weight Per Unit (kg) *
+                      Weight Per Unit (kg) <span style={{ color: '#dc2626' }}>*</span>
                     </label>
                     <input
                       type="number"
                       step="0.01"
                       value={operationFormData.weightPerUnit}
-                      onChange={e => setOperationFormData({ ...operationFormData, weightPerUnit: e.target.value })}
-                      required
+                      onChange={e => { setOperationFormData({ ...operationFormData, weightPerUnit: e.target.value }); setOperationFormErrors({ ...operationFormErrors, weightPerUnit: false }) }}
                       style={{
                         width: '100%',
                         padding: '12px 16px',
-                        border: '2px solid #e5e7eb',
+                        border: operationFormErrors.weightPerUnit ? '2px solid #dc2626' : '2px solid #e5e7eb',
                         borderRadius: 8,
                         fontSize: 16
                       }}
                     />
+                    {operationFormErrors.weightPerUnit && <span style={{ color: '#dc2626', fontSize: 12 }}>Vui lòng nhập trọng lượng</span>}
                   </div>
 
                   {/* Packaging Type */}
@@ -737,14 +778,13 @@ export default function ProcessingTab() {
                     disabled={loading}
                     style={{
                       padding: '12px 24px',
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      background: loading ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                       color: 'white',
                       border: 'none',
                       borderRadius: 8,
                       fontSize: 16,
                       fontWeight: 600,
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      opacity: loading ? 0.6 : 1
+                      cursor: loading ? 'not-allowed' : 'pointer'
                     }}
                   >
                     {loading ? 'Saving...' : (editingOperation ? 'Update' : 'Create')}
@@ -754,6 +794,7 @@ export default function ProcessingTab() {
                     onClick={() => {
                       setShowOperationForm(false)
                       setEditingOperation(null)
+                      setOperationFormErrors({})
                       setOperationFormData({
                         id: '', packagingDate: '', weightPerUnit: '', processedBy: '',
                         packagingType: '', processingDate: '', facilityId: '', batchId: ''

@@ -16,24 +16,19 @@ export class StorageService {
   // Warehouse methods
   async getAllWarehouses() {
     const warehouses = await this.warehouseRepo.find({
-      relations: ['storedInRecords'],
       order: { id: 'ASC' },
     });
 
     return warehouses.map((w) => ({
       id: w.id,
-      address: w.address,
+      capacity: w.capacity,
       storeCondition: w.storeCondition,
-      startDate: w.startDate,
-      endDate: w.endDate,
-      storedInCount: w.storedInRecords?.length || 0,
     }));
   }
 
   async getWarehouse(id: number) {
     const warehouse = await this.warehouseRepo.findOne({
       where: { id },
-      relations: ['storedInRecords'],
     });
 
     if (!warehouse) {
@@ -42,27 +37,20 @@ export class StorageService {
 
     return {
       id: warehouse.id,
-      address: warehouse.address,
+      capacity: warehouse.capacity,
       storeCondition: warehouse.storeCondition,
-      startDate: warehouse.startDate,
-      endDate: warehouse.endDate,
-      storedInCount: warehouse.storedInRecords?.length || 0,
     };
   }
 
   async createWarehouse(data: {
     id: number;
-    address: string;
+    capacity?: number;
     storeCondition?: string;
-    startDate?: string;
-    endDate?: string;
   }) {
     const warehouse = this.warehouseRepo.create({
       id: data.id,
-      address: data.address,
+      capacity: data.capacity,
       storeCondition: data.storeCondition,
-      startDate: data.startDate ? new Date(data.startDate) : null,
-      endDate: data.endDate ? new Date(data.endDate) : null,
     });
 
     await this.warehouseRepo.save(warehouse);
@@ -73,10 +61,8 @@ export class StorageService {
   async updateWarehouse(
     id: number,
     data: {
-      address?: string;
+      capacity?: number;
       storeCondition?: string;
-      startDate?: string;
-      endDate?: string;
     },
   ) {
     const warehouse = await this.warehouseRepo.findOne({ where: { id } });
@@ -85,14 +71,8 @@ export class StorageService {
       throw new NotFoundException(`Warehouse with ID ${id} not found`);
     }
 
-    if (data.address) warehouse.address = data.address;
+    if (data.capacity !== undefined) warehouse.capacity = data.capacity;
     if (data.storeCondition !== undefined) warehouse.storeCondition = data.storeCondition;
-    if (data.startDate !== undefined) {
-      warehouse.startDate = data.startDate ? new Date(data.startDate) : null;
-    }
-    if (data.endDate !== undefined) {
-      warehouse.endDate = data.endDate ? new Date(data.endDate) : null;
-    }
 
     await this.warehouseRepo.save(warehouse);
 
@@ -112,7 +92,7 @@ export class StorageService {
   // Stored In methods
   async getAllStoredIn() {
     const storedIns = await this.storedInRepo.find({
-      relations: ['batch', 'batch.agricultureProduct', 'warehouse'],
+      relations: ['batch', 'batch.agricultureProduct'],
       order: { batchId: 'DESC' },
     });
 
@@ -122,14 +102,13 @@ export class StorageService {
       quantity: si.quantity,
       batchQrCode: si.batch?.qrCodeUrl,
       productName: si.batch?.agricultureProduct?.name,
-      warehouseAddress: si.warehouse?.address,
     }));
   }
 
   async getStoredIn(batchId: number, warehouseId: number) {
     const storedIn = await this.storedInRepo.findOne({
       where: { batchId, warehouseId },
-      relations: ['batch', 'batch.agricultureProduct', 'warehouse'],
+      relations: ['batch', 'batch.agricultureProduct'],
     });
 
     if (!storedIn) {
@@ -144,7 +123,6 @@ export class StorageService {
       quantity: storedIn.quantity,
       batchQrCode: storedIn.batch?.qrCodeUrl,
       productName: storedIn.batch?.agricultureProduct?.name,
-      warehouseAddress: storedIn.warehouse?.address,
     };
   }
 
@@ -152,11 +130,15 @@ export class StorageService {
     batchId: number;
     warehouseId: number;
     quantity: number;
+    startDate?: string;
+    endDate?: string;
   }) {
     const storedIn = this.storedInRepo.create({
       batchId: data.batchId,
       warehouseId: data.warehouseId,
       quantity: data.quantity,
+      // startDate: data.startDate ? new Date(data.startDate) : null, // Commented out - column may not exist in DB
+      // endDate: data.endDate ? new Date(data.endDate) : null, // Commented out - column may not exist in DB
     });
 
     await this.storedInRepo.save(storedIn);
@@ -169,6 +151,8 @@ export class StorageService {
     warehouseId: number,
     data: {
       quantity?: number;
+      startDate?: string;
+      endDate?: string;
     },
   ) {
     const storedIn = await this.storedInRepo.findOne({
@@ -182,6 +166,12 @@ export class StorageService {
     }
 
     if (data.quantity !== undefined) storedIn.quantity = data.quantity;
+    // if (data.startDate !== undefined) {
+    //   storedIn.startDate = data.startDate ? new Date(data.startDate) : null;
+    // }
+    // if (data.endDate !== undefined) {
+    //   storedIn.endDate = data.endDate ? new Date(data.endDate) : null;
+    // }
 
     await this.storedInRepo.save(storedIn);
 

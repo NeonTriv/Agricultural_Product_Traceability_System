@@ -82,6 +82,10 @@ export default function AdminPage() {
     agricultureProductId: ''
   })
 
+  // Form validation state
+  const [formErrors, setFormErrors] = useState<{[key: string]: boolean}>({})
+  const [farmFormErrors, setFarmFormErrors] = useState<{[key: string]: boolean}>({})
+
   // Farm management state
   const [farmsList, setFarmsList] = useState<Farm[]>([])
   const [provinces, setProvinces] = useState<Province[]>([])
@@ -187,8 +191,20 @@ export default function AdminPage() {
 
   const handleFarmSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate required fields
+    const errors: {[key: string]: boolean} = {}
+    if (!farmFormData.name) errors.name = true
+    if (!farmFormData.provinceId) errors.provinceId = true
+    
+    if (Object.keys(errors).length > 0) {
+      setFarmFormErrors(errors)
+      return
+    }
+    
     setLoading(true)
     setError(null)
+    setFarmFormErrors({})
 
     try {
       const createData = {
@@ -220,6 +236,7 @@ export default function AdminPage() {
     })
     setSelectedProvince(null)
     setShowFarmForm(false)
+    setFarmFormErrors({})
   }
 
   const handleProvinceChange = (provinceId: string) => {
@@ -284,8 +301,22 @@ export default function AdminPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate required fields for new product
+    if (!editingProduct) {
+      const errors: {[key: string]: boolean} = {}
+      if (!formData.farmId) errors.farmId = true
+      if (!formData.agricultureProductId) errors.agricultureProductId = true
+      
+      if (Object.keys(errors).length > 0) {
+        setFormErrors(errors)
+        return
+      }
+    }
+    
     setLoading(true)
     setError(null)
+    setFormErrors({})
 
     try {
       if (editingProduct) {
@@ -802,6 +833,70 @@ export default function AdminPage() {
           </h2>
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              {/* Farm Selection - Required */}
+              {!editingProduct && (
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                    Farm / Trang trại <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
+                  <select
+                    value={formData.farmId}
+                    onChange={e => {
+                      setFormData({ ...formData, farmId: e.target.value })
+                      if (e.target.value) setFormErrors({ ...formErrors, farmId: false })
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: formErrors.farmId ? '2px solid #dc2626' : '2px solid #e5e7eb',
+                      borderRadius: 8,
+                      fontSize: 16,
+                      backgroundColor: 'white'
+                    }}
+                  >
+                    <option value="">-- Chọn trang trại --</option>
+                    {farms.map(farm => (
+                      <option key={farm.id} value={farm.id}>{farm.name}</option>
+                    ))}
+                  </select>
+                  {formErrors.farmId && (
+                    <span style={{ color: '#dc2626', fontSize: 12 }}>Vui lòng chọn Farm</span>
+                  )}
+                </div>
+              )}
+
+              {/* Agriculture Product Selection - Required */}
+              {!editingProduct && (
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                    Product Type / Loại sản phẩm <span style={{ color: '#dc2626' }}>*</span>
+                  </label>
+                  <select
+                    value={formData.agricultureProductId}
+                    onChange={e => {
+                      setFormData({ ...formData, agricultureProductId: e.target.value })
+                      if (e.target.value) setFormErrors({ ...formErrors, agricultureProductId: false })
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: formErrors.agricultureProductId ? '2px solid #dc2626' : '2px solid #e5e7eb',
+                      borderRadius: 8,
+                      fontSize: 16,
+                      backgroundColor: 'white'
+                    }}
+                  >
+                    <option value="">-- Chọn loại sản phẩm --</option>
+                    {agricultureProducts.map(product => (
+                      <option key={product.id} value={product.id}>{product.name}</option>
+                    ))}
+                  </select>
+                  {formErrors.agricultureProductId && (
+                    <span style={{ color: '#dc2626', fontSize: 12 }}>Vui lòng chọn Product Type</span>
+                  )}
+                </div>
+              )}
+
               {/* Variety */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
@@ -864,61 +959,6 @@ export default function AdminPage() {
                   }}
                 />
               </div>
-
-              {/* Farm and Product Selection - Only show when creating */}
-              {!editingProduct && (
-                <>
-                  {/* Farm Selection */}
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                      Farm / Trang trại *
-                    </label>
-                    <select
-                      value={formData.farmId}
-                      onChange={e => setFormData({ ...formData, farmId: e.target.value })}
-                      required
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: 8,
-                        fontSize: 16,
-                        backgroundColor: 'white'
-                      }}
-                    >
-                      <option value="">Select a farm...</option>
-                      {farms.map(farm => (
-                        <option key={farm.id} value={farm.id}>{farm.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Agriculture Product Selection */}
-                  <div style={{ marginBottom: 16 }}>
-                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                      Product Type / Loại sản phẩm *
-                    </label>
-                    <select
-                      value={formData.agricultureProductId}
-                      onChange={e => setFormData({ ...formData, agricultureProductId: e.target.value })}
-                      required
-                      style={{
-                        width: '100%',
-                        padding: '12px 16px',
-                        border: '2px solid #e5e7eb',
-                        borderRadius: 8,
-                        fontSize: 16,
-                        backgroundColor: 'white'
-                      }}
-                    >
-                      <option value="">Select a product type...</option>
-                      {agricultureProducts.map(product => (
-                        <option key={product.id} value={product.id}>{product.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                </>
-              )}
             </div>
 
             <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
@@ -1070,25 +1110,62 @@ export default function AdminPage() {
           <h2 style={{ marginTop: 0, color: '#374151' }}>Add New Farm</h2>
           <form onSubmit={handleFarmSubmit}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              {/* Farm Name */}
+              {/* Farm Name - Required */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                  Farm Name / Tên trang trại *
+                  Farm Name / Tên trang trại <span style={{ color: '#dc2626' }}>*</span>
                 </label>
                 <input
                   type="text"
                   value={farmFormData.name}
-                  onChange={e => setFarmFormData({ ...farmFormData, name: e.target.value })}
-                  required
+                  onChange={e => {
+                    setFarmFormData({ ...farmFormData, name: e.target.value })
+                    if (e.target.value) setFarmFormErrors({ ...farmFormErrors, name: false })
+                  }}
                   placeholder="e.g., Green Valley Farm"
                   style={{
                     width: '100%',
                     padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
+                    border: farmFormErrors.name ? '2px solid #dc2626' : '2px solid #e5e7eb',
                     borderRadius: 8,
                     fontSize: 16
                   }}
                 />
+                {farmFormErrors.name && (
+                  <span style={{ color: '#dc2626', fontSize: 12 }}>Vui lòng nhập tên Farm</span>
+                )}
+              </div>
+
+              {/* Province Selection - Required */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                  Province / Tỉnh thành <span style={{ color: '#dc2626' }}>*</span>
+                </label>
+                <select
+                  value={farmFormData.provinceId}
+                  onChange={e => {
+                    handleProvinceChange(e.target.value)
+                    if (e.target.value) setFarmFormErrors({ ...farmFormErrors, provinceId: false })
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: farmFormErrors.provinceId ? '2px solid #dc2626' : '2px solid #e5e7eb',
+                    borderRadius: 8,
+                    fontSize: 16,
+                    backgroundColor: 'white'
+                  }}
+                >
+                  <option value="">-- Chọn tỉnh/thành --</option>
+                  {provinces.map(province => (
+                    <option key={province.id} value={province.id}>
+                      {province.name}
+                    </option>
+                  ))}
+                </select>
+                {farmFormErrors.provinceId && (
+                  <span style={{ color: '#dc2626', fontSize: 12 }}>Vui lòng chọn Province</span>
+                )}
               </div>
 
               {/* Owner Name */}
@@ -1107,6 +1184,28 @@ export default function AdminPage() {
                     border: '2px solid #e5e7eb',
                     borderRadius: 8,
                     fontSize: 16
+                  }}
+                />
+              </div>
+
+              {/* Country (Auto-filled) */}
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                  Country / Quốc gia
+                </label>
+                <input
+                  type="text"
+                  value={selectedProvince?.countryName || ''}
+                  disabled
+                  placeholder="Auto-filled from province"
+                  style={{
+                    width: '100%',
+                    padding: '12px 16px',
+                    border: '2px solid #e5e7eb',
+                    borderRadius: 8,
+                    fontSize: 16,
+                    background: '#f9fafb',
+                    color: '#6b7280'
                   }}
                 />
               </div>
@@ -1131,53 +1230,8 @@ export default function AdminPage() {
                 />
               </div>
 
-              {/* Province Selection */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                  Province / Tỉnh thành *
-                </label>
-                <select
-                  value={farmFormData.provinceId}
-                  onChange={e => handleProvinceChange(e.target.value)}
-                  required
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: 8,
-                    fontSize: 16
-                  }}
-                >
-                  <option value="">Select a province...</option>
-                  {provinces.map(province => (
-                    <option key={province.id} value={province.id}>
-                      {province.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Country (Auto-filled) */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                  Country / Quốc gia
-                </label>
-                <input
-                  type="text"
-                  value={selectedProvince?.countryName || ''}
-                  disabled
-                  placeholder="Auto-filled from province"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: 8,
-                    fontSize: 16,
-                    background: '#f9fafb',
-                    color: '#6b7280'
-                  }}
-                />
-              </div>
+              {/* Empty placeholder */}
+              <div></div>
 
               {/* Longitude */}
               <div style={{ marginBottom: 16 }}>
@@ -1228,7 +1282,7 @@ export default function AdminPage() {
                 disabled={loading}
                 style={{
                   padding: '12px 24px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  background: loading ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                   color: 'white',
                   border: 'none',
                   borderRadius: 8,

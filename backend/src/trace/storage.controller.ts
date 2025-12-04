@@ -24,10 +24,12 @@ export class StorageController {
     @Body()
     body: {
       id: number;
-      address: string;
+      capacity?: number;
       storeCondition?: string;
-      startDate?: string;
-      endDate?: string;
+      addressDetail: string;
+      longitude?: number;
+      latitude?: number;
+      provinceId?: number;
     },
   ) {
     return this.storageService.createWarehouse(body);
@@ -39,10 +41,12 @@ export class StorageController {
     @Param('id') id: string,
     @Body()
     body: {
-      address?: string;
+      capacity?: number;
       storeCondition?: string;
-      startDate?: string;
-      endDate?: string;
+      addressDetail?: string;
+      longitude?: number;
+      latitude?: number;
+      provinceId?: number;
     },
   ) {
     return this.storageService.updateWarehouse(parseInt(id), body);
@@ -78,6 +82,8 @@ export class StorageController {
       batchId: number;
       warehouseId: number;
       quantity: number;
+      startDate?: string;
+      endDate?: string;
     },
   ) {
     return this.storageService.createStoredIn(body);
@@ -91,6 +97,8 @@ export class StorageController {
     @Body()
     body: {
       quantity?: number;
+      startDate?: string;
+      endDate?: string;
     },
   ) {
     return this.storageService.updateStoredIn(

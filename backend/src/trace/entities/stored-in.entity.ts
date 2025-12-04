@@ -15,15 +15,22 @@ export class StoredIn {
   @PrimaryColumn({ name: 'W_ID', type: 'int' })
   warehouseId: number;
 
-  @Column({ name: 'Quantity', type: 'decimal', precision: 18, scale: 0 })
+  @Column({ name: 'Quantity', type: 'decimal', precision: 10, scale: 2 })
   quantity: number;
+
+  // Note: Start_Date and End_Date columns may not exist in some database versions
+  // @Column({ name: 'Start_Date', type: 'datetimeoffset', nullable: true })
+  // startDate: Date | null;
+
+  // @Column({ name: 'End_Date', type: 'datetimeoffset', nullable: true })
+  // endDate: Date | null;
 
   // Relationships
   @ManyToOne(() => Batch, (batch) => batch.storedIn)
   @JoinColumn({ name: 'B_ID' })
   batch: Batch;
 
-  @ManyToOne(() => Warehouse, (warehouse) => warehouse.storedBatches)
+  @ManyToOne(() => Warehouse)
   @JoinColumn({ name: 'W_ID' })
   warehouse: Warehouse;
 }
