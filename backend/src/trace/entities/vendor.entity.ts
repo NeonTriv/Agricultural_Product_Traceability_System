@@ -1,8 +1,9 @@
-import { Entity, Column, PrimaryColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryColumn, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
 import { VendorProduct } from './vendor-product.entity';
 import { Discount } from './discount.entity';
 import { Distributor } from './distributor.entity';
 import { Retail } from './retail.entity';
+import { Province } from './province.entity';
 
 /**
  * VENDOR Entity
@@ -16,13 +17,26 @@ export class Vendor {
   @Column({ name: 'Name', type: 'nvarchar', length: 255 })
   name: string;
 
-  @Column({ name: 'Address', type: 'nvarchar', length: 255 })
+  @Column({ name: 'Address_detail', type: 'nvarchar', length: 255 })
   address: string;
 
   @Column({ name: 'Contact_Info', type: 'varchar', length: 255, nullable: true })
   contactInfo: string;
 
+  @Column({ name: 'Longitude', type: 'decimal', precision: 9, scale: 6, nullable: true })
+  longitude: number;
+
+  @Column({ name: 'Latitude', type: 'decimal', precision: 9, scale: 6, nullable: true })
+  latitude: number;
+
+  @Column({ name: 'P_ID', type: 'int', nullable: true })
+  provinceId: number;
+
   // Relationships
+  @ManyToOne(() => Province)
+  @JoinColumn({ name: 'P_ID' })
+  province: Province;
+
   @OneToMany(() => VendorProduct, (vendorProduct) => vendorProduct.vendor)
   vendorProducts: VendorProduct[];
 

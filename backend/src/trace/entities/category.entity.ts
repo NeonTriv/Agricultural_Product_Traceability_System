@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { Type } from './type.entity';
 
 /**
@@ -7,7 +7,7 @@ import { Type } from './type.entity';
  */
 @Entity('CATEGORY')
 export class Category {
-  @PrimaryColumn({ name: 'ID', type: 'int' })
+  @PrimaryGeneratedColumn({ name: 'ID', type: 'int' })
   id: number;
 
   @Column({ name: 'Name', type: 'nvarchar', length: 100 })

@@ -249,6 +249,9 @@ export class TraceService {
         'batch.harvestDate',
         'batch.grade',
         'batch.seedBatch',
+        'batch.farmId',
+        'batch.agricultureProductId',
+        'batch.vendorProductId',
         'product.id',
         'product.name',
         'product.imageUrl',
@@ -272,7 +275,10 @@ export class TraceService {
       qrCodeUrl: b.qrCodeUrl,
       productName: b.agricultureProduct?.name || 'Unknown',
       productImageUrl: b.agricultureProduct?.imageUrl,
+      farmId: b.farmId,
       farmName: b.farm?.name || 'Unknown Farm',
+      agricultureProductId: b.agricultureProductId,
+      vendorProductId: b.vendorProductId,
       province: b.farm?.province?.name,
       country: b.farm?.province?.country?.name,
       harvestDate: b.harvestDate,
@@ -290,6 +296,7 @@ export class TraceService {
     agricultureProductId: number;
     harvestDate: Date;
     grade?: string;
+    vendorProductId?: number;
   }) {
     const batch = this.batchRepo.create({
       qrCodeUrl: data.qrCodeUrl,
@@ -297,6 +304,7 @@ export class TraceService {
       agricultureProductId: data.agricultureProductId,
       harvestDate: data.harvestDate,
       grade: data.grade,
+      vendorProductId: data.vendorProductId,
     });
 
     const saved = await this.batchRepo.save(batch);
@@ -410,6 +418,21 @@ export class TraceService {
     return countries.map((c) => ({
       id: c.id,
       name: c.name,
+    }));
+  }
+
+  /**
+   * Get all types for dropdown selection
+   */
+  async getAllTypes() {
+    const types = await this.typeRepo.find({
+      relations: ['category'],
+      take: 100,
+    });
+    return types.map((t) => ({
+      id: t.id,
+      variety: t.variety,
+      categoryName: t.category?.name || 'Unknown',
     }));
   }
 

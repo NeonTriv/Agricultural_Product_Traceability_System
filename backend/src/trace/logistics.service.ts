@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Shipment } from './entities/shipment.entity';
 import { TransportLeg } from './entities/transport-leg.entity';
 import { CarrierCompany } from './entities/carrier-company.entity';
+import { Distributor } from './entities/distributor.entity';
+import { Vendor } from './entities/vendor.entity';
 
 @Injectable()
 export class LogisticsService {
@@ -14,20 +16,24 @@ export class LogisticsService {
     private readonly transportLegRepo: Repository<TransportLeg>,
     @InjectRepository(CarrierCompany)
     private readonly carrierRepo: Repository<CarrierCompany>,
+    @InjectRepository(Distributor)
+    private readonly distributorRepo: Repository<Distributor>,
+    @InjectRepository(Vendor)
+    private readonly vendorRepo: Repository<Vendor>,
   ) {}
 
   // Carrier Companies methods
   async getAllCarriers() {
     const carriers = await this.carrierRepo.find({
-      relations: ['transportLegs'],
+      relations: ['vendor', 'transportLegs'],
       order: { vTin: 'ASC' },
     });
 
     return carriers.map((c) => ({
       vTin: c.vTin,
-      name: c.name,
-      address: c.address,
-      contactInfo: c.contactInfo,
+      name: c.vendor?.name,
+      address: c.vendor?.address,
+      contactInfo: c.vendor?.contactInfo,
       transportLegCount: c.transportLegs?.length || 0,
     }));
   }
@@ -35,7 +41,7 @@ export class LogisticsService {
   async getCarrier(tin: string) {
     const carrier = await this.carrierRepo.findOne({
       where: { vTin: tin },
-      relations: ['transportLegs'],
+      relations: ['vendor', 'transportLegs'],
     });
 
     if (!carrier) {
@@ -44,9 +50,9 @@ export class LogisticsService {
 
     return {
       vTin: carrier.vTin,
-      name: carrier.name,
-      address: carrier.address,
-      contactInfo: carrier.contactInfo,
+      name: carrier.vendor?.name,
+      address: carrier.vendor?.address,
+      contactInfo: carrier.vendor?.contactInfo,
       transportLegCount: carrier.transportLegs?.length || 0,
     };
   }
@@ -57,11 +63,21 @@ export class LogisticsService {
     address?: string;
     contactInfo?: string;
   }) {
+    // First create or update vendor
+    let vendor = await this.vendorRepo.findOne({ where: { tin: data.vTin } });
+    if (!vendor) {
+      vendor = this.vendorRepo.create({
+        tin: data.vTin,
+        name: data.name,
+        address: data.address || '',
+        contactInfo: data.contactInfo,
+      });
+      await this.vendorRepo.save(vendor);
+    }
+
+    // Then create carrier company
     const carrier = this.carrierRepo.create({
       vTin: data.vTin,
-      name: data.name,
-      address: data.address,
-      contactInfo: data.contactInfo,
     });
 
     await this.carrierRepo.save(carrier);
@@ -83,21 +99,35 @@ export class LogisticsService {
       throw new NotFoundException(`Carrier Company with TIN ${tin} not found`);
     }
 
-    if (data.name) carrier.name = data.name;
-    if (data.address !== undefined) carrier.address = data.address;
-    if (data.contactInfo !== undefined) carrier.contactInfo = data.contactInfo;
-
-    await this.carrierRepo.save(carrier);
+    // Update the vendor record
+    const vendor = await this.vendorRepo.findOne({ where: { tin } });
+    if (vendor) {
+      if (data.name) vendor.name = data.name;
+      if (data.address !== undefined) vendor.address = data.address;
+      if (data.contactInfo !== undefined) vendor.contactInfo = data.contactInfo;
+      await this.vendorRepo.save(vendor);
+    }
 
     return { success: true, vTin: carrier.vTin };
   }
 
   async deleteCarrier(tin: string) {
-    const result = await this.carrierRepo.delete({ vTin: tin });
-
-    if (result.affected === 0) {
+    // Check if carrier exists
+    const carrier = await this.carrierRepo.findOne({ 
+      where: { vTin: tin },
+      relations: ['transportLegs']
+    });
+    if (!carrier) {
       throw new NotFoundException(`Carrier Company with TIN ${tin} not found`);
     }
+
+    // Check for related records and provide helpful error message
+    if (carrier.transportLegs?.length > 0) {
+      throw new BadRequestException(`Cannot delete carrier. Please delete ${carrier.transportLegs.length} Transport Leg(s) first (tab Logistics > Transport Legs)`);
+    }
+
+    // Delete the carrier company
+    await this.carrierRepo.delete({ vTin: tin });
 
     return { success: true };
   }
@@ -112,8 +142,6 @@ export class LogisticsService {
     return shipments.map((s) => ({
       id: s.id,
       status: s.status,
-      departuredTime: s.departuredTime,
-      arrivalTime: s.arrivalTime,
       destination: s.destination,
       distributorTin: s.distributorTin,
       distributorName: s.distributor?.vendor?.name,
@@ -134,8 +162,6 @@ export class LogisticsService {
     return {
       id: shipment.id,
       status: shipment.status,
-      departuredTime: shipment.departuredTime,
-      arrivalTime: shipment.arrivalTime,
       destination: shipment.destination,
       distributorTin: shipment.distributorTin,
       distributorName: shipment.distributor?.vendor?.name,
@@ -144,18 +170,12 @@ export class LogisticsService {
   }
 
   async createShipment(data: {
-    id: number;
     status: string;
-    departuredTime?: string;
-    arrivalTime?: string;
     destination?: string;
     distributorTin: string;
   }) {
     const shipment = this.shipmentRepo.create({
-      id: data.id,
       status: data.status,
-      departuredTime: data.departuredTime ? new Date(data.departuredTime) : null,
-      arrivalTime: data.arrivalTime ? new Date(data.arrivalTime) : null,
       destination: data.destination,
       distributorTin: data.distributorTin,
     });
@@ -169,8 +189,6 @@ export class LogisticsService {
     id: number,
     data: {
       status?: string;
-      departuredTime?: string;
-      arrivalTime?: string;
       destination?: string;
       distributorTin?: string;
     },
@@ -182,12 +200,6 @@ export class LogisticsService {
     }
 
     if (data.status) shipment.status = data.status;
-    if (data.departuredTime !== undefined) {
-      shipment.departuredTime = data.departuredTime ? new Date(data.departuredTime) : null;
-    }
-    if (data.arrivalTime !== undefined) {
-      shipment.arrivalTime = data.arrivalTime ? new Date(data.arrivalTime) : null;
-    }
     if (data.destination !== undefined) shipment.destination = data.destination;
     if (data.distributorTin) shipment.distributorTin = data.distributorTin;
 
@@ -209,7 +221,7 @@ export class LogisticsService {
   // Transport Legs methods
   async getAllTransportLegs() {
     const legs = await this.transportLegRepo.find({
-      relations: ['shipment', 'carrierCompany'],
+      relations: ['shipment', 'carrierCompany', 'carrierCompany.vendor'],
       order: { id: 'DESC' },
     });
 
@@ -220,8 +232,10 @@ export class LogisticsService {
       temperatureProfile: leg.temperatureProfile,
       startLocation: leg.startLocation,
       toLocation: leg.toLocation,
+      departureTime: leg.departureTime,
+      arrivalTime: leg.arrivalTime,
       carrierCompanyTin: leg.carrierCompanyTin,
-      carrierCompanyName: leg.carrierCompany?.name,
+      carrierCompanyName: leg.carrierCompany?.vendor?.name,
       shipmentDestination: leg.shipment?.destination,
     }));
   }
@@ -243,28 +257,32 @@ export class LogisticsService {
       temperatureProfile: leg.temperatureProfile,
       startLocation: leg.startLocation,
       toLocation: leg.toLocation,
+      departureTime: leg.departureTime,
+      arrivalTime: leg.arrivalTime,
       carrierCompanyTin: leg.carrierCompanyTin,
-      carrierCompanyName: leg.carrierCompany?.name,
+      carrierCompanyName: leg.carrierCompany?.vendor?.name,
       shipmentDestination: leg.shipment?.destination,
     };
   }
 
   async createTransportLeg(data: {
-    id: number;
     shipmentId: number;
     driverName?: string;
     temperatureProfile?: string;
     startLocation: string;
     toLocation: string;
+    departureTime?: string;
+    arrivalTime?: string;
     carrierCompanyTin: string;
   }) {
     const leg = this.transportLegRepo.create({
-      id: data.id,
       shipmentId: data.shipmentId,
       driverName: data.driverName,
       temperatureProfile: data.temperatureProfile,
       startLocation: data.startLocation,
       toLocation: data.toLocation,
+      departureTime: data.departureTime ? new Date(data.departureTime) : null,
+      arrivalTime: data.arrivalTime ? new Date(data.arrivalTime) : null,
       carrierCompanyTin: data.carrierCompanyTin,
     });
 
@@ -281,6 +299,8 @@ export class LogisticsService {
       temperatureProfile?: string;
       startLocation?: string;
       toLocation?: string;
+      departureTime?: string;
+      arrivalTime?: string;
       carrierCompanyTin?: string;
     },
   ) {
@@ -295,6 +315,8 @@ export class LogisticsService {
     if (data.temperatureProfile !== undefined) leg.temperatureProfile = data.temperatureProfile;
     if (data.startLocation) leg.startLocation = data.startLocation;
     if (data.toLocation) leg.toLocation = data.toLocation;
+    if (data.departureTime !== undefined) leg.departureTime = data.departureTime ? new Date(data.departureTime) : null;
+    if (data.arrivalTime !== undefined) leg.arrivalTime = data.arrivalTime ? new Date(data.arrivalTime) : null;
     if (data.carrierCompanyTin) leg.carrierCompanyTin = data.carrierCompanyTin;
 
     await this.transportLegRepo.save(leg);
@@ -310,5 +332,18 @@ export class LogisticsService {
     }
 
     return { success: true };
+  }
+
+  // Distributors methods
+  async getAllDistributors() {
+    const distributors = await this.distributorRepo.find({
+      relations: ['vendor'],
+      order: { vendorTin: 'ASC' },
+    });
+
+    return distributors.map((d) => ({
+      vTin: d.vendorTin,
+      name: d.vendor?.name || 'Unknown',
+    }));
   }
 }

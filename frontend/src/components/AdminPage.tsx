@@ -12,6 +12,9 @@ interface Product {
   variety?: string
   grade?: string
   harvestDate?: string
+  farmId?: number
+  agricultureProductId?: number
+  vendorProductId?: number
 }
 
 interface Farm {
@@ -54,6 +57,330 @@ const MOCK_ADMIN = {
   password: 'admin123'
 }
 
+// ==================== CATEGORIES SUB-TAB ====================
+function CategoriesSubTab({ baseUrl }: { baseUrl: string }) {
+  const [categories, setCategories] = useState<{id: number, name: string}[]>([])
+  const [loading, setLoading] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [formData, setFormData] = useState({ name: '' })
+  const [formErrors, setFormErrors] = useState<{[key: string]: boolean}>({})
+  const [editingId, setEditingId] = useState<number | null>(null)
+
+  useEffect(() => { loadCategories() }, [])
+
+  const loadCategories = async () => {
+    setLoading(true)
+    try {
+      const res = await axios.get(`${baseUrl}/api/master-data/categories`)
+      setCategories(res.data)
+    } catch (e) { console.error(e) }
+    finally { setLoading(false) }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formData.name) { setFormErrors({ name: true }); return }
+    setLoading(true)
+    try {
+      if (editingId) {
+        await axios.patch(`${baseUrl}/api/master-data/categories/${editingId}`, formData)
+      } else {
+        await axios.post(`${baseUrl}/api/master-data/categories`, formData)
+      }
+      setFormData({ name: '' }); setShowForm(false); setEditingId(null); loadCategories()
+    } catch (e) { console.error(e) }
+    finally { setLoading(false) }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Delete this category?')) return
+    try { await axios.delete(`${baseUrl}/api/master-data/categories/${id}`); loadCategories() }
+    catch (e) { console.error(e) }
+  }
+
+  return (
+    <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h3 style={{ margin: 0, color: '#374151' }}>Categories / Danh mục</h3>
+        <button onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({ name: '' }) }}
+          style={{ padding: '8px 16px', background: showForm ? '#9ca3af' : '#667eea', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+          {showForm ? 'Cancel' : '+ Add Category'}
+        </button>
+      </div>
+      {showForm && (
+        <form onSubmit={handleSubmit} style={{ marginBottom: 16, padding: 16, background: '#f9fafb', borderRadius: 8 }}>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Name <span style={{ color: '#dc2626' }}>*</span></label>
+            <input type="text" value={formData.name} onChange={e => { setFormData({ name: e.target.value }); setFormErrors({}) }}
+              style={{ width: '100%', padding: '10px 14px', border: formErrors.name ? '2px solid #dc2626' : '2px solid #e5e7eb', borderRadius: 6 }} />
+            {formErrors.name && <span style={{ color: '#dc2626', fontSize: 12 }}>Required</span>}
+          </div>
+          <button type="submit" disabled={loading} style={{ padding: '10px 20px', background: '#667eea', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+            {loading ? 'Saving...' : editingId ? 'Update' : 'Create'}
+          </button>
+        </form>
+      )}
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead><tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
+          <th style={{ padding: 12, textAlign: 'left' }}>ID</th>
+          <th style={{ padding: 12, textAlign: 'left' }}>Name</th>
+          <th style={{ padding: 12, textAlign: 'right' }}>Actions</th>
+        </tr></thead>
+        <tbody>
+          {categories.map(c => (
+            <tr key={c.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+              <td style={{ padding: 12 }}>{c.id}</td>
+              <td style={{ padding: 12 }}>{c.name}</td>
+              <td style={{ padding: 12, textAlign: 'right' }}>
+                <button onClick={() => { setEditingId(c.id); setFormData({ name: c.name }); setShowForm(true) }}
+                  style={{ padding: '4px 10px', marginRight: 8, background: '#3b82f6', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Edit</button>
+                <button onClick={() => handleDelete(c.id)}
+                  style={{ padding: '4px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// ==================== TYPES SUB-TAB ====================
+function TypesSubTab({ baseUrl }: { baseUrl: string }) {
+  const [types, setTypes] = useState<{id: number, variety: string, categoryId: number, categoryName?: string}[]>([])
+  const [categories, setCategories] = useState<{id: number, name: string}[]>([])
+  const [loading, setLoading] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [formData, setFormData] = useState({ variety: '', categoryId: '' })
+  const [formErrors, setFormErrors] = useState<{[key: string]: boolean}>({})
+  const [editingId, setEditingId] = useState<number | null>(null)
+
+  useEffect(() => { loadTypes(); loadCategories() }, [])
+
+  const loadTypes = async () => {
+    setLoading(true)
+    try {
+      const res = await axios.get(`${baseUrl}/api/master-data/types`)
+      setTypes(res.data)
+    } catch (e) { console.error(e) }
+    finally { setLoading(false) }
+  }
+
+  const loadCategories = async () => {
+    try { const res = await axios.get(`${baseUrl}/api/master-data/categories`); setCategories(res.data) }
+    catch (e) { console.error(e) }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const errors: {[key: string]: boolean} = {}
+    if (!formData.variety) errors.variety = true
+    if (!formData.categoryId) errors.categoryId = true
+    if (Object.keys(errors).length) { setFormErrors(errors); return }
+    setLoading(true)
+    try {
+      if (editingId) {
+        await axios.patch(`${baseUrl}/api/master-data/types/${editingId}`, { variety: formData.variety, categoryId: parseInt(formData.categoryId) })
+      } else {
+        await axios.post(`${baseUrl}/api/master-data/types`, { variety: formData.variety, categoryId: parseInt(formData.categoryId) })
+      }
+      setFormData({ variety: '', categoryId: '' }); setShowForm(false); setEditingId(null); loadTypes()
+    } catch (e) { console.error(e) }
+    finally { setLoading(false) }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Delete this type?')) return
+    try { await axios.delete(`${baseUrl}/api/master-data/types/${id}`); loadTypes() }
+    catch (e) { console.error(e) }
+  }
+
+  return (
+    <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h3 style={{ margin: 0, color: '#374151' }}>Types / Loại sản phẩm</h3>
+        <button onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({ variety: '', categoryId: '' }) }}
+          style={{ padding: '8px 16px', background: showForm ? '#9ca3af' : '#667eea', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+          {showForm ? 'Cancel' : '+ Add Type'}
+        </button>
+      </div>
+      {showForm && (
+        <form onSubmit={handleSubmit} style={{ marginBottom: 16, padding: 16, background: '#f9fafb', borderRadius: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Category <span style={{ color: '#dc2626' }}>*</span></label>
+              <select value={formData.categoryId} onChange={e => { setFormData({ ...formData, categoryId: e.target.value }); setFormErrors({ ...formErrors, categoryId: false }) }}
+                style={{ width: '100%', padding: '10px 14px', border: formErrors.categoryId ? '2px solid #dc2626' : '2px solid #e5e7eb', borderRadius: 6 }}>
+                <option value="">-- Chọn danh mục --</option>
+                {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              {formErrors.categoryId && <span style={{ color: '#dc2626', fontSize: 12 }}>Required</span>}
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Variety <span style={{ color: '#dc2626' }}>*</span></label>
+              <input type="text" value={formData.variety} onChange={e => { setFormData({ ...formData, variety: e.target.value }); setFormErrors({ ...formErrors, variety: false }) }}
+                style={{ width: '100%', padding: '10px 14px', border: formErrors.variety ? '2px solid #dc2626' : '2px solid #e5e7eb', borderRadius: 6 }} placeholder="e.g., Jasmine, Basmati" />
+              {formErrors.variety && <span style={{ color: '#dc2626', fontSize: 12 }}>Required</span>}
+            </div>
+          </div>
+          <button type="submit" disabled={loading} style={{ marginTop: 16, padding: '10px 20px', background: '#667eea', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+            {loading ? 'Saving...' : editingId ? 'Update' : 'Create'}
+          </button>
+        </form>
+      )}
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead><tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
+          <th style={{ padding: 12, textAlign: 'left' }}>ID</th>
+          <th style={{ padding: 12, textAlign: 'left' }}>Variety</th>
+          <th style={{ padding: 12, textAlign: 'left' }}>Category</th>
+          <th style={{ padding: 12, textAlign: 'right' }}>Actions</th>
+        </tr></thead>
+        <tbody>
+          {types.map(t => (
+            <tr key={t.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+              <td style={{ padding: 12 }}>{t.id}</td>
+              <td style={{ padding: 12 }}>{t.variety}</td>
+              <td style={{ padding: 12 }}>{t.categoryName || '-'}</td>
+              <td style={{ padding: 12, textAlign: 'right' }}>
+                <button onClick={() => { setEditingId(t.id); setFormData({ variety: t.variety, categoryId: t.categoryId.toString() }); setShowForm(true) }}
+                  style={{ padding: '4px 10px', marginRight: 8, background: '#3b82f6', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Edit</button>
+                <button onClick={() => handleDelete(t.id)}
+                  style={{ padding: '4px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// ==================== AGRICULTURE PRODUCTS SUB-TAB ====================
+function AgricultureProductsSubTab({ baseUrl, onUpdate }: { baseUrl: string, onUpdate: () => void }) {
+  const [products, setProducts] = useState<{id: number, name: string, imageUrl?: string, typeId: number, typeName?: string}[]>([])
+  const [types, setTypes] = useState<{id: number, variety: string}[]>([])
+  const [loading, setLoading] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [formData, setFormData] = useState({ name: '', imageUrl: '', typeId: '' })
+  const [formErrors, setFormErrors] = useState<{[key: string]: boolean}>({})
+  const [editingId, setEditingId] = useState<number | null>(null)
+
+  useEffect(() => { loadProducts(); loadTypes() }, [])
+
+  const loadProducts = async () => {
+    setLoading(true)
+    try {
+      const res = await axios.get(`${baseUrl}/api/master-data/agriculture-products`)
+      setProducts(res.data)
+    } catch (e) { console.error(e) }
+    finally { setLoading(false) }
+  }
+
+  const loadTypes = async () => {
+    try { const res = await axios.get(`${baseUrl}/api/master-data/types`); setTypes(res.data) }
+    catch (e) { console.error(e) }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const errors: {[key: string]: boolean} = {}
+    if (!formData.name) errors.name = true
+    if (!formData.typeId) errors.typeId = true
+    if (Object.keys(errors).length) { setFormErrors(errors); return }
+    setLoading(true)
+    try {
+      if (editingId) {
+        await axios.patch(`${baseUrl}/api/master-data/agriculture-products/${editingId}`, { name: formData.name, imageUrl: formData.imageUrl || undefined, typeId: parseInt(formData.typeId) })
+      } else {
+        await axios.post(`${baseUrl}/api/master-data/agriculture-products`, { name: formData.name, imageUrl: formData.imageUrl || undefined, typeId: parseInt(formData.typeId) })
+      }
+      setFormData({ name: '', imageUrl: '', typeId: '' }); setShowForm(false); setEditingId(null); loadProducts(); onUpdate()
+    } catch (e) { console.error(e) }
+    finally { setLoading(false) }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Delete this product?')) return
+    try { await axios.delete(`${baseUrl}/api/master-data/agriculture-products/${id}`); loadProducts(); onUpdate() }
+    catch (e) { console.error(e) }
+  }
+
+  return (
+    <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h3 style={{ margin: 0, color: '#374151' }}>Agriculture Products / Nông sản</h3>
+        <button onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({ name: '', imageUrl: '', typeId: '' }) }}
+          style={{ padding: '8px 16px', background: showForm ? '#9ca3af' : '#667eea', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+          {showForm ? 'Cancel' : '+ Add Product'}
+        </button>
+      </div>
+      {showForm && (
+        <form onSubmit={handleSubmit} style={{ marginBottom: 16, padding: 16, background: '#f9fafb', borderRadius: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Type <span style={{ color: '#dc2626' }}>*</span></label>
+              <select value={formData.typeId} onChange={e => { setFormData({ ...formData, typeId: e.target.value }); setFormErrors({ ...formErrors, typeId: false }) }}
+                style={{ width: '100%', padding: '10px 14px', border: formErrors.typeId ? '2px solid #dc2626' : '2px solid #e5e7eb', borderRadius: 6 }}>
+                <option value="">-- Chọn loại --</option>
+                {types.map(t => <option key={t.id} value={t.id}>{t.variety}</option>)}
+              </select>
+              {formErrors.typeId && <span style={{ color: '#dc2626', fontSize: 12 }}>Required</span>}
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Name <span style={{ color: '#dc2626' }}>*</span></label>
+              <input type="text" value={formData.name} onChange={e => { setFormData({ ...formData, name: e.target.value }); setFormErrors({ ...formErrors, name: false }) }}
+                style={{ width: '100%', padding: '10px 14px', border: formErrors.name ? '2px solid #dc2626' : '2px solid #e5e7eb', borderRadius: 6 }} placeholder="e.g., Gạo ST25" />
+              {formErrors.name && <span style={{ color: '#dc2626', fontSize: 12 }}>Required</span>}
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Image URL</label>
+              <input type="text" value={formData.imageUrl} onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
+                style={{ width: '100%', padding: '10px 14px', border: '2px solid #e5e7eb', borderRadius: 6 }} placeholder="https://..." />
+            </div>
+          </div>
+          <button type="submit" disabled={loading} style={{ marginTop: 16, padding: '10px 20px', background: '#667eea', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+            {loading ? 'Saving...' : editingId ? 'Update' : 'Create'}
+          </button>
+        </form>
+      )}
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead><tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
+          <th style={{ padding: 12, textAlign: 'left' }}>ID</th>
+          <th style={{ padding: 12, textAlign: 'left' }}>Name</th>
+          <th style={{ padding: 12, textAlign: 'left' }}>Type</th>
+          <th style={{ padding: 12, textAlign: 'left' }}>Image</th>
+          <th style={{ padding: 12, textAlign: 'right' }}>Actions</th>
+        </tr></thead>
+        <tbody>
+          {products.map(p => (
+            <tr key={p.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+              <td style={{ padding: 12 }}>{p.id}</td>
+              <td style={{ padding: 12 }}>{p.name}</td>
+              <td style={{ padding: 12 }}>{p.typeName || '-'}</td>
+              <td style={{ padding: 12 }}>
+                {p.imageUrl ? (
+                  <img 
+                    src={p.imageUrl} 
+                    alt={p.name} 
+                    style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 4 }}
+                    onError={(e) => { (e.target as HTMLImageElement).src = 'https://placehold.co/50x50?text=No+Image' }}
+                  />
+                ) : <span style={{ color: '#9ca3af' }}>-</span>}
+              </td>
+              <td style={{ padding: 12, textAlign: 'right' }}>
+                <button onClick={() => { setEditingId(p.id); setFormData({ name: p.name, imageUrl: p.imageUrl || '', typeId: p.typeId.toString() }); setShowForm(true) }}
+                  style={{ padding: '4px 10px', marginRight: 8, background: '#3b82f6', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Edit</button>
+                <button onClick={() => handleDelete(p.id)}
+                  style={{ padding: '4px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 export default function AdminPage() {
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -62,6 +389,9 @@ export default function AdminPage() {
 
   // Tab management
   const [activeTab, setActiveTab] = useState<'products' | 'farms' | 'vendors' | 'processing' | 'logistics' | 'storage' | 'pricing'>('products')
+  
+  // Products sub-tab management
+  const [productSubTab, setProductSubTab] = useState<'batches' | 'categories' | 'types' | 'agriculture-products'>('batches')
 
   // Product management state
   const [products, setProducts] = useState<Product[]>([])
@@ -73,13 +403,17 @@ export default function AdminPage() {
   // Lists for dropdowns
   const [farms, setFarms] = useState<Array<{id: number, name: string}>>([])
   const [agricultureProducts, setAgricultureProducts] = useState<Array<{id: number, name: string}>>([])
+  const [types, setTypes] = useState<Array<{id: number, name: string, variety?: string}>>([])
+  const [vendorProducts, setVendorProducts] = useState<Array<{id: number, productName: string, vendorName: string}>>([])
 
   const [formData, setFormData] = useState({
     variety: '',
     grade: '',
     harvestDate: '',
     farmId: '',
-    agricultureProductId: ''
+    agricultureProductId: '',
+    productTypeId: '',
+    vendorProductId: ''
   })
 
   // Form validation state
@@ -132,6 +466,8 @@ export default function AdminPage() {
       loadProducts()
       loadFarms()
       loadAgricultureProducts()
+      loadTypes()
+      loadVendorProducts()
       loadProvinces()
       loadCountries()
       loadFarmsList()
@@ -153,6 +489,24 @@ export default function AdminPage() {
       setAgricultureProducts(response.data)
     } catch (e: any) {
       console.error('Failed to load agriculture products:', e)
+    }
+  }
+
+  const loadTypes = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/api/products/types`)
+      setTypes(response.data)
+    } catch (e: any) {
+      console.error('Failed to load types:', e)
+    }
+  }
+
+  const loadVendorProducts = async () => {
+    try {
+      const response = await axios.get(`${baseUrl}/api/pricing/vendor-products`)
+      setVendorProducts(response.data)
+    } catch (e: any) {
+      console.error('Failed to load vendor products:', e)
     }
   }
 
@@ -287,7 +641,11 @@ export default function AdminPage() {
         harvestDate: item.harvestDate ? new Date(item.harvestDate).toISOString().split('T')[0] : '',
         origin: item.farmName || '-',
         certifications: '-',
-        description: '-'
+        description: '-',
+        // Map additional IDs for editing
+        farmId: item.farmId,
+        agricultureProductId: item.agricultureProductId,
+        vendorProductId: item.vendorProductId
       }))
       setProducts(mappedProducts)
     } catch (e: any) {
@@ -336,6 +694,7 @@ export default function AdminPage() {
           harvestDate: formData.harvestDate,
           grade: formData.grade,
           seedBatch: formData.variety,
+          vendorProductId: formData.vendorProductId ? parseInt(formData.vendorProductId) : undefined,
         }
         await axios.post(`${baseUrl}/api/products`, createData)
       }
@@ -369,9 +728,11 @@ export default function AdminPage() {
     setFormData({
       variety: product.variety || '',
       grade: product.grade || '',
-      harvestDate: product.harvestDate || '',
-      farmId: '',
-      agricultureProductId: ''
+      harvestDate: product.harvestDate ? product.harvestDate.split('T')[0] : '',
+      farmId: product.farmId?.toString() || '',
+      agricultureProductId: product.agricultureProductId?.toString() || '',
+      productTypeId: '',
+      vendorProductId: product.vendorProductId?.toString() || ''
     })
     setShowForm(true)
   }
@@ -382,10 +743,13 @@ export default function AdminPage() {
       grade: '',
       harvestDate: '',
       farmId: '',
-      agricultureProductId: ''
+      agricultureProductId: '',
+      productTypeId: '',
+      vendorProductId: ''
     })
     setEditingProduct(null)
     setShowForm(false)
+    setFormErrors({})
   }
 
   // Login Screen
@@ -782,9 +1146,9 @@ export default function AdminPage() {
         }}>
           {activeTab === 'products' ? 'Product Information Management' : activeTab === 'farms' ? 'Farm Management' : activeTab === 'vendors' ? 'Vendor Management' : activeTab === 'processing' ? 'Processing Management' : activeTab === 'logistics' ? 'Logistics Management' : activeTab === 'storage' ? 'Storage Management' : 'Pricing Management'}
         </h1>
-        {activeTab !== 'processing' && activeTab !== 'logistics' && activeTab !== 'storage' && activeTab !== 'pricing' && (
+        {activeTab !== 'processing' && activeTab !== 'logistics' && activeTab !== 'storage' && activeTab !== 'pricing' && activeTab !== 'vendors' && (
           <button
-            onClick={() => activeTab === 'products' ? setShowForm(!showForm) : activeTab === 'farms' ? setShowFarmForm(!showFarmForm) : activeTab === 'vendors' ? setShowVendorForm(!showVendorForm) : null}
+            onClick={() => activeTab === 'products' ? setShowForm(!showForm) : activeTab === 'farms' ? setShowFarmForm(!showFarmForm) : null}
             style={{
               padding: '12px 24px',
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -799,9 +1163,7 @@ export default function AdminPage() {
           >
             {activeTab === 'products'
               ? (showForm ? 'Cancel' : '+ Add New Product')
-              : activeTab === 'farms'
-              ? (showFarmForm ? 'Cancel' : '+ Add New Farm')
-              : (showVendorForm ? 'Cancel' : '+ Add New Vendor')}
+              : (showFarmForm ? 'Cancel' : '+ Add New Farm')}
           </button>
         )}
       </div>
@@ -819,8 +1181,77 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Product Form */}
-      {activeTab === 'products' && showForm && (
+      {/* Products Tab with Sub-tabs */}
+      {activeTab === 'products' && (
+        <>
+          {/* Sub-tab Switcher */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+            <button
+              onClick={() => setProductSubTab('batches')}
+              style={{
+                padding: '8px 16px',
+                background: productSubTab === 'batches' ? '#667eea' : '#f3f4f6',
+                color: productSubTab === 'batches' ? 'white' : '#374151',
+                border: 'none',
+                borderRadius: 6,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              🌾 Batches / Lô hàng
+            </button>
+            <button
+              onClick={() => setProductSubTab('categories')}
+              style={{
+                padding: '8px 16px',
+                background: productSubTab === 'categories' ? '#667eea' : '#f3f4f6',
+                color: productSubTab === 'categories' ? 'white' : '#374151',
+                border: 'none',
+                borderRadius: 6,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              📁 Categories / Danh mục
+            </button>
+            <button
+              onClick={() => setProductSubTab('types')}
+              style={{
+                padding: '8px 16px',
+                background: productSubTab === 'types' ? '#667eea' : '#f3f4f6',
+                color: productSubTab === 'types' ? 'white' : '#374151',
+                border: 'none',
+                borderRadius: 6,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              🏷️ Types / Loại
+            </button>
+            <button
+              onClick={() => setProductSubTab('agriculture-products')}
+              style={{
+                padding: '8px 16px',
+                background: productSubTab === 'agriculture-products' ? '#667eea' : '#f3f4f6',
+                color: productSubTab === 'agriculture-products' ? 'white' : '#374151',
+                border: 'none',
+                borderRadius: 6,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              🥬 Agriculture Products / Nông sản
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Product Form - Only show in Batches sub-tab */}
+      {activeTab === 'products' && productSubTab === 'batches' && showForm && (
         <div style={{
           background: 'white',
           padding: 24,
@@ -869,7 +1300,7 @@ export default function AdminPage() {
               {!editingProduct && (
                 <div style={{ marginBottom: 16 }}>
                   <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                    Product Type / Loại sản phẩm <span style={{ color: '#dc2626' }}>*</span>
+                    Agriculture Product / Sản phẩm nông nghiệp <span style={{ color: '#dc2626' }}>*</span>
                   </label>
                   <select
                     value={formData.agricultureProductId}
@@ -886,14 +1317,74 @@ export default function AdminPage() {
                       backgroundColor: 'white'
                     }}
                   >
-                    <option value="">-- Chọn loại sản phẩm --</option>
+                    <option value="">-- Chọn sản phẩm --</option>
                     {agricultureProducts.map(product => (
                       <option key={product.id} value={product.id}>{product.name}</option>
                     ))}
                   </select>
                   {formErrors.agricultureProductId && (
-                    <span style={{ color: '#dc2626', fontSize: 12 }}>Vui lòng chọn Product Type</span>
+                    <span style={{ color: '#dc2626', fontSize: 12 }}>Vui lòng chọn Agriculture Product</span>
                   )}
+                </div>
+              )}
+
+              {/* Product Type Selection */}
+              {!editingProduct && (
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                    Product Type / Loại sản phẩm
+                  </label>
+                  <select
+                    value={formData.productTypeId}
+                    onChange={e => {
+                      setFormData({ ...formData, productTypeId: e.target.value })
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: 8,
+                      fontSize: 16,
+                      backgroundColor: 'white'
+                    }}
+                  >
+                    <option value="">-- Chọn loại --</option>
+                    {types.map(type => (
+                      <option key={type.id} value={type.id}>
+                        {type.name} {type.variety ? `(${type.variety})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Vendor Product Selection */}
+              {!editingProduct && (
+                <div style={{ marginBottom: 16 }}>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
+                    Vendor Product / Sản phẩm nhà cung cấp
+                  </label>
+                  <select
+                    value={formData.vendorProductId}
+                    onChange={e => {
+                      setFormData({ ...formData, vendorProductId: e.target.value })
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '2px solid #e5e7eb',
+                      borderRadius: 8,
+                      fontSize: 16,
+                      backgroundColor: 'white'
+                    }}
+                  >
+                    <option value="">-- Chọn vendor product --</option>
+                    {vendorProducts.map(vp => (
+                      <option key={vp.id} value={vp.id}>
+                        {vp.productName} - {vp.vendorName}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
 
@@ -999,8 +1490,8 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Products List */}
-      {activeTab === 'products' && (
+      {/* Products List - Only show in Batches sub-tab */}
+      {activeTab === 'products' && productSubTab === 'batches' && (
         <div style={{
           background: 'white',
           borderRadius: 12,
@@ -1096,6 +1587,21 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
+      )}
+
+      {/* Categories Sub-tab */}
+      {activeTab === 'products' && productSubTab === 'categories' && (
+        <CategoriesSubTab baseUrl={baseUrl} />
+      )}
+
+      {/* Types Sub-tab */}
+      {activeTab === 'products' && productSubTab === 'types' && (
+        <TypesSubTab baseUrl={baseUrl} />
+      )}
+
+      {/* Agriculture Products Sub-tab */}
+      {activeTab === 'products' && productSubTab === 'agriculture-products' && (
+        <AgricultureProductsSubTab baseUrl={baseUrl} onUpdate={loadAgricultureProducts} />
       )}
 
       {/* Farm Form */}

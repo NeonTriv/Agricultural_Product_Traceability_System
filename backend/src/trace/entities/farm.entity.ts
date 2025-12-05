@@ -21,10 +21,13 @@ export class Farm {
   @Column({ name: 'Contact_Info', type: 'varchar', length: 255, nullable: true })
   contactInfo: string;
 
-  @Column({ name: 'Longitude', type: 'decimal', precision: 18, scale: 0 })
+  @Column({ name: 'Address_detail', type: 'nvarchar', length: 255, nullable: true })
+  addressDetail: string;
+
+  @Column({ name: 'Longitude', type: 'decimal', precision: 9, scale: 6 })
   longitude: number;
 
-  @Column({ name: 'Latitude', type: 'decimal', precision: 18, scale: 0 })
+  @Column({ name: 'Latitude', type: 'decimal', precision: 9, scale: 6 })
   latitude: number;
 
   @Column({ name: 'P_ID', type: 'int' })

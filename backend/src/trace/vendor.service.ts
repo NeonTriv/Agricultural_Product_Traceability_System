@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Vendor } from './entities/vendor.entity';
 import { Distributor } from './entities/distributor.entity';
 import { Retail } from './entities/retail.entity';
+import { CarrierCompany } from './entities/carrier-company.entity';
 
 @Injectable()
 export class VendorService {
@@ -14,6 +15,8 @@ export class VendorService {
     private readonly distributorRepo: Repository<Distributor>,
     @InjectRepository(Retail)
     private readonly retailRepo: Repository<Retail>,
+    @InjectRepository(CarrierCompany)
+    private readonly carrierRepo: Repository<CarrierCompany>,
   ) {}
 
   async getAllVendors() {
@@ -122,11 +125,39 @@ export class VendorService {
   }
 
   async deleteVendor(tin: string) {
-    const result = await this.vendorRepo.delete({ tin });
-
-    if (result.affected === 0) {
+    // Check if vendor exists
+    const vendor = await this.vendorRepo.findOne({ 
+      where: { tin },
+      relations: ['distributors', 'retails', 'vendorProducts']
+    });
+    if (!vendor) {
       throw new NotFoundException(`Vendor with TIN ${tin} not found`);
     }
+
+    // Check for carrier company separately
+    const carrierCompany = await this.carrierRepo.findOne({ where: { vTin: tin } });
+
+    // Check for related records and provide helpful error message
+    const blockers: string[] = [];
+    if (vendor.distributors?.length > 0) {
+      blockers.push('Distributor records (tab Vendors > delete distributor type)');
+    }
+    if (vendor.retails?.length > 0) {
+      blockers.push('Retail records (tab Vendors > delete retail type)');
+    }
+    if (vendor.vendorProducts?.length > 0) {
+      blockers.push(`Vendor Products (${vendor.vendorProducts.length} items - tab Vendors > Vendor Products)`);
+    }
+    if (carrierCompany) {
+      blockers.push('Carrier Company (tab Logistics > Carrier Companies)');
+    }
+
+    if (blockers.length > 0) {
+      throw new BadRequestException(`Cannot delete vendor. Please delete the following first: ${blockers.join(', ')}`);
+    }
+
+    // Now safe to delete the vendor
+    await this.vendorRepo.delete({ tin });
 
     return { success: true };
   }

@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Distributor } from './distributor.entity';
 import { TransportLeg } from './transport-leg.entity';
 import { ShipBatch } from './ship-batch.entity';
@@ -9,17 +9,11 @@ import { ShipBatch } from './ship-batch.entity';
  */
 @Entity('SHIPMENT')
 export class Shipment {
-  @PrimaryColumn({ name: 'ID', type: 'int' })
+  @PrimaryGeneratedColumn({ name: 'ID', type: 'int' })
   id: number;
 
   @Column({ name: 'Status', type: 'varchar', length: 50 })
   status: string;
-
-  @Column({ name: 'Departured_Time', type: 'datetimeoffset', nullable: true })
-  departuredTime: Date | null;
-
-  @Column({ name: 'Arrival_Time', type: 'datetimeoffset', nullable: true })
-  arrivalTime: Date | null;
 
   @Column({ name: 'Destination', type: 'nvarchar', length: 255, nullable: true })
   destination: string;

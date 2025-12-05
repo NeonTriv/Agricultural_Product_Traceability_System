@@ -29,6 +29,12 @@ export class ProductController {
     return this.traceService.getAllCountries();
   }
 
+  @Get('types')
+  @HttpCode(HttpStatus.OK)
+  async getAllTypes() {
+    return this.traceService.getAllTypes();
+  }
+
   @Get('batches')
   @HttpCode(HttpStatus.OK)
   async getAllBatches() {

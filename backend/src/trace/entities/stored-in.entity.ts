@@ -18,19 +18,18 @@ export class StoredIn {
   @Column({ name: 'Quantity', type: 'decimal', precision: 10, scale: 2 })
   quantity: number;
 
-  // Note: Start_Date and End_Date columns may not exist in some database versions
-  // @Column({ name: 'Start_Date', type: 'datetimeoffset', nullable: true })
-  // startDate: Date | null;
+  @Column({ name: 'Start_Date', type: 'datetimeoffset', nullable: true })
+  startDate: Date | null;
 
-  // @Column({ name: 'End_Date', type: 'datetimeoffset', nullable: true })
-  // endDate: Date | null;
+  @Column({ name: 'End_Date', type: 'datetimeoffset', nullable: true })
+  endDate: Date | null;
 
   // Relationships
   @ManyToOne(() => Batch, (batch) => batch.storedIn)
   @JoinColumn({ name: 'B_ID' })
   batch: Batch;
 
-  @ManyToOne(() => Warehouse)
+  @ManyToOne(() => Warehouse, (warehouse) => warehouse.storedInRecords)
   @JoinColumn({ name: 'W_ID' })
   warehouse: Warehouse;
 }

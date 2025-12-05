@@ -105,7 +105,7 @@ export class TraceabilityService {
         route: transportLeg
           ? `${transportLeg.startLocation} -> ${transportLeg.toLocation}`
           : null,
-        carrierCompany: transportLeg?.carrierCompany?.name,
+        carrierCompany: transportLeg?.carrierCompany?.vendor?.name,
         distributorName: vendor?.name,
         distributorAddress: vendor?.address,
         distributorContact: vendor?.contactInfo,

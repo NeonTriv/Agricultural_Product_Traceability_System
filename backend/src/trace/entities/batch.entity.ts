@@ -1,6 +1,7 @@
 import { Entity, Column, PrimaryColumn, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Farm } from './farm.entity';
 import { AgricultureProduct } from './agriculture-product.entity';
+import { VendorProduct } from './vendor-product.entity';
 import { Processing } from './processing.entity';
 import { ShipBatch } from './ship-batch.entity';
 import { StoredIn } from './stored-in.entity';
@@ -35,6 +36,9 @@ export class Batch {
   @Column({ name: 'AP_ID', type: 'int' })
   agricultureProductId: number;
 
+  @Column({ name: 'V_ID', type: 'int', nullable: true })
+  vendorProductId: number;
+
   // Relationships
   @ManyToOne(() => Farm, (farm) => farm.batches)
   @JoinColumn({ name: 'Farm_ID' })
@@ -43,6 +47,10 @@ export class Batch {
   @ManyToOne(() => AgricultureProduct, (product) => product.id)
   @JoinColumn({ name: 'AP_ID' })
   agricultureProduct: AgricultureProduct;
+
+  @ManyToOne(() => VendorProduct)
+  @JoinColumn({ name: 'V_ID' })
+  vendorProduct: VendorProduct;
 
   @OneToMany(() => Processing, (processing) => processing.batch)
   processings: Processing[];

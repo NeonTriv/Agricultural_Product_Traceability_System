@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Type } from './type.entity';
 import { VendorProduct } from './vendor-product.entity';
 
@@ -8,7 +8,7 @@ import { VendorProduct } from './vendor-product.entity';
  */
 @Entity('AGRICULTURE_PRODUCT')
 export class AgricultureProduct {
-  @PrimaryColumn({ name: 'ID', type: 'int' })
+  @PrimaryGeneratedColumn({ name: 'ID', type: 'int' })
   id: number;
 
   @Column({ name: 'Name', type: 'nvarchar', length: 255 })

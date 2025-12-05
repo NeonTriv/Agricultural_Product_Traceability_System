@@ -139,12 +139,157 @@ END
 -- 7. INSERT VENDORS (Dùng Address_detail)
 -- ============================================================================
 PRINT '7. Inserting Vendors...';
+DECLARE @danang INT;
+SELECT @danang = ID FROM PROVINCE WHERE Name = N'Đà Nẵng';
+
 IF NOT EXISTS (SELECT * FROM VENDOR WHERE TIN = '1234567890')
 BEGIN
     INSERT INTO VENDOR (TIN, Name, Address_detail, Contact_Info, P_ID, Longitude, Latitude) VALUES
-    ('1234567890', N'BigC Supermarket', N'HCMC', '0281111111', @hcm, 106.6, 10.8),
-    ('2345678901', N'VinMart', N'Hanoi', '0242222222', @hanoi, 105.8, 21.0),
-    ('3456789012', N'Co.opMart', N'Da Nang', '0263333333', @vietnamID, 108.2, 16.0);
+    ('1234567890', N'BigC Supermarket', N'268 Vo Van Kiet, Q1', '0281111111', @hcm, 106.6, 10.8),
+    ('2345678901', N'VinMart', N'72 Tran Duy Hung, Cau Giay', '0242222222', @hanoi, 105.8, 21.0),
+    ('3456789012', N'Co.opMart', N'478 Dien Bien Phu, Q. Thanh Khe', '0263333333', @danang, 108.2, 16.0),
+    ('4567890123', N'Lotte Mart', N'469 Nguyen Huu Tho, Q7', '0284444444', @hcm, 106.7, 10.75),
+    ('5678901234', N'AEON Mall', N'30 Bo Bao Tan Thang, Tan Phu', '0285555555', @hcm, 106.65, 10.82),
+    ('6789012345', N'Metro Cash & Carry', N'Song Hanh, Thu Duc', '0286666666', @hcm, 106.75, 10.85);
+
+    -- Insert Distributors
+    INSERT INTO DISTRIBUTOR (Vendor_TIN, Type) VALUES
+    ('1234567890', 'Direct'),
+    ('2345678901', 'Direct'),
+    ('4567890123', 'Indirect');
+
+    -- Insert Retail
+    INSERT INTO RETAIL (Vendor_TIN, Format) VALUES
+    ('1234567890', N'Supermarket'),
+    ('2345678901', N'Supermarket'),
+    ('3456789012', N'Supermarket'),
+    ('5678901234', N'Supermarket'),
+    ('6789012345', N'Traditional Market');
+END
+
+-- ============================================================================
+-- 8. INSERT CARRIER COMPANIES
+-- ============================================================================
+PRINT '8. Inserting Carrier Companies...';
+IF NOT EXISTS (SELECT * FROM VENDOR WHERE TIN = 'CARRIER001')
+BEGIN
+    INSERT INTO VENDOR (TIN, Name, Address_detail, Contact_Info, P_ID, Longitude, Latitude) VALUES
+    ('CARRIER001', N'Giao Hang Nhanh', N'405/15 Xo Viet Nghe Tinh, Binh Thanh', '0287777777', @hcm, 106.68, 10.81),
+    ('CARRIER002', N'Viettel Post', N'285 CMT8, Q10', '0288888888', @hcm, 106.67, 10.78),
+    ('CARRIER003', N'J&T Express', N'Tan Binh Industrial', '0289999999', @hcm, 106.64, 10.80);
+
+    INSERT INTO CARRIERCOMPANY (V_TIN) VALUES
+    ('CARRIER001'),
+    ('CARRIER002'),
+    ('CARRIER003');
+END
+
+-- ============================================================================
+-- 9. INSERT WAREHOUSES
+-- ============================================================================
+PRINT '9. Inserting Warehouses...';
+IF NOT EXISTS (SELECT * FROM WAREHOUSE WHERE Address_detail = N'KCN Tan Tao, Binh Tan')
+BEGIN
+    INSERT INTO WAREHOUSE (Capacity, Store_Condition, Address_detail, Longitude, Latitude, P_ID) VALUES
+    (5000.00, N'Cold Storage -5°C to 5°C', N'KCN Tan Tao, Binh Tan', 106.58, 10.75, @hcm),
+    (3000.00, N'Dry Storage, Climate Controlled', N'KCN VSIP, Binh Duong', 106.72, 10.92, @hcm),
+    (8000.00, N'Cold Storage -20°C to 0°C', N'KCN Long Hau, Long An', 106.55, 10.68, @angiang),
+    (2000.00, N'Normal Temperature', N'KCN Hoa Khanh, Da Nang', 108.15, 16.05, @danang);
+END
+
+-- ============================================================================
+-- 10. INSERT VENDOR_PRODUCT (Liên kết Vendor với Agriculture Product)
+-- ============================================================================
+PRINT '10. Inserting Vendor Products...';
+IF NOT EXISTS (SELECT * FROM VENDOR_PRODUCT WHERE Vendor_TIN = '1234567890')
+BEGIN
+    DECLARE @ap1 INT, @ap2 INT, @ap3 INT, @ap4 INT, @ap5 INT;
+    SELECT @ap1 = ID FROM AGRICULTURE_PRODUCT ORDER BY ID OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY;
+    SELECT @ap2 = ID FROM AGRICULTURE_PRODUCT ORDER BY ID OFFSET 1 ROWS FETCH NEXT 1 ROWS ONLY;
+    SELECT @ap3 = ID FROM AGRICULTURE_PRODUCT ORDER BY ID OFFSET 2 ROWS FETCH NEXT 1 ROWS ONLY;
+    SELECT @ap4 = ID FROM AGRICULTURE_PRODUCT ORDER BY ID OFFSET 3 ROWS FETCH NEXT 1 ROWS ONLY;
+    SELECT @ap5 = ID FROM AGRICULTURE_PRODUCT ORDER BY ID OFFSET 4 ROWS FETCH NEXT 1 ROWS ONLY;
+
+    INSERT INTO VENDOR_PRODUCT (Unit, Vendor_TIN, AP_ID) VALUES
+    (N'kg', '1234567890', @ap1),
+    (N'túi 5kg', '1234567890', @ap2),
+    (N'kg', '2345678901', @ap1),
+    (N'thùng 10kg', '2345678901', @ap3),
+    (N'kg', '3456789012', @ap2),
+    (N'bao 25kg', '3456789012', @ap4),
+    (N'kg', '4567890123', @ap1),
+    (N'túi 2kg', '4567890123', @ap5),
+    (N'kg', '5678901234', @ap3),
+    (N'thùng 20kg', '5678901234', @ap4),
+    (N'tấn', '6789012345', @ap1),
+    (N'tấn', '6789012345', @ap2);
+END
+
+-- ============================================================================
+-- 11. INSERT PRICES
+-- ============================================================================
+PRINT '11. Inserting Prices...';
+IF NOT EXISTS (SELECT * FROM PRICE)
+BEGIN
+    INSERT INTO PRICE (V_ID, Value, Currency)
+    SELECT ID, 
+        CASE 
+            WHEN Unit = N'kg' THEN 25000 + (ID * 1000)
+            WHEN Unit LIKE N'túi%' THEN 120000 + (ID * 5000)
+            WHEN Unit LIKE N'thùng%' THEN 250000 + (ID * 10000)
+            WHEN Unit LIKE N'bao%' THEN 500000 + (ID * 15000)
+            WHEN Unit = N'tấn' THEN 20000000 + (ID * 100000)
+            ELSE 50000
+        END,
+        'VND'
+    FROM VENDOR_PRODUCT;
+END
+
+-- ============================================================================
+-- 12. INSERT SHIPMENTS & TRANSPORT LEGS
+-- ============================================================================
+PRINT '12. Inserting Shipments...';
+IF NOT EXISTS (SELECT * FROM SHIPMENT)
+BEGIN
+    INSERT INTO SHIPMENT (Status, Destination, Distributor_TIN) VALUES
+    ('Delivered', N'BigC Supermarket - HCMC', '1234567890'),
+    ('In-Transit', N'VinMart - Hanoi', '2345678901'),
+    ('Pending', N'Lotte Mart - HCMC', '4567890123'),
+    ('Delivered', N'BigC Supermarket - HCMC', '1234567890'),
+    ('In-Transit', N'VinMart - Hanoi', '2345678901');
+END
+
+PRINT '13. Inserting Transport Legs...';
+IF NOT EXISTS (SELECT * FROM TRANSPORLEG)
+BEGIN
+    DECLARE @ship1 INT, @ship2 INT;
+    SELECT @ship1 = ID FROM SHIPMENT ORDER BY ID OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY;
+    SELECT @ship2 = ID FROM SHIPMENT ORDER BY ID OFFSET 1 ROWS FETCH NEXT 1 ROWS ONLY;
+
+    INSERT INTO TRANSPORLEG (Shipment_ID, Driver_Name, Temperature_Profile, Start_Location, To_Location, D_Time, A_Time, CarrierCompany_TIN) VALUES
+    (@ship1, N'Nguyen Van Tai', N'{"min": 2, "max": 8, "unit": "C"}', N'KCN Long Hau, Long An', N'BigC Q1, HCMC', DATEADD(DAY, -5, GETDATE()), DATEADD(DAY, -4, GETDATE()), 'CARRIER001'),
+    (@ship1, N'Tran Van Xe', N'{"min": 0, "max": 5, "unit": "C"}', N'BigC Q1, HCMC', N'BigC Q7, HCMC', DATEADD(DAY, -4, GETDATE()), DATEADD(DAY, -3, GETDATE()), 'CARRIER002'),
+    (@ship2, N'Le Van Giao', N'{"min": 2, "max": 8, "unit": "C"}', N'KCN VSIP, Binh Duong', N'VinMart Cau Giay, Hanoi', DATEADD(DAY, -2, GETDATE()), NULL, 'CARRIER003');
+END
+
+-- ============================================================================
+-- 13. INSERT DISCOUNTS
+-- ============================================================================
+PRINT '14. Inserting Discounts...';
+IF NOT EXISTS (SELECT * FROM DISCOUNT)
+BEGIN
+    INSERT INTO DISCOUNT (V_TIN, Percentage, Min_Value, Max_Discount_Amount, Start_Date, Expired_Date) VALUES
+    ('1234567890', 10.00, 100000, 50000, GETDATE(), DATEADD(MONTH, 1, GETDATE())),
+    ('2345678901', 15.00, 200000, 100000, GETDATE(), DATEADD(MONTH, 2, GETDATE())),
+    ('3456789012', 5.00, 50000, 25000, GETDATE(), DATEADD(WEEK, 2, GETDATE())),
+    ('4567890123', 20.00, 500000, 200000, GETDATE(), DATEADD(MONTH, 1, GETDATE()));
+
+    -- Link discounts to vendor products
+    INSERT INTO PRODUCT_HAS_DISCOUNT (V_ID, Discount_ID)
+    SELECT vp.ID, d.ID
+    FROM VENDOR_PRODUCT vp
+    CROSS JOIN DISCOUNT d
+    WHERE vp.Vendor_TIN = d.V_TIN;
 END
 
 PRINT '============================================================================';

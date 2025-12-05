@@ -11,7 +11,163 @@ interface Vendor {
   retailFormat?: string
 }
 
+interface VendorProduct {
+  id: number
+  unit: string
+  vendorTin: string
+  vendorName?: string
+  agricultureProductId: number
+  productName?: string
+}
+
+interface AgricultureProduct {
+  id: number
+  name: string
+}
+
+const baseUrl = 'http://localhost:5000'
+
+// ==================== VENDOR PRODUCTS SUB-TAB ====================
+function VendorProductsSubTab() {
+  const [vendorProducts, setVendorProducts] = useState<VendorProduct[]>([])
+  const [vendors, setVendors] = useState<Vendor[]>([])
+  const [agricultureProducts, setAgricultureProducts] = useState<AgricultureProduct[]>([])
+  const [loading, setLoading] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [formData, setFormData] = useState({ unit: '', vendorTin: '', agricultureProductId: '' })
+  const [formErrors, setFormErrors] = useState<{[key: string]: boolean}>({})
+  const [editingId, setEditingId] = useState<number | null>(null)
+
+  useEffect(() => { loadVendorProducts(); loadVendors(); loadAgricultureProducts() }, [])
+
+  const loadVendorProducts = async () => {
+    setLoading(true)
+    try {
+      const res = await axios.get(`${baseUrl}/api/pricing/vendor-products`)
+      setVendorProducts(res.data)
+    } catch (e) { console.error(e) }
+    finally { setLoading(false) }
+  }
+
+  const loadVendors = async () => {
+    try { const res = await axios.get(`${baseUrl}/api/vendors`); setVendors(res.data) }
+    catch (e) { console.error(e) }
+  }
+
+  const loadAgricultureProducts = async () => {
+    try { const res = await axios.get(`${baseUrl}/api/products/agriculture-products`); setAgricultureProducts(res.data) }
+    catch (e) { console.error(e) }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const errors: {[key: string]: boolean} = {}
+    if (!formData.unit) errors.unit = true
+    if (!formData.vendorTin) errors.vendorTin = true
+    if (!formData.agricultureProductId) errors.agricultureProductId = true
+    if (Object.keys(errors).length) { setFormErrors(errors); return }
+    setLoading(true)
+    try {
+      if (editingId) {
+        await axios.patch(`${baseUrl}/api/pricing/vendor-products/${editingId}`, { 
+          unit: formData.unit
+        })
+      } else {
+        await axios.post(`${baseUrl}/api/pricing/vendor-products`, { 
+          unit: formData.unit,
+          vendorTin: formData.vendorTin,
+          agricultureProductId: parseInt(formData.agricultureProductId)
+        })
+      }
+      setFormData({ unit: '', vendorTin: '', agricultureProductId: '' }); setShowForm(false); setEditingId(null); loadVendorProducts()
+    } catch (e: any) { 
+      console.error(e)
+      alert(e?.response?.data?.message || 'Error creating vendor product')
+    }
+    finally { setLoading(false) }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('Delete this vendor product?')) return
+    try { await axios.delete(`${baseUrl}/api/pricing/vendor-products/${id}`); loadVendorProducts() }
+    catch (e) { console.error(e) }
+  }
+
+  return (
+    <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h3 style={{ margin: 0, color: '#374151' }}>Vendor Products / Sản phẩm nhà cung cấp</h3>
+        <button onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({ unit: '', vendorTin: '', agricultureProductId: '' }) }}
+          style={{ padding: '8px 16px', background: showForm ? '#9ca3af' : '#667eea', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+          {showForm ? 'Cancel' : '+ Add Vendor Product'}
+        </button>
+      </div>
+      {showForm && (
+        <form onSubmit={handleSubmit} style={{ marginBottom: 16, padding: 16, background: '#f9fafb', borderRadius: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Vendor <span style={{ color: '#dc2626' }}>*</span></label>
+              <select value={formData.vendorTin} onChange={e => { setFormData({ ...formData, vendorTin: e.target.value }); setFormErrors({ ...formErrors, vendorTin: false }) }}
+                disabled={!!editingId}
+                style={{ width: '100%', padding: '10px 14px', border: formErrors.vendorTin ? '2px solid #dc2626' : '2px solid #e5e7eb', borderRadius: 6, background: editingId ? '#f3f4f6' : 'white' }}>
+                <option value="">-- Chọn nhà cung cấp --</option>
+                {vendors.map(v => <option key={v.tin} value={v.tin}>{v.name}</option>)}
+              </select>
+              {formErrors.vendorTin && <span style={{ color: '#dc2626', fontSize: 12 }}>Required</span>}
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Agriculture Product <span style={{ color: '#dc2626' }}>*</span></label>
+              <select value={formData.agricultureProductId} onChange={e => { setFormData({ ...formData, agricultureProductId: e.target.value }); setFormErrors({ ...formErrors, agricultureProductId: false }) }}
+                disabled={!!editingId}
+                style={{ width: '100%', padding: '10px 14px', border: formErrors.agricultureProductId ? '2px solid #dc2626' : '2px solid #e5e7eb', borderRadius: 6, background: editingId ? '#f3f4f6' : 'white' }}>
+                <option value="">-- Chọn sản phẩm --</option>
+                {agricultureProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              {formErrors.agricultureProductId && <span style={{ color: '#dc2626', fontSize: 12 }}>Required</span>}
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Unit <span style={{ color: '#dc2626' }}>*</span></label>
+              <input type="text" value={formData.unit} onChange={e => { setFormData({ ...formData, unit: e.target.value }); setFormErrors({ ...formErrors, unit: false }) }}
+                style={{ width: '100%', padding: '10px 14px', border: formErrors.unit ? '2px solid #dc2626' : '2px solid #e5e7eb', borderRadius: 6 }} placeholder="e.g., kg, túi, thùng" />
+              {formErrors.unit && <span style={{ color: '#dc2626', fontSize: 12 }}>Required</span>}
+            </div>
+          </div>
+          <button type="submit" disabled={loading} style={{ marginTop: 16, padding: '10px 20px', background: '#667eea', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
+            {loading ? 'Saving...' : editingId ? 'Update' : 'Create'}
+          </button>
+        </form>
+      )}
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead><tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
+          <th style={{ padding: 12, textAlign: 'left' }}>ID</th>
+          <th style={{ padding: 12, textAlign: 'left' }}>Vendor</th>
+          <th style={{ padding: 12, textAlign: 'left' }}>Product</th>
+          <th style={{ padding: 12, textAlign: 'left' }}>Unit</th>
+          <th style={{ padding: 12, textAlign: 'right' }}>Actions</th>
+        </tr></thead>
+        <tbody>
+          {vendorProducts.map(vp => (
+            <tr key={vp.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+              <td style={{ padding: 12 }}>{vp.id}</td>
+              <td style={{ padding: 12 }}>{vp.vendorName || vp.vendorTin}</td>
+              <td style={{ padding: 12 }}>{vp.productName || '-'}</td>
+              <td style={{ padding: 12 }}>{vp.unit}</td>
+              <td style={{ padding: 12, textAlign: 'right' }}>
+                <button onClick={() => { setEditingId(vp.id); setFormData({ unit: vp.unit, vendorTin: vp.vendorTin, agricultureProductId: vp.agricultureProductId.toString() }); setShowForm(true) }}
+                  style={{ padding: '4px 10px', marginRight: 8, background: '#3b82f6', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Edit</button>
+                <button onClick={() => handleDelete(vp.id)}
+                  style={{ padding: '4px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Delete</button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 export default function VendorsTab() {
+  const [subTab, setSubTab] = useState<'vendors' | 'vendor-products'>('vendors')
   const [vendors, setVendors] = useState<Vendor[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -128,6 +284,46 @@ export default function VendorsTab() {
 
   return (
     <div>
+      {/* Sub-tab Switcher */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
+        <button
+          onClick={() => setSubTab('vendors')}
+          style={{
+            padding: '8px 16px',
+            background: subTab === 'vendors' ? '#667eea' : '#f3f4f6',
+            color: subTab === 'vendors' ? 'white' : '#374151',
+            border: 'none',
+            borderRadius: 6,
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          🏪 Vendors / Nhà cung cấp
+        </button>
+        <button
+          onClick={() => setSubTab('vendor-products')}
+          style={{
+            padding: '8px 16px',
+            background: subTab === 'vendor-products' ? '#667eea' : '#f3f4f6',
+            color: subTab === 'vendor-products' ? 'white' : '#374151',
+            border: 'none',
+            borderRadius: 6,
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          📦 Vendor Products / SP nhà cung cấp
+        </button>
+      </div>
+
+      {/* Vendor Products Sub-tab */}
+      {subTab === 'vendor-products' && <VendorProductsSubTab />}
+
+      {/* Vendors Sub-tab */}
+      {subTab === 'vendors' && (
+        <>
       {/* Header */}
       <div style={{
         display: 'flex',
@@ -483,6 +679,8 @@ export default function VendorsTab() {
           </tbody>
         </table>
       </div>
+        </>
+      )}
     </div>
   )
 }

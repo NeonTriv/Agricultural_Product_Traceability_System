@@ -9,6 +9,7 @@ import { LogisticsController } from './logistics.controller';
 import { StorageController } from './storage.controller';
 import { PricingController } from './pricing.controller';
 import { TraceabilityController } from './traceability.controller';
+import { MasterDataController } from './master-data.controller';
 import { TraceService } from './trace.service';
 import { VendorService } from './vendor.service';
 import { ProcessingService } from './processing.service';
@@ -16,6 +17,7 @@ import { LogisticsService } from './logistics.service';
 import { StorageService } from './storage.service';
 import { PricingService } from './pricing.service';
 import { TraceabilityService } from './traceability.service';
+import { MasterDataService } from './master-data.service';
 import { AgricultureProduct } from './entities/agriculture-product.entity';
 import { Batch } from './entities/batch.entity';
 import { Farm } from './entities/farm.entity';
@@ -64,8 +66,8 @@ import { StoredIn } from './entities/stored-in.entity';
       StoredIn,
     ]),
   ],
-  controllers: [TraceController, ProductController, FarmController, VendorController, ProcessingController, LogisticsController, StorageController, PricingController, TraceabilityController],
-  providers: [TraceService, VendorService, ProcessingService, LogisticsService, StorageService, PricingService, TraceabilityService],
-  exports: [TraceService, VendorService, ProcessingService, LogisticsService, StorageService, PricingService, TraceabilityService],
+  controllers: [TraceController, ProductController, FarmController, VendorController, ProcessingController, LogisticsController, StorageController, PricingController, TraceabilityController, MasterDataController],
+  providers: [TraceService, VendorService, ProcessingService, LogisticsService, StorageService, PricingService, TraceabilityService, MasterDataService],
+  exports: [TraceService, VendorService, ProcessingService, LogisticsService, StorageService, PricingService, TraceabilityService, MasterDataService],
 })
 export class TraceModule {}

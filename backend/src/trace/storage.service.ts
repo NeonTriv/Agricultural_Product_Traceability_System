@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Warehouse } from './entities/warehouse.entity';
@@ -80,11 +80,20 @@ export class StorageService {
   }
 
   async deleteWarehouse(id: number) {
-    const result = await this.warehouseRepo.delete({ id });
-
-    if (result.affected === 0) {
+    // Check if warehouse exists with relations
+    const warehouse = await this.warehouseRepo.findOne({ where: { id } });
+    if (!warehouse) {
       throw new NotFoundException(`Warehouse with ID ${id} not found`);
     }
+
+    // Check for stored items
+    const storedItems = await this.storedInRepo.find({ where: { warehouseId: id } });
+    if (storedItems.length > 0) {
+      throw new BadRequestException(`Cannot delete warehouse. Please remove ${storedItems.length} stored item(s) first (tab Storage > Stored Items)`);
+    }
+
+    // Now safe to delete the warehouse
+    await this.warehouseRepo.delete({ id });
 
     return { success: true };
   }

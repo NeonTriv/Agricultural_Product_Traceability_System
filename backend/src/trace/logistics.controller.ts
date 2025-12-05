@@ -5,6 +5,13 @@ import { LogisticsService } from './logistics.service';
 export class LogisticsController {
   constructor(private readonly logisticsService: LogisticsService) {}
 
+  // Distributors endpoints
+  @Get('distributors')
+  @HttpCode(HttpStatus.OK)
+  async getAllDistributors() {
+    return this.logisticsService.getAllDistributors();
+  }
+
   // Carrier Companies endpoints
   @Get('carriers')
   @HttpCode(HttpStatus.OK)

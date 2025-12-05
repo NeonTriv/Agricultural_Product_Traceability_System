@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Shipment } from './shipment.entity';
 import { CarrierCompany } from './carrier-company.entity';
 
@@ -8,7 +8,7 @@ import { CarrierCompany } from './carrier-company.entity';
  */
 @Entity('TRANSPORLEG')
 export class TransportLeg {
-  @PrimaryColumn({ name: 'ID', type: 'int' })
+  @PrimaryGeneratedColumn({ name: 'ID', type: 'int' })
   id: number;
 
   @Column({ name: 'Shipment_ID', type: 'int' })
@@ -25,6 +25,12 @@ export class TransportLeg {
 
   @Column({ name: 'To_Location', type: 'nvarchar', length: 255 })
   toLocation: string;
+
+  @Column({ name: 'D_Time', type: 'datetimeoffset', nullable: true })
+  departureTime: Date | null;
+
+  @Column({ name: 'A_Time', type: 'datetimeoffset', nullable: true })
+  arrivalTime: Date | null;
 
   @Column({ name: 'CarrierCompany_TIN', type: 'varchar', length: 20 })
   carrierCompanyTin: string;
