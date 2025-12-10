@@ -26,7 +26,7 @@ export class VendorController {
       name: string;
       address: string;
       contactInfo?: string;
-      vendorType?: 'distributor' | 'retail';
+      vendorType?: 'distributor' | 'retail' | 'both';
       distributorType?: string;
       retailFormat?: string;
     },
@@ -43,6 +43,9 @@ export class VendorController {
       name?: string;
       address?: string;
       contactInfo?: string;
+      vendorType?: 'distributor' | 'retail' | 'both';
+      distributorType?: string;
+      retailFormat?: string;
     },
   ) {
     return this.vendorService.updateVendor(tin, body);

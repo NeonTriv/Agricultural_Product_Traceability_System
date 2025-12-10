@@ -23,11 +23,13 @@ export class ProcessingController {
   async createFacility(
     @Body()
     body: {
-      id: number;
       name: string;
-      address: string;
+      addressDetail: string;
       contactInfo?: string;
       licenseNumber: string;
+      longitude?: number;
+      latitude?: number;
+      provinceId?: number;
     },
   ) {
     return this.processingService.createFacility(body);
@@ -40,9 +42,12 @@ export class ProcessingController {
     @Body()
     body: {
       name?: string;
-      address?: string;
+      addressDetail?: string;
       contactInfo?: string;
       licenseNumber?: string;
+      longitude?: number;
+      latitude?: number;
+      provinceId?: number;
     },
   ) {
     return this.processingService.updateFacility(parseInt(id), body);
@@ -72,7 +77,6 @@ export class ProcessingController {
   async createOperation(
     @Body()
     body: {
-      id: number;
       packagingDate: string;
       weightPerUnit: number;
       processedBy?: string;
@@ -107,5 +111,33 @@ export class ProcessingController {
   @HttpCode(HttpStatus.OK)
   async deleteOperation(@Param('id') id: string) {
     return this.processingService.deleteOperation(parseInt(id));
+  }
+
+  // Process Steps endpoints
+  @Get('process-steps')
+  @HttpCode(HttpStatus.OK)
+  async getAllProcessSteps() {
+    return this.processingService.getAllProcessSteps();
+  }
+
+  @Post('process-steps')
+  @HttpCode(HttpStatus.CREATED)
+  async createProcessStep(
+    @Body()
+    body: {
+      processingId: number;
+      step: string;
+    },
+  ) {
+    return this.processingService.createProcessStep(body);
+  }
+
+  @Delete('process-steps/:processingId/:step')
+  @HttpCode(HttpStatus.OK)
+  async deleteProcessStep(
+    @Param('processingId') processingId: string,
+    @Param('step') step: string,
+  ) {
+    return this.processingService.deleteProcessStep(parseInt(processingId), decodeURIComponent(step));
   }
 }

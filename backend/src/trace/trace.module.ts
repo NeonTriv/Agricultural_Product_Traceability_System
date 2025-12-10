@@ -26,6 +26,7 @@ import { Country } from './entities/country.entity';
 import { Province } from './entities/province.entity';
 import { Processing } from './entities/processing.entity';
 import { ProcessingFacility } from './entities/processing-facility.entity';
+import { ProcessStep } from './entities/process-step.entity';
 import { VendorProduct } from './entities/vendor-product.entity';
 import { Vendor } from './entities/vendor.entity';
 import { Distributor } from './entities/distributor.entity';
@@ -51,6 +52,7 @@ import { StoredIn } from './entities/stored-in.entity';
       Province,
       Processing,
       ProcessingFacility,
+      ProcessStep,
       VendorProduct,
       Vendor,
       Distributor,

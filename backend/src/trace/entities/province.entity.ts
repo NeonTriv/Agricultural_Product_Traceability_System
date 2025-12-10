@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Country } from './country.entity';
 import { Farm } from './farm.entity';
 
@@ -8,7 +8,7 @@ import { Farm } from './farm.entity';
  */
 @Entity('PROVINCE')
 export class Province {
-  @PrimaryColumn({ name: 'ID', type: 'int' })
+  @PrimaryGeneratedColumn('increment', { name: 'ID' })
   id: number;
 
   @Column({ name: 'Name', type: 'nvarchar', length: 100 })

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 import VendorsTab from './VendorsTab'
+import FarmsTab from './FarmsTab'
 import ProcessingTab from './ProcessingTab'
 import LogisticsTab from './LogisticsTab'
 import StorageTab from './StorageTab'
@@ -122,20 +123,20 @@ function CategoriesSubTab({ baseUrl }: { baseUrl: string }) {
       )}
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead><tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-          <th style={{ padding: 12, textAlign: 'left' }}>ID</th>
-          <th style={{ padding: 12, textAlign: 'left' }}>Name</th>
-          <th style={{ padding: 12, textAlign: 'right' }}>Actions</th>
+          <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 14 }}>ID</th>
+          <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 14 }}>Name</th>
+          <th style={{ padding: 12, textAlign: 'right', fontWeight: 600, color: '#374151', fontSize: 14 }}>Actions</th>
         </tr></thead>
         <tbody>
           {categories.map(c => (
             <tr key={c.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-              <td style={{ padding: 12 }}>{c.id}</td>
-              <td style={{ padding: 12 }}>{c.name}</td>
+              <td style={{ padding: 12, color: '#374151', fontSize: 14 }}>{c.id}</td>
+              <td style={{ padding: 12, color: '#374151', fontSize: 14 }}>{c.name}</td>
               <td style={{ padding: 12, textAlign: 'right' }}>
                 <button onClick={() => { setEditingId(c.id); setFormData({ name: c.name }); setShowForm(true) }}
-                  style={{ padding: '4px 10px', marginRight: 8, background: '#3b82f6', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Edit</button>
+                  style={{ padding: '6px 12px', marginRight: 8, background: 'white', color: '#667eea', border: '1px solid #667eea', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Edit</button>
                 <button onClick={() => handleDelete(c.id)}
-                  style={{ padding: '4px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Delete</button>
+                  style={{ padding: '6px 12px', background: 'white', color: '#dc2626', border: '1px solid #dc2626', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Delete</button>
               </td>
             </tr>
           ))}
@@ -230,22 +231,22 @@ function TypesSubTab({ baseUrl }: { baseUrl: string }) {
       )}
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead><tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-          <th style={{ padding: 12, textAlign: 'left' }}>ID</th>
-          <th style={{ padding: 12, textAlign: 'left' }}>Variety</th>
-          <th style={{ padding: 12, textAlign: 'left' }}>Category</th>
-          <th style={{ padding: 12, textAlign: 'right' }}>Actions</th>
+          <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 14 }}>ID</th>
+          <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 14 }}>Variety</th>
+          <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 14 }}>Category</th>
+          <th style={{ padding: 12, textAlign: 'right', fontWeight: 600, color: '#374151', fontSize: 14 }}>Actions</th>
         </tr></thead>
         <tbody>
           {types.map(t => (
             <tr key={t.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-              <td style={{ padding: 12 }}>{t.id}</td>
-              <td style={{ padding: 12 }}>{t.variety}</td>
-              <td style={{ padding: 12 }}>{t.categoryName || '-'}</td>
+              <td style={{ padding: 12, color: '#374151', fontSize: 14 }}>{t.id}</td>
+              <td style={{ padding: 12, color: '#374151', fontSize: 14 }}>{t.variety}</td>
+              <td style={{ padding: 12, color: '#6b7280', fontSize: 14 }}>{t.categoryName || '-'}</td>
               <td style={{ padding: 12, textAlign: 'right' }}>
                 <button onClick={() => { setEditingId(t.id); setFormData({ variety: t.variety, categoryId: t.categoryId.toString() }); setShowForm(true) }}
-                  style={{ padding: '4px 10px', marginRight: 8, background: '#3b82f6', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Edit</button>
+                  style={{ padding: '6px 12px', marginRight: 8, background: 'white', color: '#667eea', border: '1px solid #667eea', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Edit</button>
                 <button onClick={() => handleDelete(t.id)}
-                  style={{ padding: '4px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Delete</button>
+                  style={{ padding: '6px 12px', background: 'white', color: '#dc2626', border: '1px solid #dc2626', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Delete</button>
               </td>
             </tr>
           ))}
@@ -345,19 +346,19 @@ function AgricultureProductsSubTab({ baseUrl, onUpdate }: { baseUrl: string, onU
       )}
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead><tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-          <th style={{ padding: 12, textAlign: 'left' }}>ID</th>
-          <th style={{ padding: 12, textAlign: 'left' }}>Name</th>
-          <th style={{ padding: 12, textAlign: 'left' }}>Type</th>
-          <th style={{ padding: 12, textAlign: 'left' }}>Image</th>
-          <th style={{ padding: 12, textAlign: 'right' }}>Actions</th>
+          <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 14 }}>ID</th>
+          <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 14 }}>Name</th>
+          <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 14 }}>Type</th>
+          <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 14 }}>Image</th>
+          <th style={{ padding: 12, textAlign: 'right', fontWeight: 600, color: '#374151', fontSize: 14 }}>Actions</th>
         </tr></thead>
         <tbody>
           {products.map(p => (
             <tr key={p.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-              <td style={{ padding: 12 }}>{p.id}</td>
-              <td style={{ padding: 12 }}>{p.name}</td>
-              <td style={{ padding: 12 }}>{p.typeName || '-'}</td>
-              <td style={{ padding: 12 }}>
+              <td style={{ padding: 12, color: '#374151', fontSize: 14 }}>{p.id}</td>
+              <td style={{ padding: 12, color: '#374151', fontSize: 14 }}>{p.name}</td>
+              <td style={{ padding: 12, color: '#6b7280', fontSize: 14 }}>{p.typeName || '-'}</td>
+              <td style={{ padding: 12, fontSize: 14 }}>
                 {p.imageUrl ? (
                   <img 
                     src={p.imageUrl} 
@@ -369,14 +370,113 @@ function AgricultureProductsSubTab({ baseUrl, onUpdate }: { baseUrl: string, onU
               </td>
               <td style={{ padding: 12, textAlign: 'right' }}>
                 <button onClick={() => { setEditingId(p.id); setFormData({ name: p.name, imageUrl: p.imageUrl || '', typeId: p.typeId.toString() }); setShowForm(true) }}
-                  style={{ padding: '4px 10px', marginRight: 8, background: '#3b82f6', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Edit</button>
+                  style={{ padding: '6px 12px', marginRight: 8, background: 'white', color: '#667eea', border: '1px solid #667eea', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Edit</button>
                 <button onClick={() => handleDelete(p.id)}
-                  style={{ padding: '4px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Delete</button>
+                  style={{ padding: '6px 12px', background: 'white', color: '#dc2626', border: '1px solid #dc2626', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Delete</button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+    </div>
+  )
+}
+
+// ==================== PROVINCES SUB-TAB ====================
+function ProvincesSubTab({ baseUrl }: { baseUrl: string }) {
+  const [provinces, setProvinces] = useState<Province[]>([])
+  const [countries, setCountries] = useState<Country[]>([])
+  const [loading, setLoading] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [formData, setFormData] = useState<{ name: string; countryId: string; countryName: string }>({ name: '', countryId: '', countryName: '' })
+  const [formErrors, setFormErrors] = useState<{[key: string]: boolean}>({})
+
+  useEffect(() => { loadProvinces(); loadCountries() }, [])
+
+  const loadProvinces = async () => { setLoading(true); try { const res = await axios.get(`${baseUrl}/api/products/provinces`); setProvinces(res.data) } catch (e) { console.error(e) } finally { setLoading(false) } }
+  const loadCountries = async () => { try { const res = await axios.get(`${baseUrl}/api/products/countries`); setCountries(res.data) } catch (e) { console.error(e) } }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); const errors: {[key: string]: boolean} = {}; if (!formData.name) errors.name = true; if (!formData.countryId && !formData.countryName) errors.country = true; if (Object.keys(errors).length) { setFormErrors(errors); return }
+    setLoading(true); try { const payload: any = { name: formData.name }; if (formData.countryId) payload.countryId = parseInt(formData.countryId); if (formData.countryName) payload.countryName = formData.countryName; await axios.post(`${baseUrl}/api/products/provinces`, payload); setFormData({ name: '', countryId: '', countryName: '' }); setShowForm(false); setFormErrors({}); loadProvinces() } catch (e) { console.error(e) } finally { setLoading(false) }
+  }
+
+  const handleDeleteProvince = async (id: number) => {
+    if (!confirm('Delete this province?')) return
+    setLoading(true)
+    try { 
+      await axios.delete(`${baseUrl}/api/products/provinces/${id}`)
+      loadProvinces()
+    } catch (e) { console.error(e) } 
+    finally { setLoading(false) }
+  }
+
+  return (
+    <div style={{ marginTop: 24 }}> 
+      {/* HEADER + ACTION BAR (Single Line) */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <div>
+           <h2 style={{ margin: 0, color: '#374151', fontSize: 24 }}>Provinces List</h2>
+           <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: 14 }}>Manage provinces and countries locations</p>
+        </div>
+        <button onClick={() => { setShowForm(!showForm); setFormData({ name: '', countryId: '', countryName: '' }); setFormErrors({}) }}
+          style={{ padding: '10px 20px', background: showForm ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, boxShadow: '0 2px 4px rgba(102,126,234,0.3)' }}>
+          {showForm ? 'Cancel' : '+ Add Province'}
+        </button>
+      </div>
+
+      {/* FORM */}
+      {showForm && (
+        <form onSubmit={handleSubmit} style={{ marginBottom: 24, padding: 24, background: 'white', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Province Name <span style={{ color: '#dc2626' }}>*</span></label>
+              <input type="text" value={formData.name} onChange={e => { setFormData({ ...formData, name: e.target.value }); setFormErrors({ ...formErrors, name: false }) }}
+                style={{ width: '100%', padding: 12, border: formErrors.name ? '2px solid #dc2626' : '2px solid #e5e7eb', borderRadius: 8 }} placeholder="e.g., Lam Dong" />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Country <span style={{ color: '#dc2626' }}>*</span></label>
+              <select value={formData.countryId} onChange={e => { setFormData({ ...formData, countryId: e.target.value }); setFormErrors({ ...formErrors, country: false }) }}
+                style={{ width: '100%', padding: 12, border: formErrors.country ? '2px solid #dc2626' : '2px solid #e5e7eb', borderRadius: 8, marginBottom: 8 }}>
+                <option value="">-- Select Country --</option>
+                {countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <input type="text" value={formData.countryName} onChange={e => { setFormData({ ...formData, countryName: e.target.value }); setFormErrors({ ...formErrors, country: false }) }}
+                placeholder="Or type new country name..." style={{ width: '100%', padding: 12, border: '2px solid #e5e7eb', borderRadius: 8 }} />
+            </div>
+          </div>
+          <button type="submit" disabled={loading} style={{ marginTop: 16, padding: '12px 24px', background: '#667eea', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
+            {loading ? 'Saving...' : 'Create Province'}
+          </button>
+        </form>
+      )}
+
+      {/* TABLE */}
+      <div style={{ background: 'white', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
+            <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>ID</th>
+            <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Province Name</th>
+            <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Country</th>
+            <th style={{ padding: 16, textAlign: 'right', fontWeight: 600, color: '#374151' }}>Actions</th>
+          </tr></thead>
+          <tbody>
+            {provinces.map(p => (
+              <tr key={p.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                <td style={{ padding: 16, color: '#374151', fontWeight: 600 }}>#{p.id}</td>
+                <td style={{ padding: 16, color: '#374151' }}>{p.name}</td>
+                <td style={{ padding: 16, color: '#6b7280' }}>{p.countryName}</td>
+                <td style={{ padding: 16, textAlign: 'right' }}>
+                  <button onClick={() => handleDeleteProvince(p.id)}
+                    style={{ padding: '6px 12px', border: '1px solid #ef4444', color: '#ef4444', borderRadius: 6, background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
@@ -388,10 +488,10 @@ export default function AdminPage() {
   const [loginError, setLoginError] = useState('')
 
   // Tab management
-  const [activeTab, setActiveTab] = useState<'products' | 'farms' | 'vendors' | 'processing' | 'logistics' | 'storage' | 'pricing'>('products')
+  const [activeTab, setActiveTab] = useState<'products' | 'provinces' | 'farms' | 'vendors' | 'processing' | 'logistics' | 'storage' | 'pricing'>('products')
   
   // Products sub-tab management
-  const [productSubTab, setProductSubTab] = useState<'batches' | 'categories' | 'types' | 'agriculture-products'>('batches')
+  const [masterSubTab, setMasterSubTab] = useState<'batches' | 'categories' | 'types' | 'agriculture-products'>('batches')
 
   // Product management state
   const [products, setProducts] = useState<Product[]>([])
@@ -418,23 +518,6 @@ export default function AdminPage() {
 
   // Form validation state
   const [formErrors, setFormErrors] = useState<{[key: string]: boolean}>({})
-  const [farmFormErrors, setFarmFormErrors] = useState<{[key: string]: boolean}>({})
-
-  // Farm management state
-  const [farmsList, setFarmsList] = useState<Farm[]>([])
-  const [provinces, setProvinces] = useState<Province[]>([])
-  const [countries, setCountries] = useState<Country[]>([])
-  const [showFarmForm, setShowFarmForm] = useState(false)
-  const [selectedProvince, setSelectedProvince] = useState<Province | null>(null)
-
-  const [farmFormData, setFarmFormData] = useState({
-    name: '',
-    ownerName: '',
-    contactInfo: '',
-    longitude: '',
-    latitude: '',
-    provinceId: ''
-  })
 
   // Vendor management state
   const [vendorsList, setVendorsList] = useState<Vendor[]>([])
@@ -453,6 +536,11 @@ export default function AdminPage() {
 
   const baseUrl = 'http://localhost:5000'
 
+  // Country creation state (quick add)
+  const [newCountryName, setNewCountryName] = useState('')
+  const [creatingCountry, setCreatingCountry] = useState(false)
+  const [createCountryError, setCreateCountryError] = useState('')
+
   // Check if user is already logged in (from sessionStorage)
   useEffect(() => {
     const savedAuth = sessionStorage.getItem('adminAuth')
@@ -468,9 +556,6 @@ export default function AdminPage() {
       loadAgricultureProducts()
       loadTypes()
       loadVendorProducts()
-      loadProvinces()
-      loadCountries()
-      loadFarmsList()
     }
   }, [isAuthenticated])
 
@@ -510,94 +595,7 @@ export default function AdminPage() {
     }
   }
 
-  const loadProvinces = async () => {
-    try {
-      const response = await axios.get(`${baseUrl}/api/products/provinces`)
-      setProvinces(response.data)
-    } catch (e: any) {
-      console.error('Failed to load provinces:', e)
-    }
-  }
 
-  const loadCountries = async () => {
-    try {
-      const response = await axios.get(`${baseUrl}/api/products/countries`)
-      setCountries(response.data)
-    } catch (e: any) {
-      console.error('Failed to load countries:', e)
-    }
-  }
-
-  const loadFarmsList = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const response = await axios.get(`${baseUrl}/api/farms`)
-      setFarmsList(response.data)
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load farms')
-      console.error('API Error:', e)
-      setFarmsList([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleFarmSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // Validate required fields
-    const errors: {[key: string]: boolean} = {}
-    if (!farmFormData.name) errors.name = true
-    if (!farmFormData.provinceId) errors.provinceId = true
-    
-    if (Object.keys(errors).length > 0) {
-      setFarmFormErrors(errors)
-      return
-    }
-    
-    setLoading(true)
-    setError(null)
-    setFarmFormErrors({})
-
-    try {
-      const createData = {
-        name: farmFormData.name,
-        ownerName: farmFormData.ownerName || undefined,
-        contactInfo: farmFormData.contactInfo || undefined,
-        longitude: farmFormData.longitude ? parseFloat(farmFormData.longitude) : undefined,
-        latitude: farmFormData.latitude ? parseFloat(farmFormData.latitude) : undefined,
-        provinceId: parseInt(farmFormData.provinceId),
-      }
-      await axios.post(`${baseUrl}/api/farms`, createData)
-      await loadFarmsList()
-      resetFarmForm()
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to create farm')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const resetFarmForm = () => {
-    setFarmFormData({
-      name: '',
-      ownerName: '',
-      contactInfo: '',
-      longitude: '',
-      latitude: '',
-      provinceId: ''
-    })
-    setSelectedProvince(null)
-    setShowFarmForm(false)
-    setFarmFormErrors({})
-  }
-
-  const handleProvinceChange = (provinceId: string) => {
-    setFarmFormData({ ...farmFormData, provinceId })
-    const province = provinces.find(p => p.id === parseInt(provinceId))
-    setSelectedProvince(province || null)
-  }
 
   // Handle login
   const handleLogin = (e: React.FormEvent) => {
@@ -985,7 +983,6 @@ export default function AdminPage() {
           onClick={() => {
             setActiveTab('products')
             setShowForm(false)
-            setShowFarmForm(false)
           }}
           style={{
             padding: '12px 24px',
@@ -1006,7 +1003,6 @@ export default function AdminPage() {
           onClick={() => {
             setActiveTab('farms')
             setShowForm(false)
-            setShowFarmForm(false)
           }}
           style={{
             padding: '12px 24px',
@@ -1025,9 +1021,28 @@ export default function AdminPage() {
         </button>
         <button
           onClick={() => {
+            setActiveTab('provinces')
+            setShowForm(false)
+          }}
+          style={{
+            padding: '12px 24px',
+            background: activeTab === 'provinces' ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent',
+            color: activeTab === 'provinces' ? 'white' : '#6b7280',
+            border: 'none',
+            borderBottom: activeTab === 'provinces' ? '3px solid #667eea' : 'none',
+            borderRadius: '8px 8px 0 0',
+            fontSize: 16,
+            fontWeight: 600,
+            cursor: 'pointer',
+            transition: 'all 0.2s'
+          }}
+        >
+          Provinces / Tỉnh thành
+        </button>
+        <button
+          onClick={() => {
             setActiveTab('vendors')
             setShowForm(false)
-            setShowFarmForm(false)
           }}
           style={{
             padding: '12px 24px',
@@ -1048,7 +1063,6 @@ export default function AdminPage() {
           onClick={() => {
             setActiveTab('processing')
             setShowForm(false)
-            setShowFarmForm(false)
           }}
           style={{
             padding: '12px 24px',
@@ -1069,7 +1083,6 @@ export default function AdminPage() {
           onClick={() => {
             setActiveTab('logistics')
             setShowForm(false)
-            setShowFarmForm(false)
           }}
           style={{
             padding: '12px 24px',
@@ -1090,7 +1103,6 @@ export default function AdminPage() {
           onClick={() => {
             setActiveTab('storage')
             setShowForm(false)
-            setShowFarmForm(false)
           }}
           style={{
             padding: '12px 24px',
@@ -1111,7 +1123,6 @@ export default function AdminPage() {
           onClick={() => {
             setActiveTab('pricing')
             setShowForm(false)
-            setShowFarmForm(false)
           }}
           style={{
             padding: '12px 24px',
@@ -1144,11 +1155,11 @@ export default function AdminPage() {
           fontWeight: 700,
           margin: 0
         }}>
-          {activeTab === 'products' ? 'Product Information Management' : activeTab === 'farms' ? 'Farm Management' : activeTab === 'vendors' ? 'Vendor Management' : activeTab === 'processing' ? 'Processing Management' : activeTab === 'logistics' ? 'Logistics Management' : activeTab === 'storage' ? 'Storage Management' : 'Pricing Management'}
+          {activeTab === 'products' ? 'Product Information Management' : activeTab === 'farms' ? 'Farm Management' : activeTab === 'provinces' ? 'Provinces Management' : activeTab === 'vendors' ? 'Vendor Management' : activeTab === 'processing' ? 'Processing Management' : activeTab === 'logistics' ? 'Logistics Management' : activeTab === 'storage' ? 'Storage Management' : 'Pricing Management'}
         </h1>
-        {activeTab !== 'processing' && activeTab !== 'logistics' && activeTab !== 'storage' && activeTab !== 'pricing' && activeTab !== 'vendors' && (
+        {activeTab === 'products' && (
           <button
-            onClick={() => activeTab === 'products' ? setShowForm(!showForm) : activeTab === 'farms' ? setShowFarmForm(!showFarmForm) : null}
+            onClick={() => setShowForm(!showForm)}
             style={{
               padding: '12px 24px',
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -1161,9 +1172,7 @@ export default function AdminPage() {
               boxShadow: '0 2px 4px rgba(102,126,234,0.4)'
             }}
           >
-            {activeTab === 'products'
-              ? (showForm ? 'Cancel' : '+ Add New Product')
-              : (showFarmForm ? 'Cancel' : '+ Add New Farm')}
+            {showForm ? 'Cancel' : '+ Add New Product'}
           </button>
         )}
       </div>
@@ -1181,77 +1190,50 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* Products Tab with Sub-tabs */}
+      {/* Products Tab with Sub-tabs - Master Data Navigation */}
       {activeTab === 'products' && (
-        <>
-          {/* Sub-tab Switcher */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-            <button
-              onClick={() => setProductSubTab('batches')}
-              style={{
-                padding: '8px 16px',
-                background: productSubTab === 'batches' ? '#667eea' : '#f3f4f6',
-                color: productSubTab === 'batches' ? 'white' : '#374151',
-                border: 'none',
-                borderRadius: 6,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              🌾 Batches / Lô hàng
-            </button>
-            <button
-              onClick={() => setProductSubTab('categories')}
-              style={{
-                padding: '8px 16px',
-                background: productSubTab === 'categories' ? '#667eea' : '#f3f4f6',
-                color: productSubTab === 'categories' ? 'white' : '#374151',
-                border: 'none',
-                borderRadius: 6,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              📁 Categories / Danh mục
-            </button>
-            <button
-              onClick={() => setProductSubTab('types')}
-              style={{
-                padding: '8px 16px',
-                background: productSubTab === 'types' ? '#667eea' : '#f3f4f6',
-                color: productSubTab === 'types' ? 'white' : '#374151',
-                border: 'none',
-                borderRadius: 6,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              🏷️ Types / Loại
-            </button>
-            <button
-              onClick={() => setProductSubTab('agriculture-products')}
-              style={{
-                padding: '8px 16px',
-                background: productSubTab === 'agriculture-products' ? '#667eea' : '#f3f4f6',
-                color: productSubTab === 'agriculture-products' ? 'white' : '#374151',
-                border: 'none',
-                borderRadius: 6,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: 'pointer'
-              }}
-            >
-              🥬 Agriculture Products / Nông sản
-            </button>
+        <div style={{
+          background: 'white',
+          borderRadius: 12,
+          marginBottom: 16,
+          padding: 12,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          flexWrap: 'wrap'
+        }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button onClick={() => setMasterSubTab('batches')} style={{ padding: '8px 12px', borderRadius: 8, border: masterSubTab === 'batches' ? '2px solid #667eea' : '1px solid #e5e7eb', background: masterSubTab === 'batches' ? '#eef2ff' : 'white', fontWeight: masterSubTab === 'batches' ? 600 : 500, cursor: 'pointer' }}>🌾 Batches</button>
+            <button onClick={() => setMasterSubTab('categories')} style={{ padding: '8px 12px', borderRadius: 8, border: masterSubTab === 'categories' ? '2px solid #667eea' : '1px solid #e5e7eb', background: masterSubTab === 'categories' ? '#eef2ff' : 'white', fontWeight: masterSubTab === 'categories' ? 600 : 500, cursor: 'pointer' }}>📁 Categories</button>
+            <button onClick={() => setMasterSubTab('types')} style={{ padding: '8px 12px', borderRadius: 8, border: masterSubTab === 'types' ? '2px solid #667eea' : '1px solid #e5e7eb', background: masterSubTab === 'types' ? '#eef2ff' : 'white', fontWeight: masterSubTab === 'types' ? 600 : 500, cursor: 'pointer' }}>🏷️ Types</button>
+            <button onClick={() => setMasterSubTab('agriculture-products')} style={{ padding: '8px 12px', borderRadius: 8, border: masterSubTab === 'agriculture-products' ? '2px solid #667eea' : '1px solid #e5e7eb', background: masterSubTab === 'agriculture-products' ? '#eef2ff' : 'white', fontWeight: masterSubTab === 'agriculture-products' ? 600 : 500, cursor: 'pointer' }}>🥬 Agriculture Products</button>
           </div>
-        </>
+
+          {masterSubTab === 'batches' && (
+            <button
+              onClick={() => setShowForm(!showForm)}
+              style={{
+                padding: '12px 24px',
+                background: showForm ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 14,
+                fontWeight: 600,
+                cursor: 'pointer',
+                boxShadow: '0 2px 4px rgba(102,126,234,0.35)'
+              }}
+            >
+              {showForm ? 'Cancel' : '+ Add New Product'}
+            </button>
+          )}
+        </div>
       )}
 
       {/* Product Form - Only show in Batches sub-tab */}
-      {activeTab === 'products' && productSubTab === 'batches' && showForm && (
+      {activeTab === 'products' && masterSubTab === 'batches' && showForm && (
         <div style={{
           background: 'white',
           padding: 24,
@@ -1491,7 +1473,7 @@ export default function AdminPage() {
       )}
 
       {/* Products List - Only show in Batches sub-tab */}
-      {activeTab === 'products' && productSubTab === 'batches' && (
+      {activeTab === 'products' && masterSubTab === 'batches' && (
         <div style={{
           background: 'white',
           borderRadius: 12,
@@ -1501,11 +1483,11 @@ export default function AdminPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-              <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Product Name</th>
-              <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Variety</th>
-              <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Grade</th>
-              <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Harvest Date</th>
-              <th style={{ padding: 16, textAlign: 'right', fontWeight: 600, color: '#374151' }}>Actions</th>
+              <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 14 }}>Product Name</th>
+              <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 14 }}>Variety</th>
+              <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 14 }}>Grade</th>
+              <th style={{ padding: 12, textAlign: 'left', fontWeight: 600, color: '#374151', fontSize: 14 }}>Harvest Date</th>
+              <th style={{ padding: 12, textAlign: 'center', fontWeight: 600, color: '#374151', fontSize: 14 }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -1529,26 +1511,28 @@ export default function AdminPage() {
                     borderBottom: index < products.length - 1 ? '1px solid #e5e7eb' : 'none'
                   }}
                 >
-                  <td style={{ padding: 16, fontWeight: 600 }}>{product.name}</td>
-                  <td style={{ padding: 16, color: '#6b7280' }}>{product.variety || '-'}</td>
-                  <td style={{ padding: 16 }}>
-                    {product.grade && (
+                  <td style={{ padding: 12, fontWeight: 500, color: '#374151', fontSize: 14 }}>{product.name}</td>
+                  <td style={{ padding: 12, color: '#6b7280', fontSize: 14 }}>{product.variety || '-'}</td>
+                  <td style={{ padding: 12, fontSize: 14 }}>
+                    {product.grade ? (
                       <span style={{
                         padding: '4px 12px',
                         background: product.grade === 'A' ? '#dcfce7' : product.grade === 'Premium' ? '#fef3c7' : '#e5e7eb',
                         color: product.grade === 'A' ? '#166534' : product.grade === 'Premium' ? '#92400e' : '#374151',
-                        borderRadius: 6,
-                        fontSize: 14,
-                        fontWeight: 600
+                        borderRadius: 4,
+                        fontSize: 12,
+                        fontWeight: 500
                       }}>
                         {product.grade}
                       </span>
+                    ) : (
+                      <span style={{ color: '#6b7280' }}>-</span>
                     )}
                   </td>
-                  <td style={{ padding: 16, color: '#6b7280' }}>
+                  <td style={{ padding: 12, color: '#6b7280', fontSize: 14 }}>
                     {product.harvestDate ? new Date(product.harvestDate).toLocaleDateString('vi-VN') : '-'}
                   </td>
-                  <td style={{ padding: 16, textAlign: 'right' }}>
+                  <td style={{ padding: 12, textAlign: 'center' }}>
                     <button
                       onClick={() => handleEdit(product)}
                       style={{
@@ -1558,8 +1542,8 @@ export default function AdminPage() {
                         color: '#667eea',
                         border: '1px solid #667eea',
                         borderRadius: 6,
-                        fontSize: 14,
-                        fontWeight: 500,
+                        fontSize: 12,
+                        fontWeight: 600,
                         cursor: 'pointer'
                       }}
                     >
@@ -1573,8 +1557,8 @@ export default function AdminPage() {
                         color: '#dc2626',
                         border: '1px solid #dc2626',
                         borderRadius: 6,
-                        fontSize: 14,
-                        fontWeight: 500,
+                        fontSize: 12,
+                        fontWeight: 600,
                         cursor: 'pointer'
                       }}
                     >
@@ -1589,289 +1573,16 @@ export default function AdminPage() {
       </div>
       )}
 
-      {/* Categories Sub-tab */}
-      {activeTab === 'products' && productSubTab === 'categories' && (
-        <CategoriesSubTab baseUrl={baseUrl} />
-      )}
+      {/* Master Data Sub-tabs Content */}
+      {activeTab === 'products' && masterSubTab === 'categories' && (<CategoriesSubTab baseUrl={baseUrl} />)}
+      {activeTab === 'products' && masterSubTab === 'types' && (<TypesSubTab baseUrl={baseUrl} />)}
+      {activeTab === 'products' && masterSubTab === 'agriculture-products' && (<AgricultureProductsSubTab baseUrl={baseUrl} onUpdate={loadAgricultureProducts} />)}
 
-      {/* Types Sub-tab */}
-      {activeTab === 'products' && productSubTab === 'types' && (
-        <TypesSubTab baseUrl={baseUrl} />
-      )}
+      {/* Farms Tab - Full featured component with certifications */}
+      {activeTab === 'farms' && <FarmsTab />}
 
-      {/* Agriculture Products Sub-tab */}
-      {activeTab === 'products' && productSubTab === 'agriculture-products' && (
-        <AgricultureProductsSubTab baseUrl={baseUrl} onUpdate={loadAgricultureProducts} />
-      )}
-
-      {/* Farm Form */}
-      {activeTab === 'farms' && showFarmForm && (
-        <div style={{
-          background: 'white',
-          padding: 24,
-          borderRadius: 12,
-          marginBottom: 24,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-        }}>
-          <h2 style={{ marginTop: 0, color: '#374151' }}>Add New Farm</h2>
-          <form onSubmit={handleFarmSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              {/* Farm Name - Required */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                  Farm Name / Tên trang trại <span style={{ color: '#dc2626' }}>*</span>
-                </label>
-                <input
-                  type="text"
-                  value={farmFormData.name}
-                  onChange={e => {
-                    setFarmFormData({ ...farmFormData, name: e.target.value })
-                    if (e.target.value) setFarmFormErrors({ ...farmFormErrors, name: false })
-                  }}
-                  placeholder="e.g., Green Valley Farm"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: farmFormErrors.name ? '2px solid #dc2626' : '2px solid #e5e7eb',
-                    borderRadius: 8,
-                    fontSize: 16
-                  }}
-                />
-                {farmFormErrors.name && (
-                  <span style={{ color: '#dc2626', fontSize: 12 }}>Vui lòng nhập tên Farm</span>
-                )}
-              </div>
-
-              {/* Province Selection - Required */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                  Province / Tỉnh thành <span style={{ color: '#dc2626' }}>*</span>
-                </label>
-                <select
-                  value={farmFormData.provinceId}
-                  onChange={e => {
-                    handleProvinceChange(e.target.value)
-                    if (e.target.value) setFarmFormErrors({ ...farmFormErrors, provinceId: false })
-                  }}
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: farmFormErrors.provinceId ? '2px solid #dc2626' : '2px solid #e5e7eb',
-                    borderRadius: 8,
-                    fontSize: 16,
-                    backgroundColor: 'white'
-                  }}
-                >
-                  <option value="">-- Chọn tỉnh/thành --</option>
-                  {provinces.map(province => (
-                    <option key={province.id} value={province.id}>
-                      {province.name}
-                    </option>
-                  ))}
-                </select>
-                {farmFormErrors.provinceId && (
-                  <span style={{ color: '#dc2626', fontSize: 12 }}>Vui lòng chọn Province</span>
-                )}
-              </div>
-
-              {/* Owner Name */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                  Owner Name / Chủ trang trại
-                </label>
-                <input
-                  type="text"
-                  value={farmFormData.ownerName}
-                  onChange={e => setFarmFormData({ ...farmFormData, ownerName: e.target.value })}
-                  placeholder="e.g., Nguyen Van A"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: 8,
-                    fontSize: 16
-                  }}
-                />
-              </div>
-
-              {/* Country (Auto-filled) */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                  Country / Quốc gia
-                </label>
-                <input
-                  type="text"
-                  value={selectedProvince?.countryName || ''}
-                  disabled
-                  placeholder="Auto-filled from province"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: 8,
-                    fontSize: 16,
-                    background: '#f9fafb',
-                    color: '#6b7280'
-                  }}
-                />
-              </div>
-
-              {/* Contact Info */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                  Contact Info / Thông tin liên hệ
-                </label>
-                <input
-                  type="text"
-                  value={farmFormData.contactInfo}
-                  onChange={e => setFarmFormData({ ...farmFormData, contactInfo: e.target.value })}
-                  placeholder="Phone, email, etc."
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: 8,
-                    fontSize: 16
-                  }}
-                />
-              </div>
-
-              {/* Empty placeholder */}
-              <div></div>
-
-              {/* Longitude */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                  Longitude / Kinh độ
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  value={farmFormData.longitude}
-                  onChange={e => setFarmFormData({ ...farmFormData, longitude: e.target.value })}
-                  placeholder="e.g., 105.8342"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: 8,
-                    fontSize: 16
-                  }}
-                />
-              </div>
-
-              {/* Latitude */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                  Latitude / Vĩ độ
-                </label>
-                <input
-                  type="number"
-                  step="any"
-                  value={farmFormData.latitude}
-                  onChange={e => setFarmFormData({ ...farmFormData, latitude: e.target.value })}
-                  placeholder="e.g., 21.0285"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: 8,
-                    fontSize: 16
-                  }}
-                />
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', gap: 16, marginTop: 24 }}>
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  padding: '12px 24px',
-                  background: loading ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 8,
-                  fontSize: 16,
-                  fontWeight: 600,
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  opacity: loading ? 0.6 : 1
-                }}
-              >
-                {loading ? 'Creating...' : 'Create Farm'}
-              </button>
-              <button
-                type="button"
-                onClick={resetFarmForm}
-                style={{
-                  padding: '12px 24px',
-                  background: 'white',
-                  color: '#6b7280',
-                  border: '2px solid #e5e7eb',
-                  borderRadius: 8,
-                  fontSize: 16,
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Farms List */}
-      {activeTab === 'farms' && (
-        <div style={{
-          background: 'white',
-          borderRadius: 12,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-          overflow: 'hidden'
-        }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Farm Name</th>
-                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Owner</th>
-                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Contact</th>
-                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Province</th>
-                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Country</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && !farmsList.length ? (
-                <tr>
-                  <td colSpan={5} style={{ padding: 24, textAlign: 'center', color: '#6b7280' }}>
-                    Loading farms...
-                  </td>
-                </tr>
-              ) : farmsList.length === 0 ? (
-                <tr>
-                  <td colSpan={5} style={{ padding: 24, textAlign: 'center', color: '#6b7280' }}>
-                    No farms found. Add your first farm!
-                  </td>
-                </tr>
-              ) : (
-                farmsList.map((farm, index) => (
-                  <tr
-                    key={farm.id}
-                    style={{
-                      borderBottom: index < farmsList.length - 1 ? '1px solid #e5e7eb' : 'none'
-                    }}
-                  >
-                    <td style={{ padding: 16, fontWeight: 600 }}>{farm.name}</td>
-                    <td style={{ padding: 16, color: '#6b7280' }}>{farm.ownerName || '-'}</td>
-                    <td style={{ padding: 16, color: '#6b7280' }}>{farm.contactInfo || '-'}</td>
-                    <td style={{ padding: 16, color: '#6b7280' }}>{farm.provinceName || '-'}</td>
-                    <td style={{ padding: 16, color: '#6b7280' }}>{farm.countryName || '-'}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {/* Provinces Tab */}
+      {activeTab === 'provinces' && (<ProvincesSubTab baseUrl={baseUrl} />)}
 
       {/* Vendors Tab */}
       {activeTab === 'vendors' && <VendorsTab />}

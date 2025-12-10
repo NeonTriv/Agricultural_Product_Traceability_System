@@ -24,19 +24,25 @@ export class VendorService {
       relations: ['distributors', 'retails'],
     });
 
-    return vendors.map((v) => ({
-      tin: v.tin,
-      name: v.name,
-      address: v.address,
-      contactInfo: v.contactInfo,
-      type: v.distributors?.length > 0
-        ? 'distributor'
-        : v.retails?.length > 0
-        ? 'retail'
-        : 'vendor',
-      distributorType: v.distributors?.[0]?.type,
-      retailFormat: v.retails?.[0]?.format,
-    }));
+    return vendors.map((v) => {
+      const isDistributor = v.distributors?.length > 0;
+      const isRetail = v.retails?.length > 0;
+      let type: 'vendor' | 'distributor' | 'retail' | 'both' = 'vendor';
+      
+      if (isDistributor && isRetail) type = 'both';
+      else if (isDistributor) type = 'distributor';
+      else if (isRetail) type = 'retail';
+
+      return {
+        tin: v.tin,
+        name: v.name,
+        address: v.address,
+        contactInfo: v.contactInfo,
+        type,
+        distributorType: v.distributors?.[0]?.type,
+        retailFormat: v.retails?.[0]?.format,
+      };
+    });
   }
 
   async getVendor(tin: string) {
@@ -49,16 +55,20 @@ export class VendorService {
       throw new NotFoundException(`Vendor with TIN ${tin} not found`);
     }
 
+    const isDistributor = vendor.distributors?.length > 0;
+    const isRetail = vendor.retails?.length > 0;
+    let type: 'vendor' | 'distributor' | 'retail' | 'both' = 'vendor';
+    
+    if (isDistributor && isRetail) type = 'both';
+    else if (isDistributor) type = 'distributor';
+    else if (isRetail) type = 'retail';
+
     return {
       tin: vendor.tin,
       name: vendor.name,
       address: vendor.address,
       contactInfo: vendor.contactInfo,
-      type: vendor.distributors?.length > 0
-        ? 'distributor'
-        : vendor.retails?.length > 0
-        ? 'retail'
-        : 'vendor',
+      type,
       distributorType: vendor.distributors?.[0]?.type,
       retailFormat: vendor.retails?.[0]?.format,
     };
@@ -69,10 +79,22 @@ export class VendorService {
     name: string;
     address: string;
     contactInfo?: string;
-    vendorType?: 'distributor' | 'retail';
+    vendorType?: 'distributor' | 'retail' | 'both';
     distributorType?: string;
     retailFormat?: string;
   }) {
+    // Validate required fields for distributor/retail
+    if (data.vendorType === 'distributor' || data.vendorType === 'both') {
+      if (!data.distributorType) {
+        throw new BadRequestException('Distributor Type is required for distributor vendors');
+      }
+    }
+    if (data.vendorType === 'retail' || data.vendorType === 'both') {
+      if (!data.retailFormat) {
+        throw new BadRequestException('Retail Format is required for retail vendors');
+      }
+    }
+
     // Create base vendor
     const vendor = this.vendorRepo.create({
       tin: data.tin,
@@ -84,13 +106,15 @@ export class VendorService {
     await this.vendorRepo.save(vendor);
 
     // Create distributor or retail if specified
-    if (data.vendorType === 'distributor' && data.distributorType) {
+    if ((data.vendorType === 'distributor' || data.vendorType === 'both') && data.distributorType) {
       const distributor = this.distributorRepo.create({
         vendorTin: data.tin,
         type: data.distributorType,
       });
       await this.distributorRepo.save(distributor);
-    } else if (data.vendorType === 'retail' && data.retailFormat) {
+    }
+    
+    if ((data.vendorType === 'retail' || data.vendorType === 'both') && data.retailFormat) {
       const retail = this.retailRepo.create({
         vendorTin: data.tin,
         format: data.retailFormat,
@@ -107,19 +131,85 @@ export class VendorService {
       name?: string;
       address?: string;
       contactInfo?: string;
+      vendorType?: 'distributor' | 'retail' | 'both';
+      distributorType?: string;
+      retailFormat?: string;
     },
   ) {
-    const vendor = await this.vendorRepo.findOne({ where: { tin } });
+    // Validate required fields for distributor/retail
+    if (data.vendorType === 'distributor' && !data.distributorType) {
+      throw new BadRequestException('Distributor Type is required for distributor vendors');
+    }
+    if (data.vendorType === 'retail' && !data.retailFormat) {
+      throw new BadRequestException('Retail Format is required for retail vendors');
+    }
+    if (data.vendorType === 'both' && (!data.distributorType || !data.retailFormat)) {
+      throw new BadRequestException('Both Distributor Type and Retail Format are required for both vendors');
+    }
+
+    const vendor = await this.vendorRepo.findOne({ 
+      where: { tin },
+      relations: ['distributors', 'retails']
+    });
 
     if (!vendor) {
       throw new NotFoundException(`Vendor with TIN ${tin} not found`);
     }
 
+    // Update vendor base info
     if (data.name) vendor.name = data.name;
     if (data.address) vendor.address = data.address;
     if (data.contactInfo !== undefined) vendor.contactInfo = data.contactInfo;
 
     await this.vendorRepo.save(vendor);
+
+    // Handle type changes
+    if (data.vendorType) {
+      const hasDistributor = vendor.distributors?.length > 0;
+      const hasRetail = vendor.retails?.length > 0;
+
+      if (data.vendorType === 'distributor') {
+        // Keep distributor, remove retail
+        if (!hasDistributor && data.distributorType) {
+          const distributor = this.distributorRepo.create({
+            vendorTin: tin,
+            type: data.distributorType,
+          });
+          await this.distributorRepo.save(distributor);
+        }
+        if (hasRetail) {
+          await this.retailRepo.delete({ vendorTin: tin });
+        }
+      } else if (data.vendorType === 'retail') {
+        // Keep retail, remove distributor
+        if (!hasRetail && data.retailFormat) {
+          const retail = this.retailRepo.create({
+            vendorTin: tin,
+            format: data.retailFormat,
+          });
+          await this.retailRepo.save(retail);
+        }
+        if (hasDistributor) {
+          await this.distributorRepo.delete({ vendorTin: tin });
+        }
+      } else if (data.vendorType === 'both') {
+        // Create both if not exist
+        if (!hasDistributor && data.distributorType) {
+          const distributor = this.distributorRepo.create({
+            vendorTin: tin,
+            type: data.distributorType,
+          });
+          await this.distributorRepo.save(distributor);
+        }
+        if (!hasRetail && data.retailFormat) {
+          const retail = this.retailRepo.create({
+            vendorTin: tin,
+            format: data.retailFormat,
+          });
+          await this.retailRepo.save(retail);
+        }
+      }
+    }
 
     return { success: true, tin: vendor.tin };
   }

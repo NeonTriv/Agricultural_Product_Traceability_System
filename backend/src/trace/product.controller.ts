@@ -29,6 +29,42 @@ export class ProductController {
     return this.traceService.getAllCountries();
   }
 
+  @Post('countries')
+  @HttpCode(HttpStatus.CREATED)
+  async createCountry(
+    @Body()
+    body: {
+      name: string;
+    },
+  ) {
+    return this.traceService.createCountry(body);
+  }
+
+  @Post('provinces')
+  @HttpCode(HttpStatus.CREATED)
+  async createProvince(
+    @Body()
+    body: {
+      name: string;
+      countryId?: number;
+      countryName?: string;
+    },
+  ) {
+    return this.traceService.createProvince(body);
+  }
+
+  @Delete('provinces/:id')
+  @HttpCode(HttpStatus.OK)
+  async deleteProvince(@Param('id') id: string) {
+    return this.traceService.deleteProvince(parseInt(id));
+  }
+
+  @Delete('countries/:id')
+  @HttpCode(HttpStatus.OK)
+  async deleteCountry(@Param('id') id: string) {
+    return this.traceService.deleteCountry(parseInt(id));
+  }
+
   @Get('types')
   @HttpCode(HttpStatus.OK)
   async getAllTypes() {

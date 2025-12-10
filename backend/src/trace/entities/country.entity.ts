@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { Province } from './province.entity';
 
 /**
@@ -7,7 +7,7 @@ import { Province } from './province.entity';
  */
 @Entity('COUNTRY')
 export class Country {
-  @PrimaryColumn({ name: 'ID', type: 'int' })
+  @PrimaryGeneratedColumn('increment', { name: 'ID' })
   id: number;
 
   @Column({ name: 'Name', type: 'nvarchar', length: 100 })

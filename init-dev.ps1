@@ -2,9 +2,9 @@
 # It checks if the database exists and only runs the setup scripts if needed.
 
 param(
-  [string]$SqlServer = "localhost,1433",
-  [string]$AppDb = "Traceability",
-  [string]$SaUser = "sa"
+    [string]$SqlServer = "localhost,1433",
+    [string]$AppDb = "Traceability",
+    [string]$SaUser = "test"
 )
 
 # Function to check if the database exists using sqlcmd
@@ -16,8 +16,8 @@ function Test-DatabaseExists {
         [string]$Password
     )
     
-    $query = "SELECT DB_ID('$Database')"
-    $sqlCmdArgs = @("-S", $Server, "-Q", $query, "-h-1")
+    $query = "SET NOCOUNT ON; SELECT DB_ID('$Database')"
+    $sqlCmdArgs = @("-S", $Server, "-Q", $query, "-h-1", "-W", "-b")
 
     if ([string]::IsNullOrWhiteSpace($Password)) {
         # Use Windows Integrated Authentication
@@ -36,12 +36,12 @@ function Test-DatabaseExists {
         return $false
     }
 
-    # If the database does not exist, sqlcmd returns "NULL" or an empty string.
-    if ($result -and $result.Trim() -ne "NULL" -and $result.Trim() -ne "") {
-        return $true
-    } else {
-        return $false
-    }
+    # If the database exists, DB_ID returns a positive integer; otherwise NULL/empty
+    $trimmed = if ($null -ne $result) { $result.Trim() } else { "" }
+    if ([string]::IsNullOrWhiteSpace($trimmed)) { return $false }
+    if ($trimmed -eq "NULL") { return $false }
+    $idVal = 0
+    if ([int]::TryParse($trimmed, [ref]$idVal) -and $idVal -gt 0) { return $true } else { return $false }
 }
 
 # --- Main Execution ---
@@ -60,6 +60,16 @@ if (Test-DatabaseExists -Server $SqlServer -Database $AppDb -User $SaUser -Passw
 } else {
     Write-Host "[INFO] Database '$AppDb' not found. Starting one-time setup..." -ForegroundColor Yellow
     
+    # Allow user to choose a different database name
+    $newDbName = Read-Host -Prompt "Enter NEW database name (or press Enter to keep '$AppDb')"
+    if (-not [string]::IsNullOrWhiteSpace($newDbName)) { $AppDb = $newDbName.Trim() }
+
+    # Export settings so backend setup uses the same values
+    $env:INIT_SQLSERVER = $SqlServer
+    $env:INIT_APPDB = $AppDb
+    $env:INIT_SAUSER = $SaUser
+    $env:INIT_SAPASSWORD = $SaPassword  # may be empty -> Windows Auth in setup-db
+
     # 1. Run the database setup script
     Write-Host "[STEP 1/2] Creating database, schema, and user..."
     npm --workspace ./backend run setup-db

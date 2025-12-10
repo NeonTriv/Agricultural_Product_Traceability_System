@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Processing } from './entities/processing.entity';
 import { ProcessingFacility } from './entities/processing-facility.entity';
+import { ProcessStep } from './entities/process-step.entity';
 
 @Injectable()
 export class ProcessingService {
@@ -11,21 +12,27 @@ export class ProcessingService {
     private readonly processingRepo: Repository<Processing>,
     @InjectRepository(ProcessingFacility)
     private readonly facilityRepo: Repository<ProcessingFacility>,
+    @InjectRepository(ProcessStep)
+    private readonly processStepRepo: Repository<ProcessStep>,
   ) {}
 
   // Processing Facilities methods
   async getAllFacilities() {
     const facilities = await this.facilityRepo.find({
-      relations: ['processings'],
+      relations: ['processings', 'province'],
       order: { id: 'DESC' },
     });
 
     return facilities.map((f) => ({
       id: f.id,
       name: f.name,
-      address: f.address,
+      addressDetail: f.address,
       contactInfo: f.contactInfo,
       licenseNumber: f.licenseNumber,
+      longitude: f.longitude,
+      latitude: f.latitude,
+      provinceId: f.provinceId,
+      provinceName: f.province?.name,
       processingCount: f.processings?.length || 0,
     }));
   }
@@ -33,7 +40,7 @@ export class ProcessingService {
   async getFacility(id: number) {
     const facility = await this.facilityRepo.findOne({
       where: { id },
-      relations: ['processings'],
+      relations: ['processings', 'province'],
     });
 
     if (!facility) {
@@ -43,26 +50,34 @@ export class ProcessingService {
     return {
       id: facility.id,
       name: facility.name,
-      address: facility.address,
+      addressDetail: facility.address,
       contactInfo: facility.contactInfo,
       licenseNumber: facility.licenseNumber,
+      longitude: facility.longitude,
+      latitude: facility.latitude,
+      provinceId: facility.provinceId,
+      provinceName: facility.province?.name,
       processingCount: facility.processings?.length || 0,
     };
   }
 
   async createFacility(data: {
-    id: number;
     name: string;
-    address: string;
+    addressDetail: string;
     contactInfo?: string;
     licenseNumber: string;
+    longitude?: number;
+    latitude?: number;
+    provinceId?: number;
   }) {
     const facility = this.facilityRepo.create({
-      id: data.id,
       name: data.name,
-      address: data.address,
+      address: data.addressDetail,
       contactInfo: data.contactInfo,
       licenseNumber: data.licenseNumber,
+      longitude: data.longitude,
+      latitude: data.latitude,
+      provinceId: data.provinceId,
     });
 
     await this.facilityRepo.save(facility);
@@ -74,9 +89,12 @@ export class ProcessingService {
     id: number,
     data: {
       name?: string;
-      address?: string;
+      addressDetail?: string;
       contactInfo?: string;
       licenseNumber?: string;
+      longitude?: number;
+      latitude?: number;
+      provinceId?: number;
     },
   ) {
     const facility = await this.facilityRepo.findOne({ where: { id } });
@@ -86,9 +104,12 @@ export class ProcessingService {
     }
 
     if (data.name) facility.name = data.name;
-    if (data.address) facility.address = data.address;
+    if (data.addressDetail) facility.address = data.addressDetail;
     if (data.contactInfo !== undefined) facility.contactInfo = data.contactInfo;
     if (data.licenseNumber) facility.licenseNumber = data.licenseNumber;
+    if (data.longitude !== undefined) facility.longitude = data.longitude;
+    if (data.latitude !== undefined) facility.latitude = data.latitude;
+    if (data.provinceId !== undefined) facility.provinceId = data.provinceId;
 
     await this.facilityRepo.save(facility);
 
@@ -151,7 +172,6 @@ export class ProcessingService {
   }
 
   async createOperation(data: {
-    id: number;
     packagingDate: string;
     weightPerUnit: number;
     processedBy?: string;
@@ -161,7 +181,6 @@ export class ProcessingService {
     batchId: number;
   }) {
     const operation = this.processingRepo.create({
-      id: data.id,
       packagingDate: new Date(data.packagingDate),
       weightPerUnit: data.weightPerUnit,
       processedBy: data.processedBy,
@@ -214,6 +233,48 @@ export class ProcessingService {
 
     if (result.affected === 0) {
       throw new NotFoundException(`Processing Operation with ID ${id} not found`);
+    }
+
+    return { success: true };
+  }
+
+  // Process Steps methods
+  async getAllProcessSteps() {
+    const steps = await this.processStepRepo.find({
+      relations: ['processing', 'processing.facility', 'processing.batch'],
+      order: { processingId: 'DESC' },
+    });
+
+    return steps.map((s) => ({
+      processingId: s.processingId,
+      step: s.step,
+      facilityName: s.processing?.facility?.name,
+      batchId: s.processing?.batchId,
+    }));
+  }
+
+  async createProcessStep(data: { processingId: number; step: string }) {
+    const processing = await this.processingRepo.findOne({ where: { id: data.processingId } });
+
+    if (!processing) {
+      throw new NotFoundException(`Processing Operation with ID ${data.processingId} not found`);
+    }
+
+    const processStep = this.processStepRepo.create({
+      processingId: data.processingId,
+      step: data.step,
+    });
+
+    await this.processStepRepo.save(processStep);
+
+    return { success: true, processingId: data.processingId, step: data.step };
+  }
+
+  async deleteProcessStep(processingId: number, step: string) {
+    const result = await this.processStepRepo.delete({ processingId, step });
+
+    if (result.affected === 0) {
+      throw new NotFoundException(`Process Step for Processing ${processingId} not found`);
     }
 
     return { success: true };

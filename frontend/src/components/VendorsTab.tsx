@@ -1,33 +1,13 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
-interface Vendor {
-  tin: string
-  name: string
-  address: string
-  contactInfo?: string
-  type: 'vendor' | 'distributor' | 'retail'
-  distributorType?: string
-  retailFormat?: string
-}
-
-interface VendorProduct {
-  id: number
-  unit: string
-  vendorTin: string
-  vendorName?: string
-  agricultureProductId: number
-  productName?: string
-}
-
-interface AgricultureProduct {
-  id: number
-  name: string
-}
+interface Vendor { tin: string; name: string; address: string; contactInfo?: string; type: 'vendor' | 'distributor' | 'retail' | 'both'; distributorType?: string; retailFormat?: string }
+interface VendorProduct { id: number; unit: string; vendorTin: string; vendorName?: string; agricultureProductId: number; productName?: string }
+interface AgricultureProduct { id: number; name: string }
 
 const baseUrl = 'http://localhost:5000'
 
-// ==================== VENDOR PRODUCTS SUB-TAB ====================
+// Sub-component: VendorProducts
 function VendorProductsSubTab() {
   const [vendorProducts, setVendorProducts] = useState<VendorProduct[]>([])
   const [vendors, setVendors] = useState<Vendor[]>([])
@@ -35,650 +15,205 @@ function VendorProductsSubTab() {
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({ unit: '', vendorTin: '', agricultureProductId: '' })
-  const [formErrors, setFormErrors] = useState<{[key: string]: boolean}>({})
   const [editingId, setEditingId] = useState<number | null>(null)
 
-  useEffect(() => { loadVendorProducts(); loadVendors(); loadAgricultureProducts() }, [])
-
-  const loadVendorProducts = async () => {
+  useEffect(() => { loadData() }, [])
+  const loadData = async () => {
     setLoading(true)
     try {
-      const res = await axios.get(`${baseUrl}/api/pricing/vendor-products`)
-      setVendorProducts(res.data)
-    } catch (e) { console.error(e) }
-    finally { setLoading(false) }
-  }
-
-  const loadVendors = async () => {
-    try { const res = await axios.get(`${baseUrl}/api/vendors`); setVendors(res.data) }
-    catch (e) { console.error(e) }
-  }
-
-  const loadAgricultureProducts = async () => {
-    try { const res = await axios.get(`${baseUrl}/api/products/agriculture-products`); setAgricultureProducts(res.data) }
-    catch (e) { console.error(e) }
+      const [vpRes, vRes, apRes] = await Promise.all([
+        axios.get(`${baseUrl}/api/pricing/vendor-products`),
+        axios.get(`${baseUrl}/api/vendors`),
+        axios.get(`${baseUrl}/api/products/agriculture-products`)
+      ])
+      setVendorProducts(vpRes.data); setVendors(vRes.data); setAgricultureProducts(apRes.data)
+    } catch (e) { console.error(e) } finally { setLoading(false) }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const errors: {[key: string]: boolean} = {}
-    if (!formData.unit) errors.unit = true
-    if (!formData.vendorTin) errors.vendorTin = true
-    if (!formData.agricultureProductId) errors.agricultureProductId = true
-    if (Object.keys(errors).length) { setFormErrors(errors); return }
-    setLoading(true)
+    e.preventDefault(); setLoading(true)
     try {
-      if (editingId) {
-        await axios.patch(`${baseUrl}/api/pricing/vendor-products/${editingId}`, { 
-          unit: formData.unit
-        })
-      } else {
-        await axios.post(`${baseUrl}/api/pricing/vendor-products`, { 
-          unit: formData.unit,
-          vendorTin: formData.vendorTin,
-          agricultureProductId: parseInt(formData.agricultureProductId)
-        })
-      }
-      setFormData({ unit: '', vendorTin: '', agricultureProductId: '' }); setShowForm(false); setEditingId(null); loadVendorProducts()
-    } catch (e: any) { 
-      console.error(e)
-      alert(e?.response?.data?.message || 'Error creating vendor product')
-    }
-    finally { setLoading(false) }
+      if (editingId) await axios.patch(`${baseUrl}/api/pricing/vendor-products/${editingId}`, { unit: formData.unit })
+      else await axios.post(`${baseUrl}/api/pricing/vendor-products`, { ...formData, agricultureProductId: parseInt(formData.agricultureProductId) })
+      setFormData({ unit: '', vendorTin: '', agricultureProductId: '' }); setShowForm(false); setEditingId(null); loadData()
+    } catch (e: any) { alert(e?.response?.data?.message || 'Error') } finally { setLoading(false) }
   }
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('Delete this vendor product?')) return
-    try { await axios.delete(`${baseUrl}/api/pricing/vendor-products/${id}`); loadVendorProducts() }
-    catch (e) { console.error(e) }
-  }
+  const handleDelete = async (id: number) => { if (!confirm('Delete?')) return; try { await axios.delete(`${baseUrl}/api/pricing/vendor-products/${id}`); loadData() } catch (e) { console.error(e) } }
 
   return (
-    <div style={{ background: 'white', borderRadius: 12, padding: 24, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h3 style={{ margin: 0, color: '#374151' }}>Vendor Products / Sản phẩm nhà cung cấp</h3>
+    <>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
         <button onClick={() => { setShowForm(!showForm); setEditingId(null); setFormData({ unit: '', vendorTin: '', agricultureProductId: '' }) }}
-          style={{ padding: '8px 16px', background: showForm ? '#9ca3af' : '#667eea', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
-          {showForm ? 'Cancel' : '+ Add Vendor Product'}
+          style={{ padding: '10px 20px', background: showForm ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, boxShadow: '0 2px 4px rgba(102,126,234,0.3)' }}>
+          {showForm ? 'Cancel' : '+ Add Product'}
         </button>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} style={{ marginBottom: 16, padding: 16, background: '#f9fafb', borderRadius: 8 }}>
+        <form onSubmit={handleSubmit} style={{ marginBottom: 24, padding: 24, background: 'white', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-            <div>
-              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Vendor <span style={{ color: '#dc2626' }}>*</span></label>
-              <select value={formData.vendorTin} onChange={e => { setFormData({ ...formData, vendorTin: e.target.value }); setFormErrors({ ...formErrors, vendorTin: false }) }}
-                disabled={!!editingId}
-                style={{ width: '100%', padding: '10px 14px', border: formErrors.vendorTin ? '2px solid #dc2626' : '2px solid #e5e7eb', borderRadius: 6, background: editingId ? '#f3f4f6' : 'white' }}>
-                <option value="">-- Chọn nhà cung cấp --</option>
-                {vendors.map(v => <option key={v.tin} value={v.tin}>{v.name}</option>)}
-              </select>
-              {formErrors.vendorTin && <span style={{ color: '#dc2626', fontSize: 12 }}>Required</span>}
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Agriculture Product <span style={{ color: '#dc2626' }}>*</span></label>
-              <select value={formData.agricultureProductId} onChange={e => { setFormData({ ...formData, agricultureProductId: e.target.value }); setFormErrors({ ...formErrors, agricultureProductId: false }) }}
-                disabled={!!editingId}
-                style={{ width: '100%', padding: '10px 14px', border: formErrors.agricultureProductId ? '2px solid #dc2626' : '2px solid #e5e7eb', borderRadius: 6, background: editingId ? '#f3f4f6' : 'white' }}>
-                <option value="">-- Chọn sản phẩm --</option>
-                {agricultureProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-              {formErrors.agricultureProductId && <span style={{ color: '#dc2626', fontSize: 12 }}>Required</span>}
-            </div>
-            <div>
-              <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>Unit <span style={{ color: '#dc2626' }}>*</span></label>
-              <input type="text" value={formData.unit} onChange={e => { setFormData({ ...formData, unit: e.target.value }); setFormErrors({ ...formErrors, unit: false }) }}
-                style={{ width: '100%', padding: '10px 14px', border: formErrors.unit ? '2px solid #dc2626' : '2px solid #e5e7eb', borderRadius: 6 }} placeholder="e.g., kg, túi, thùng" />
-              {formErrors.unit && <span style={{ color: '#dc2626', fontSize: 12 }}>Required</span>}
-            </div>
+            <div><label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Vendor *</label><select value={formData.vendorTin} onChange={e => setFormData({ ...formData, vendorTin: e.target.value })} disabled={!!editingId} style={{ width: '100%', padding: 12, border: '2px solid #e5e7eb', borderRadius: 8 }} required><option value="">Select Vendor</option>{vendors.map(v => <option key={v.tin} value={v.tin}>{v.name}</option>)}</select></div>
+            <div><label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Product *</label><select value={formData.agricultureProductId} onChange={e => setFormData({ ...formData, agricultureProductId: e.target.value })} disabled={!!editingId} style={{ width: '100%', padding: 12, border: '2px solid #e5e7eb', borderRadius: 8 }} required><option value="">Select Product</option>{agricultureProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
+            <div><label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Unit *</label><input type="text" value={formData.unit} onChange={e => setFormData({ ...formData, unit: e.target.value })} style={{ width: '100%', padding: 12, border: '2px solid #e5e7eb', borderRadius: 8 }} required /></div>
           </div>
-          <button type="submit" disabled={loading} style={{ marginTop: 16, padding: '10px 20px', background: '#667eea', color: 'white', border: 'none', borderRadius: 6, cursor: 'pointer' }}>
-            {loading ? 'Saving...' : editingId ? 'Update' : 'Create'}
-          </button>
+          <button type="submit" style={{ marginTop: 16, padding: '12px 24px', background: '#667eea', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>{editingId ? 'Update' : 'Create'}</button>
         </form>
       )}
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead><tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-          <th style={{ padding: 12, textAlign: 'left' }}>ID</th>
-          <th style={{ padding: 12, textAlign: 'left' }}>Vendor</th>
-          <th style={{ padding: 12, textAlign: 'left' }}>Product</th>
-          <th style={{ padding: 12, textAlign: 'left' }}>Unit</th>
-          <th style={{ padding: 12, textAlign: 'right' }}>Actions</th>
-        </tr></thead>
-        <tbody>
-          {vendorProducts.map(vp => (
-            <tr key={vp.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
-              <td style={{ padding: 12 }}>{vp.id}</td>
-              <td style={{ padding: 12 }}>{vp.vendorName || vp.vendorTin}</td>
-              <td style={{ padding: 12 }}>{vp.productName || '-'}</td>
-              <td style={{ padding: 12 }}>{vp.unit}</td>
-              <td style={{ padding: 12, textAlign: 'right' }}>
-                <button onClick={() => { setEditingId(vp.id); setFormData({ unit: vp.unit, vendorTin: vp.vendorTin, agricultureProductId: vp.agricultureProductId.toString() }); setShowForm(true) }}
-                  style={{ padding: '4px 10px', marginRight: 8, background: '#3b82f6', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Edit</button>
-                <button onClick={() => handleDelete(vp.id)}
-                  style={{ padding: '4px 10px', background: '#ef4444', color: 'white', border: 'none', borderRadius: 4, cursor: 'pointer' }}>Delete</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )
-}
-
-export default function VendorsTab() {
-  const [subTab, setSubTab] = useState<'vendors' | 'vendor-products'>('vendors')
-  const [vendors, setVendors] = useState<Vendor[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [showForm, setShowForm] = useState(false)
-  const [editingVendor, setEditingVendor] = useState<Vendor | null>(null)
-
-  const [formData, setFormData] = useState({
-    tin: '',
-    name: '',
-    address: '',
-    contactInfo: '',
-    vendorType: '' as 'distributor' | 'retail' | '',
-    distributorType: '',
-    retailFormat: ''
-  })
-
-  const baseUrl = 'http://localhost:5000'
-
-  useEffect(() => {
-    loadVendors()
-  }, [])
-
-  const loadVendors = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const response = await axios.get(`${baseUrl}/api/vendors`)
-      setVendors(response.data)
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to load vendors')
-      console.error('API Error:', e)
-      setVendors([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-
-    try {
-      if (editingVendor) {
-        // Update existing vendor
-        await axios.patch(`${baseUrl}/api/vendors/${editingVendor.tin}`, {
-          name: formData.name,
-          address: formData.address,
-          contactInfo: formData.contactInfo || undefined,
-        })
-      } else {
-        // Create new vendor
-        await axios.post(`${baseUrl}/api/vendors`, {
-          tin: formData.tin,
-          name: formData.name,
-          address: formData.address,
-          contactInfo: formData.contactInfo || undefined,
-          vendorType: formData.vendorType || undefined,
-          distributorType: formData.distributorType || undefined,
-          retailFormat: formData.retailFormat || undefined,
-        })
-      }
-      await loadVendors()
-      resetForm()
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to save vendor')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDelete = async (tin: string) => {
-    if (!confirm('Are you sure you want to delete this vendor?')) return
-
-    setLoading(true)
-    setError(null)
-    try {
-      await axios.delete(`${baseUrl}/api/vendors/${tin}`)
-      await loadVendors()
-    } catch (e: any) {
-      setError(e?.response?.data?.message || e?.message || 'Failed to delete vendor')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleEdit = (vendor: Vendor) => {
-    setEditingVendor(vendor)
-    setFormData({
-      tin: vendor.tin,
-      name: vendor.name,
-      address: vendor.address,
-      contactInfo: vendor.contactInfo || '',
-      vendorType: vendor.type === 'vendor' ? '' : vendor.type,
-      distributorType: vendor.distributorType || '',
-      retailFormat: vendor.retailFormat || ''
-    })
-    setShowForm(true)
-  }
-
-  const resetForm = () => {
-    setFormData({
-      tin: '',
-      name: '',
-      address: '',
-      contactInfo: '',
-      vendorType: '',
-      distributorType: '',
-      retailFormat: ''
-    })
-    setEditingVendor(null)
-    setShowForm(false)
-  }
-
-  return (
-    <div>
-      {/* Sub-tab Switcher */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24 }}>
-        <button
-          onClick={() => setSubTab('vendors')}
-          style={{
-            padding: '8px 16px',
-            background: subTab === 'vendors' ? '#667eea' : '#f3f4f6',
-            color: subTab === 'vendors' ? 'white' : '#374151',
-            border: 'none',
-            borderRadius: 6,
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}
-        >
-          🏪 Vendors / Nhà cung cấp
-        </button>
-        <button
-          onClick={() => setSubTab('vendor-products')}
-          style={{
-            padding: '8px 16px',
-            background: subTab === 'vendor-products' ? '#667eea' : '#f3f4f6',
-            color: subTab === 'vendor-products' ? 'white' : '#374151',
-            border: 'none',
-            borderRadius: 6,
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: 'pointer'
-          }}
-        >
-          📦 Vendor Products / SP nhà cung cấp
-        </button>
-      </div>
-
-      {/* Vendor Products Sub-tab */}
-      {subTab === 'vendor-products' && <VendorProductsSubTab />}
-
-      {/* Vendors Sub-tab */}
-      {subTab === 'vendors' && (
-        <>
-      {/* Header */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 24,
-        padding: '16px 0'
-      }}>
-        <h1 style={{
-          fontSize: 28,
-          fontWeight: 700,
-          margin: 0
-        }}>
-          Vendor Management
-        </h1>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          style={{
-            padding: '12px 24px',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            color: 'white',
-            border: 'none',
-            borderRadius: 8,
-            fontSize: 14,
-            fontWeight: 600,
-            cursor: 'pointer',
-            boxShadow: '0 2px 4px rgba(102,126,234,0.4)'
-          }}
-        >
-          {showForm ? 'Cancel' : '+ Add New Vendor'}
-        </button>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div style={{
-          padding: 16,
-          background: '#fee',
-          color: '#c33',
-          borderRadius: 8,
-          marginBottom: 16
-        }}>
-          {error}
-        </div>
-      )}
-
-      {/* Form */}
-      {showForm && (
-        <div style={{
-          background: 'white',
-          padding: 24,
-          borderRadius: 12,
-          marginBottom: 24,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-        }}>
-          <h2 style={{ marginTop: 0, color: '#374151' }}>
-            {editingVendor ? 'Edit Vendor' : 'Add New Vendor'}
-          </h2>
-          <form onSubmit={handleSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-              {/* TIN */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                  TIN (Tax ID) *
-                </label>
-                <input
-                  type="text"
-                  value={formData.tin}
-                  onChange={e => setFormData({ ...formData, tin: e.target.value })}
-                  required
-                  disabled={!!editingVendor}
-                  placeholder="e.g., 1234567890"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: 8,
-                    fontSize: 16,
-                    background: editingVendor ? '#f3f4f6' : 'white'
-                  }}
-                />
-              </div>
-
-              {/* Name */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                  Vendor Name *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  placeholder="e.g., BigC Supermarket"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: 8,
-                    fontSize: 16
-                  }}
-                />
-              </div>
-
-              {/* Address */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                  Address *
-                </label>
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={e => setFormData({ ...formData, address: e.target.value })}
-                  required
-                  placeholder="e.g., HCMC, Vietnam"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: 8,
-                    fontSize: 16
-                  }}
-                />
-              </div>
-
-              {/* Contact Info */}
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                  Contact Info
-                </label>
-                <input
-                  type="text"
-                  value={formData.contactInfo}
-                  onChange={e => setFormData({ ...formData, contactInfo: e.target.value })}
-                  placeholder="Phone, email, etc."
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '2px solid #e5e7eb',
-                    borderRadius: 8,
-                    fontSize: 16
-                  }}
-                />
-              </div>
-
-              {/* Vendor Type */}
-              {!editingVendor && (
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                    Vendor Type
-                  </label>
-                  <select
-                    value={formData.vendorType}
-                    onChange={e => setFormData({ ...formData, vendorType: e.target.value as any })}
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: 8,
-                      fontSize: 16
-                    }}
-                  >
-                    <option value="">Regular Vendor</option>
-                    <option value="distributor">Distributor</option>
-                    <option value="retail">Retail</option>
-                  </select>
-                </div>
-              )}
-
-              {/* Distributor Type */}
-              {formData.vendorType === 'distributor' && (
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                    Distributor Type *
-                  </label>
-                  <select
-                    value={formData.distributorType}
-                    onChange={e => setFormData({ ...formData, distributorType: e.target.value })}
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: 8,
-                      fontSize: 16
-                    }}
-                  >
-                    <option value="">Select type...</option>
-                    <option value="Direct">Direct</option>
-                    <option value="Indirect">Indirect</option>
-                  </select>
-                </div>
-              )}
-
-              {/* Retail Format */}
-              {formData.vendorType === 'retail' && (
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600, color: '#374151' }}>
-                    Retail Format *
-                  </label>
-                  <select
-                    value={formData.retailFormat}
-                    onChange={e => setFormData({ ...formData, retailFormat: e.target.value })}
-                    required
-                    style={{
-                      width: '100%',
-                      padding: '12px 16px',
-                      border: '2px solid #e5e7eb',
-                      borderRadius: 8,
-                      fontSize: 16
-                    }}
-                  >
-                    <option value="">Select format...</option>
-                    <option value="Supermarket">Supermarket</option>
-                    <option value="Online Store">Online Store</option>
-                    <option value="Convenience Store">Convenience Store</option>
-                    <option value="Traditional Market">Traditional Market</option>
-                    <option value="Specialty Shop">Specialty Shop</option>
-                  </select>
-                </div>
-              )}
-            </div>
-
-            <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-              <button
-                type="submit"
-                disabled={loading}
-                style={{
-                  padding: '12px 24px',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 8,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                  opacity: loading ? 0.6 : 1
-                }}
-              >
-                {loading ? 'Saving...' : editingVendor ? 'Update Vendor' : 'Create Vendor'}
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                style={{
-                  padding: '12px 24px',
-                  background: '#f3f4f6',
-                  color: '#374151',
-                  border: 'none',
-                  borderRadius: 8,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Vendors List */}
-      <div style={{
-        background: 'white',
-        borderRadius: 12,
-        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        overflow: 'hidden'
-      }}>
+      <div style={{ background: 'white', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
-              <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>TIN</th>
-              <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Name</th>
-              <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Address</th>
-              <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Contact</th>
-              <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Type</th>
-              <th style={{ padding: 16, textAlign: 'center', fontWeight: 600, color: '#374151' }}>Actions</th>
-            </tr>
-          </thead>
+          <thead><tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
+            <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Vendor</th>
+            <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Product</th>
+            <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Unit</th>
+            <th style={{ padding: 16, textAlign: 'right', fontWeight: 600, color: '#374151' }}>Actions</th>
+          </tr></thead>
           <tbody>
-            {loading && (
-              <tr>
-                <td colSpan={6} style={{ padding: 32, textAlign: 'center', color: '#6b7280' }}>
-                  Loading vendors...
-                </td>
-              </tr>
-            )}
-            {!loading && vendors.length === 0 && (
-              <tr>
-                <td colSpan={6} style={{ padding: 32, textAlign: 'center', color: '#6b7280' }}>
-                  No vendors found. Click "+ Add New Vendor" to create one.
-                </td>
-              </tr>
-            )}
-            {!loading && vendors.map(vendor => (
-              <tr key={vendor.tin} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                <td style={{ padding: 16, color: '#374151', fontFamily: 'monospace' }}>{vendor.tin}</td>
-                <td style={{ padding: 16, color: '#374151', fontWeight: 600 }}>{vendor.name}</td>
-                <td style={{ padding: 16, color: '#6b7280' }}>{vendor.address}</td>
-                <td style={{ padding: 16, color: '#6b7280' }}>{vendor.contactInfo || '-'}</td>
-                <td style={{ padding: 16 }}>
-                  <span style={{
-                    padding: '4px 12px',
-                    background: vendor.type === 'distributor' ? '#dbeafe' : vendor.type === 'retail' ? '#d1fae5' : '#f3f4f6',
-                    color: vendor.type === 'distributor' ? '#1e40af' : vendor.type === 'retail' ? '#065f46' : '#374151',
-                    borderRadius: 999,
-                    fontSize: 12,
-                    fontWeight: 600
-                  }}>
-                    {vendor.type === 'distributor' && vendor.distributorType
-                      ? `${vendor.type} (${vendor.distributorType})`
-                      : vendor.type === 'retail' && vendor.retailFormat
-                      ? `${vendor.type} (${vendor.retailFormat})`
-                      : vendor.type}
-                  </span>
-                </td>
-                <td style={{ padding: 16, textAlign: 'center' }}>
-                  <button
-                    onClick={() => handleEdit(vendor)}
-                    style={{
-                      padding: '6px 12px',
-                      background: '#3b82f6',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: 6,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      marginRight: 8
-                    }}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(vendor.tin)}
-                    style={{
-                      padding: '6px 12px',
-                      background: '#ef4444',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: 6,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Delete
-                  </button>
+            {vendorProducts.map(vp => (
+              <tr key={vp.id} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                <td style={{ padding: 16 }}>{vp.vendorName || vp.vendorTin}</td>
+                <td style={{ padding: 16 }}>{vp.productName}</td>
+                <td style={{ padding: 16 }}>{vp.unit}</td>
+                <td style={{ padding: 16, textAlign: 'right' }}>
+                  <button onClick={() => { setEditingId(vp.id); setFormData({ unit: vp.unit, vendorTin: vp.vendorTin, agricultureProductId: vp.agricultureProductId.toString() }); setShowForm(true) }} style={{ marginRight: 8, padding: '6px 12px', border: '1px solid #667eea', color: '#667eea', borderRadius: 6, background: 'white', cursor: 'pointer' }}>Edit</button>
+                  <button onClick={() => handleDelete(vp.id)} style={{ padding: '6px 12px', border: '1px solid #dc2626', color: '#dc2626', borderRadius: 6, background: 'white', cursor: 'pointer' }}>Delete</button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+    </>
+  )
+}
+
+// Main Component: VendorsTab
+export default function VendorsTab() {
+  const [subTab, setSubTab] = useState<'vendors' | 'vendor-products'>('vendors')
+  const [vendors, setVendors] = useState<Vendor[]>([])
+  const [loading, setLoading] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [editingVendor, setEditingVendor] = useState<Vendor | null>(null)
+  const [formData, setFormData] = useState({ tin: '', name: '', address: '', contactInfo: '', vendorType: '' as any, distributorType: '', retailFormat: '' })
+
+  useEffect(() => { loadVendors() }, [])
+  const loadVendors = async () => { setLoading(true); try { const res = await axios.get(`${baseUrl}/api/vendors`); setVendors(res.data) } catch (e) { console.error(e) } finally { setLoading(false) } }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); setLoading(true)
+    try {
+      const payload = { 
+        name: formData.name,
+        address: formData.address,
+        contactInfo: formData.contactInfo || undefined,
+        vendorType: formData.vendorType || undefined,
+        distributorType: formData.distributorType || undefined,
+        retailFormat: formData.retailFormat || undefined
+      }
+      if (editingVendor) await axios.patch(`${baseUrl}/api/vendors/${editingVendor.tin}`, payload)
+      else await axios.post(`${baseUrl}/api/vendors`, { tin: formData.tin, ...payload })
+      setShowForm(false); setEditingVendor(null); setFormData({ tin: '', name: '', address: '', contactInfo: '', vendorType: '', distributorType: '', retailFormat: '' }); loadVendors()
+    } catch (e) { console.error(e) } finally { setLoading(false) }
+  }
+  const handleDelete = async (tin: string) => { if (!confirm('Delete?')) return; setLoading(true); try { await axios.delete(`${baseUrl}/api/vendors/${tin}`); loadVendors() } catch (e) { console.error(e) } finally { setLoading(false) } }
+
+  const btnStyle = (active: boolean) => ({
+    padding: '8px 16px', borderRadius: 8, border: active ? '2px solid #667eea' : '1px solid #e5e7eb',
+    background: active ? '#eef2ff' : 'white', color: active ? '#667eea' : '#6b7280',
+    fontSize: 14, fontWeight: active ? 600 : 500, cursor: 'pointer', transition: 'all 0.2s', marginRight: 8
+  })
+
+  return (
+    <div>
+      <div style={{ display: 'flex', marginBottom: 24, background: 'white', padding: '12px', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+        <button onClick={() => setSubTab('vendors')} style={btnStyle(subTab === 'vendors')}>🏪 Vendors</button>
+        <button onClick={() => setSubTab('vendor-products')} style={btnStyle(subTab === 'vendor-products')}>📦 Vendor Products</button>
+      </div>
+
+      {subTab === 'vendor-products' && <VendorProductsSubTab />}
+
+      {subTab === 'vendors' && (
+        <>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+            <button onClick={() => setShowForm(!showForm)}
+              style={{ padding: '10px 20px', background: showForm ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, boxShadow: '0 2px 4px rgba(102,126,234,0.3)' }}>
+              {showForm ? 'Cancel' : '+ Add Vendor'}
+            </button>
+          </div>
+
+          {showForm && (
+            <form onSubmit={handleSubmit} style={{ marginBottom: 24, padding: 24, background: 'white', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div><label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>TIN *</label><input type="text" value={formData.tin} onChange={e => setFormData({ ...formData, tin: e.target.value })} disabled={!!editingVendor} style={{ width: '100%', padding: 12, border: '2px solid #e5e7eb', borderRadius: 8 }} required /></div>
+                <div><label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Name *</label><input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={{ width: '100%', padding: 12, border: '2px solid #e5e7eb', borderRadius: 8 }} required /></div>
+                <div><label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Address *</label><input type="text" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} style={{ width: '100%', padding: 12, border: '2px solid #e5e7eb', borderRadius: 8 }} required /></div>
+                <div><label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Contact</label><input type="text" value={formData.contactInfo} onChange={e => setFormData({ ...formData, contactInfo: e.target.value })} style={{ width: '100%', padding: 12, border: '2px solid #e5e7eb', borderRadius: 8 }} /></div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Type *</label>
+                  <select value={formData.vendorType} onChange={e => { const type = e.target.value; setFormData({ ...formData, vendorType: type as any, distributorType: '', retailFormat: '' }) }} style={{ width: '100%', padding: 12, border: '2px solid #e5e7eb', borderRadius: 8 }} required>
+                    <option value="">-- Select Type --</option>
+                    <option value="distributor">Distributor</option>
+                    <option value="retail">Retail</option>
+                    <option value="both">Both (Distributor + Retail)</option>
+                  </select>
+                </div>
+                {(formData.vendorType === 'distributor' || formData.vendorType === 'both') && (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Distributor Type *</label>
+                    <select value={formData.distributorType} onChange={e => setFormData({ ...formData, distributorType: e.target.value })} style={{ width: '100%', padding: 12, border: '2px solid #e5e7eb', borderRadius: 8 }} required={formData.vendorType === 'distributor' || formData.vendorType === 'both'}>
+                      <option value="">-- Select Type --</option>
+                      <option value="Direct">Direct</option>
+                      <option value="Indirect">Indirect</option>
+                    </select>
+                  </div>
+                )}
+                {(formData.vendorType === 'retail' || formData.vendorType === 'both') && (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Retail Format *</label>
+                    <select value={formData.retailFormat} onChange={e => setFormData({ ...formData, retailFormat: e.target.value })} style={{ width: '100%', padding: 12, border: '2px solid #e5e7eb', borderRadius: 8 }} required={formData.vendorType === 'retail' || formData.vendorType === 'both'}>
+                      <option value="">-- Select Format --</option>
+                      <option value="Supermarket">Supermarket</option>
+                      <option value="Online Store">Online Store</option>
+                      <option value="Convenience Store">Convenience Store</option>
+                      <option value="Traditional Market">Traditional Market</option>
+                      <option value="Specialty Shop">Specialty Shop</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+              <button type="submit" style={{ marginTop: 16, padding: '12px 24px', background: '#667eea', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>{editingVendor ? 'Update' : 'Create'}</button>
+            </form>
+          )}
+
+          <div style={{ background: 'white', borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead><tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e7eb' }}>
+                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>TIN</th>
+                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Name</th>
+                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Address</th>
+                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Contact</th>
+                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#374151' }}>Type</th>
+                <th style={{ padding: 16, textAlign: 'right', fontWeight: 600, color: '#374151' }}>Actions</th>
+              </tr></thead>
+              <tbody>
+                {vendors.map(v => (
+                  <tr key={v.tin} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                    <td style={{ padding: 16, fontFamily: 'monospace', fontWeight: 600 }}>{v.tin}</td>
+                    <td style={{ padding: 16 }}>{v.name}</td>
+                    <td style={{ padding: 16, color: '#6b7280' }}>{v.address}</td>
+                    <td style={{ padding: 16, color: '#6b7280' }}>{v.contactInfo}</td>
+                    <td style={{ padding: 16 }}>
+                      <span style={{ padding: '4px 12px', background: v.type === 'distributor' ? '#dbeafe' : v.type === 'retail' ? '#d1fae5' : v.type === 'both' ? '#fef3c7' : '#f3f4f6', color: v.type === 'distributor' ? '#1e40af' : v.type === 'retail' ? '#065f46' : v.type === 'both' ? '#92400e' : '#374151', borderRadius: 4, fontSize: 12, fontWeight: 600, textTransform: 'capitalize' }}>
+                        {v.type}
+                      </span>
+                    </td>
+                    <td style={{ padding: 16, textAlign: 'right' }}>
+                      <button onClick={() => { setEditingVendor(v); setFormData({ tin: v.tin, name: v.name, address: v.address, contactInfo: v.contactInfo || '', vendorType: v.type, distributorType: v.distributorType || '', retailFormat: v.retailFormat || '' }); setShowForm(true) }} style={{ marginRight: 8, padding: '6px 12px', border: '1px solid #667eea', color: '#667eea', borderRadius: 6, background: 'white', cursor: 'pointer' }}>Edit</button>
+                      <button onClick={() => handleDelete(v.tin)} style={{ padding: '6px 12px', border: '1px solid #dc2626', color: '#dc2626', borderRadius: 6, background: 'white', cursor: 'pointer' }}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
     </div>
