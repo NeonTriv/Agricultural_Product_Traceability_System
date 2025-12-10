@@ -126,9 +126,9 @@ export class VendorService {
 
   async deleteVendor(tin: string) {
     // Check if vendor exists
-    const vendor = await this.vendorRepo.findOne({ 
+    const vendor = await this.vendorRepo.findOne({
       where: { tin },
-      relations: ['distributors', 'retails', 'vendorProducts']
+      relations: ['distributors', 'distributors.shipments', 'retails', 'vendorProducts', 'discounts']
     });
     if (!vendor) {
       throw new NotFoundException(`Vendor with TIN ${tin} not found`);
@@ -139,21 +139,32 @@ export class VendorService {
 
     // Check for related records and provide helpful error message
     const blockers: string[] = [];
+
+    // Check if distributor has shipments (the actual blocker, not just being a distributor)
     if (vendor.distributors?.length > 0) {
-      blockers.push('Distributor records (tab Vendors > delete distributor type)');
+      const shipmentsCount = vendor.distributors.reduce((sum, d) => sum + (d.shipments?.length || 0), 0);
+      if (shipmentsCount > 0) {
+        blockers.push(`${shipmentsCount} Shipment(s) from this distributor (tab Logistics > Shipments)`);
+      }
     }
-    if (vendor.retails?.length > 0) {
-      blockers.push('Retail records (tab Vendors > delete retail type)');
-    }
+
+    // Retail records can be cascade deleted, so they're not a blocker
+    // (no other tables reference RETAIL)
+
     if (vendor.vendorProducts?.length > 0) {
-      blockers.push(`Vendor Products (${vendor.vendorProducts.length} items - tab Vendors > Vendor Products)`);
+      blockers.push(`${vendor.vendorProducts.length} Vendor Product(s) (tab Vendors > Vendor Products)`);
     }
+
+    if (vendor.discounts?.length > 0) {
+      blockers.push(`${vendor.discounts.length} Discount(s) (tab Pricing > Discounts)`);
+    }
+
     if (carrierCompany) {
-      blockers.push('Carrier Company (tab Logistics > Carrier Companies)');
+      blockers.push('Carrier Company record (tab Logistics > Carrier Companies)');
     }
 
     if (blockers.length > 0) {
-      throw new BadRequestException(`Cannot delete vendor. Please delete the following first: ${blockers.join(', ')}`);
+      throw new BadRequestException(`Cannot delete vendor. Please delete the following first: ${blockers.join('; ')}`);
     }
 
     // Now safe to delete the vendor
