@@ -79,8 +79,6 @@ export class LogisticsController {
     body: {
       id: number;
       status: string;
-      departuredTime?: string;
-      arrivalTime?: string;
       destination?: string;
       distributorTin: string;
     },
@@ -95,8 +93,6 @@ export class LogisticsController {
     @Body()
     body: {
       status?: string;
-      departuredTime?: string;
-      arrivalTime?: string;
       destination?: string;
       distributorTin?: string;
     },

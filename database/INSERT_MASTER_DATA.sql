@@ -1,8 +1,3 @@
--- ============================================================================
--- INSERT MASTER DATA (FIXED FOR LEADER SCHEMA)
--- Countries, Categories, Provinces, Types, Farms, Facilities, Vendors, Products
--- ============================================================================
-
 USE Traceability;
 GO
 

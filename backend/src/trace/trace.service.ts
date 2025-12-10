@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AgricultureProduct } from './entities/agriculture-product.entity';
@@ -359,6 +359,32 @@ export class TraceService {
   }
 
   /**
+   * Delete a province
+   */
+  async deleteProvince(id: number) {
+    const result = await this.provinceRepo.delete({ id });
+
+    if (result.affected === 0) {
+      throw new NotFoundException(`Province with ID "${id}" not found`);
+    }
+
+    return { success: true, id };
+  }
+
+  /**
+   * Delete a country
+   */
+  async deleteCountry(id: number) {
+    const result = await this.countryRepo.delete({ id });
+
+    if (result.affected === 0) {
+      throw new NotFoundException(`Country with ID "${id}" not found`);
+    }
+
+    return { success: true, id };
+  }
+
+  /**
    * Get all farms for dropdown selection
    */
   async getAllFarms() {
@@ -422,6 +448,54 @@ export class TraceService {
   }
 
   /**
+   * Create a new country
+   */
+  async createCountry(data: { name: string }) {
+    const name = (data.name || '').trim();
+    if (!name) {
+      throw new BadRequestException('Country name is required');
+    }
+
+    const exists = await this.countryRepo.findOne({ where: { name } });
+    if (exists) {
+      return { success: true, id: exists.id };
+    }
+
+    const country = this.countryRepo.create({ name });
+    const saved = await this.countryRepo.save(country);
+    return { success: true, id: saved.id };
+  }
+
+  /**
+   * Create a new province, with either existing countryId or new countryName
+   */
+  async createProvince(data: { name: string; countryId?: number; countryName?: string }) {
+    const name = (data.name || '').trim();
+    if (!name) throw new BadRequestException('Province name is required');
+
+    let countryId = data.countryId;
+    if (!countryId && data.countryName) {
+      const countryName = data.countryName.trim();
+      if (!countryName) throw new BadRequestException('countryName is empty');
+      let country = await this.countryRepo.findOne({ where: { name: countryName } });
+      if (!country) {
+        country = await this.countryRepo.save(this.countryRepo.create({ name: countryName }));
+      }
+      countryId = country.id;
+    }
+
+    if (!countryId) throw new BadRequestException('countryId or countryName is required');
+
+    // Unique(Name, C_ID) in schema: check existence
+    const exists = await this.provinceRepo.findOne({ where: { name, countryId } });
+    if (exists) return { success: true, id: exists.id };
+
+    const province = this.provinceRepo.create({ name, countryId });
+    const saved = await this.provinceRepo.save(province);
+    return { success: true, id: saved.id };
+  }
+
+  /**
    * Get all types for dropdown selection
    */
   async getAllTypes() {
@@ -460,6 +534,7 @@ export class TraceService {
     name: string;
     ownerName?: string;
     contactInfo?: string;
+    addressDetail?: string;
     longitude?: number;
     latitude?: number;
     provinceId: number;
@@ -468,6 +543,7 @@ export class TraceService {
       name: data.name,
       ownerName: data.ownerName,
       contactInfo: data.contactInfo,
+      addressDetail: data.addressDetail,
       longitude: data.longitude || 0,
       latitude: data.latitude || 0,
       provinceId: data.provinceId,
@@ -475,5 +551,132 @@ export class TraceService {
 
     const saved = await this.farmRepo.save(farm);
     return { success: true, id: saved.id };
+  }
+
+  /**
+   * Get farm by ID with relations
+   */
+  async getFarmById(id: number) {
+    const farm = await this.farmRepo.findOne({
+      where: { id },
+      relations: ['province', 'province.country', 'certifications'],
+    });
+
+    if (!farm) {
+      throw new NotFoundException(`Farm with ID ${id} not found`);
+    }
+
+    return {
+      id: farm.id,
+      name: farm.name,
+      ownerName: farm.ownerName,
+      contactInfo: farm.contactInfo,
+      addressDetail: farm.addressDetail,
+      longitude: farm.longitude,
+      latitude: farm.latitude,
+      provinceId: farm.provinceId,
+      provinceName: farm.province?.name || 'Unknown',
+      countryName: farm.province?.country?.name || 'Unknown',
+      certifications: farm.certifications?.map(c => c.farmCertifications) || [],
+    };
+  }
+
+  /**
+   * Update farm
+   */
+  async updateFarm(
+    id: number,
+    data: {
+      name?: string;
+      ownerName?: string;
+      contactInfo?: string;
+      addressDetail?: string;
+      longitude?: number;
+      latitude?: number;
+      provinceId?: number;
+    },
+  ) {
+    const farm = await this.farmRepo.findOne({ where: { id } });
+    if (!farm) {
+      throw new NotFoundException(`Farm with ID ${id} not found`);
+    }
+
+    Object.assign(farm, data);
+    await this.farmRepo.save(farm);
+    return { success: true, id: farm.id };
+  }
+
+  /**
+   * Delete farm
+   */
+  async deleteFarm(id: number) {
+    const farm = await this.farmRepo.findOne({ where: { id } });
+    if (!farm) {
+      throw new NotFoundException(`Farm with ID ${id} not found`);
+    }
+
+    await this.farmRepo.remove(farm);
+    return { success: true, message: 'Farm deleted successfully' };
+  }
+
+  /**
+   * Get farm certifications
+   */
+  async getFarmCertifications(farmId: number) {
+    const certifications = await this.farmCertRepo.find({
+      where: { farmId },
+    });
+    return certifications.map(c => ({
+      farmId: c.farmId,
+      certification: c.farmCertifications,
+    }));
+  }
+
+  /**
+   * Add farm certification
+   */
+  async addFarmCertification(farmId: number, certification: string) {
+    const farm = await this.farmRepo.findOne({ where: { id: farmId } });
+    if (!farm) {
+      throw new NotFoundException(`Farm with ID ${farmId} not found`);
+    }
+
+    const trimmedCert = certification.trim();
+    if (!trimmedCert) {
+      throw new BadRequestException('Certification name is required');
+    }
+
+    // Check if certification already exists
+    const exists = await this.farmCertRepo.findOne({
+      where: { farmId, farmCertifications: trimmedCert },
+    });
+
+    if (exists) {
+      return { success: true, message: 'Certification already exists' };
+    }
+
+    const cert = this.farmCertRepo.create({
+      farmId,
+      farmCertifications: trimmedCert,
+    });
+
+    await this.farmCertRepo.save(cert);
+    return { success: true, message: 'Certification added successfully' };
+  }
+
+  /**
+   * Delete farm certification
+   */
+  async deleteFarmCertification(farmId: number, certification: string) {
+    const cert = await this.farmCertRepo.findOne({
+      where: { farmId, farmCertifications: certification },
+    });
+
+    if (!cert) {
+      throw new NotFoundException('Certification not found');
+    }
+
+    await this.farmCertRepo.remove(cert);
+    return { success: true, message: 'Certification deleted successfully' };
   }
 }

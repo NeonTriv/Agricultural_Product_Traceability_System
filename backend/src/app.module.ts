@@ -16,6 +16,7 @@ import { Country } from './trace/entities/country.entity';
 import { Province } from './trace/entities/province.entity';
 import { Processing } from './trace/entities/processing.entity';
 import { ProcessingFacility } from './trace/entities/processing-facility.entity';
+import { ProcessStep } from './trace/entities/process-step.entity';
 import { VendorProduct } from './trace/entities/vendor-product.entity';
 import { Vendor } from './trace/entities/vendor.entity';
 import { Price } from './trace/entities/price.entity';
@@ -54,6 +55,7 @@ import { User } from './trace/entities/user.entity';
         Province,
         Processing,
         ProcessingFacility,
+        ProcessStep,
         VendorProduct,
         Vendor,
         Price,

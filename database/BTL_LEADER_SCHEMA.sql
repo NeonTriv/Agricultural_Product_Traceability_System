@@ -84,14 +84,6 @@ CREATE TABLE PROCESSING_FACILITY (
     FOREIGN KEY (P_ID) REFERENCES PROVINCE(ID)
 );
 
--- PDF Bảng 8: Process Step phụ thuộc vào Facility
-CREATE TABLE PROCESS_STEP (
-    P_ID INT NOT NULL,
-    Step NVARCHAR(255) NOT NULL,
-    PRIMARY KEY (P_ID, Step),
-    FOREIGN KEY (P_ID) REFERENCES PROCESSING_FACILITY(ID) ON DELETE CASCADE
-);
-
 CREATE TABLE WAREHOUSE (
     ID INT IDENTITY(1,1) PRIMARY KEY,
     Capacity DECIMAL(10, 2) CHECK (Capacity > 0),
@@ -99,7 +91,7 @@ CREATE TABLE WAREHOUSE (
     Address_detail NVARCHAR(255) NOT NULL,
     Longitude DECIMAL(9, 6) CHECK (Longitude BETWEEN -180 AND 180),
     Latitude DECIMAL(9, 6) CHECK (Latitude BETWEEN -90 AND 90),
-    P_ID INT,
+    P_ID INT NOT NULL,
     FOREIGN KEY (P_ID) REFERENCES PROVINCE(ID)
 );
 
@@ -180,10 +172,19 @@ CREATE TABLE PROCESSING (
     CHECK (Packaging_Date > Processing_Date)
 );
 
+-- Process Step phụ thuộc vào PROCESSING (các bước của một lần chế biến)
+CREATE TABLE PROCESS_STEP (
+    P_ID INT NOT NULL,
+    Step NVARCHAR(255) NOT NULL,
+    PRIMARY KEY (P_ID, Step),
+    FOREIGN KEY (P_ID) REFERENCES PROCESSING(ID) ON DELETE CASCADE
+);
+
 CREATE TABLE SHIPMENT (
     ID INT IDENTITY(1,1) PRIMARY KEY,
     Status VARCHAR(50) NOT NULL CHECK (Status IN ('Pending', 'In-Transit', 'Delivered', 'Cancelled')),
     Destination NVARCHAR(255),
+    Start_Location NVARCHAR(255),
     Distributor_TIN VARCHAR(20) NOT NULL,
     FOREIGN KEY (Distributor_TIN) REFERENCES DISTRIBUTOR(Vendor_TIN)
 );

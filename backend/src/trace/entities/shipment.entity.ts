@@ -18,6 +18,9 @@ export class Shipment {
   @Column({ name: 'Destination', type: 'nvarchar', length: 255, nullable: true })
   destination: string;
 
+  @Column({ name: 'Start_Location', type: 'nvarchar', length: 255, nullable: true })
+  startLocation: string;
+
   @Column({ name: 'Distributor_TIN', type: 'varchar', length: 20 })
   distributorTin: string;
 
