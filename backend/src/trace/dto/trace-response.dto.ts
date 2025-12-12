@@ -1,7 +1,22 @@
 /**
- * DTOs for Trace API Response
- * These match the frontend types in frontend/src/types/trace.ts
+ * DTOs for Trace API Response - OPTIMIZED for Single Query
+ * Lấy tất cả thông tin từ 1 câu SQL duy nhất
+ *
+ * Relationships traced từ Batch (QR Code):
+ * Batch → Farm → Province → Country
+ * Batch → AgricultureProduct → Type
+ * Batch → AgricultureProduct → VendorProduct → Vendor
+ * Batch → AgricultureProduct → VendorProduct → Price
+ * Batch → Processing → ProcessingFacility
+ * Farm → FarmCertification
  */
+
+export class TypeDto {
+  id: string;
+  name: string;
+  variety?: string;
+  characteristics?: string;
+}
 
 export class ProductDto {
   id: string;
@@ -9,34 +24,62 @@ export class ProductDto {
   imageUrl?: string;
   qrCodeUrl?: string;
   batchId?: string;
-  typeId?: string;
+  type?: TypeDto;
+  category?: string;
 }
 
 export class BatchDto {
   id: string;
-  farmName: string;
   harvestDate?: string;
   grade?: string;
+  seedBatch?: string;
+  createdBy?: string;
+  farmName: string;
+}
+
+export class LocationDto {
+  country?: string;
+  province?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export class FarmDto {
+  id: string;
   name: string;
-  address?: string;
+  ownerName?: string;
+  contactInfo?: string;
+  location?: LocationDto;
   certifications?: string[];
-  country?: string;
-  province?: string;
+}
+
+export class ProcessingFacilityDto {
+  id: string;
+  name: string;
+  location?: string;
 }
 
 export class ProcessingDto {
-  facility?: string;
-  packedAt?: string;
+  id: string;
+  facility?: ProcessingFacilityDto;
+  processingDate?: string;
+  packagingDate?: string;
   processedBy?: string;
   packagingType?: string;
+  weightPerUnit?: number;
+}
+
+export class VendorDto {
+  tin: string;
+  name?: string;
+  address?: string;
+  contactInfo?: string;
 }
 
 export class DistributorDto {
-  name?: string;
-  location?: string;
+  vendor?: VendorDto;
+  unit?: string;
 }
 
 export class PriceDto {
@@ -44,12 +87,60 @@ export class PriceDto {
   currency?: string;
 }
 
+export class WarehouseDto {
+  id: number;
+  address: string;
+  capacity?: number;
+  storeCondition?: string;
+  province?: string;
+  quantity?: number;
+  startDate?: string;
+  endDate?: string;
+}
+
+export class DiscountDto {
+  id: number;
+  name?: string;
+  percentage?: number;
+  minValue?: number;
+  maxDiscountAmount?: number;
+  startDate?: string;
+  expiredDate?: string;
+  isStackable?: boolean;
+}
+
+export class TransportLegDto {
+  id: number;
+  startLocation: string;
+  toLocation: string;
+  departureTime?: string;
+  arrivalTime?: string;
+  driverName?: string;
+  temperatureProfile?: string;
+  carrierCompany?: {
+    name?: string;
+    tin: string;
+    contactInfo?: string;
+  };
+}
+
+export class ShipmentDto {
+  id: number;
+  status: string;
+  startLocation?: string;
+  destination?: string;
+  transportLegs?: TransportLegDto[];
+}
+
 export class TraceResponseDto {
-  code: string;
+  code: string; // QR Code URL
   product: ProductDto;
   batch?: BatchDto;
   farm?: FarmDto;
   processing?: ProcessingDto;
   distributor?: DistributorDto;
   price?: PriceDto;
+  warehouses?: WarehouseDto[];
+  discounts?: DiscountDto[];
+  shipments?: ShipmentDto[];
 }

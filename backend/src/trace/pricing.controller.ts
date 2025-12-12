@@ -85,4 +85,146 @@ export class PricingController {
   async deletePrice(@Param('vendorProductId') vendorProductId: string) {
     return this.pricingService.deletePrice(parseInt(vendorProductId));
   }
+
+  // Discounts CRUD
+  @Get('discounts')
+  @HttpCode(HttpStatus.OK)
+  async getAllDiscounts() {
+    return this.pricingService.getAllDiscounts();
+  }
+
+  @Post('discounts')
+  @HttpCode(HttpStatus.CREATED)
+  async createDiscount(
+    @Body()
+    body: {
+      name: string;
+      percentage?: number;
+      minValue?: number;
+      maxDiscountAmount?: number;
+      startDate: string;
+      expiredDate: string;
+    },
+  ) {
+    return this.pricingService.createDiscount({
+      name: body.name,
+      percentage: body.percentage,
+      minValue: body.minValue,
+      maxDiscountAmount: body.maxDiscountAmount,
+      startDate: new Date(body.startDate),
+      expiredDate: new Date(body.expiredDate),
+    });
+  }
+
+  @Patch('discounts/:id')
+  @HttpCode(HttpStatus.OK)
+  async updateDiscount(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      percentage?: number;
+      minValue?: number;
+      maxDiscountAmount?: number;
+      priority?: number;
+      isStackable?: boolean;
+      startDate?: string;
+      expiredDate?: string;
+    },
+  ) {
+    return this.pricingService.updateDiscount(parseInt(id), {
+      percentage: body.percentage,
+      minValue: body.minValue,
+      maxDiscountAmount: body.maxDiscountAmount,
+      priority: body.priority,
+      isStackable: body.isStackable,
+      startDate: body.startDate ? new Date(body.startDate) : undefined,
+      expiredDate: body.expiredDate ? new Date(body.expiredDate) : undefined,
+    });
+  }
+
+  @Delete('discounts/:id')
+  @HttpCode(HttpStatus.OK)
+  async deleteDiscount(@Param('id') id: string) {
+    return this.pricingService.deleteDiscount(parseInt(id));
+  }
+
+  // Link Product-Has-Discount
+  @Post('product-has-discount')
+  @HttpCode(HttpStatus.CREATED)
+  async linkProductHasDiscount(
+    @Body()
+    body: {
+      vendorProductId: number;
+      discountId: number;
+    },
+  ) {
+    return this.pricingService.linkProductHasDiscount(body.vendorProductId, body.discountId);
+  }
+
+  // Alias endpoint to match frontend call
+  @Post('link-discount')
+  @HttpCode(HttpStatus.CREATED)
+  async linkDiscountAlias(
+    @Body()
+    body: {
+      vendorProductId: number;
+      discountId: number;
+    },
+  ) {
+    return this.pricingService.linkProductHasDiscount(body.vendorProductId, body.discountId);
+  }
+
+    @Get('discounts/:id/products')
+    async getDiscountProducts(@Param('id') id: number) {
+      return this.pricingService.getProductsByDiscount(id);
+    }
+
+    @Delete('discounts/:id/products/:vpId')
+    async unlinkProduct(
+      @Param('id') discountId: number,
+      @Param('vpId') vpId: number,
+    ) {
+      return this.pricingService.unlinkProductHasDiscount(vpId, discountId);
+    }
+
+  // Orchestration: Create Vendor Product with Price and Discounts
+  @Post('setup')
+  @HttpCode(HttpStatus.CREATED)
+  async createVendorProductWithPricingAndDiscounts(
+    @Body()
+    body: {
+      vendorTin: string;
+      agricultureProductId: number;
+      unit: string;
+      valuePerUnit?: number;
+      priceValue?: number;
+      priceCurrency?: string;
+      discounts?: Array<{
+        percentage: number;
+        minValue?: number;
+        maxDiscountAmount?: number;
+        priority?: number;
+        isStackable?: boolean;
+        startDate?: string;
+        expiredDate?: string;
+      }>;
+    },
+  ) {
+    // Convert date strings to Date objects
+    const normalizedDiscounts = body.discounts?.map((d) => ({
+      ...d,
+      startDate: d.startDate ? new Date(d.startDate) : undefined,
+      expiredDate: d.expiredDate ? new Date(d.expiredDate) : undefined,
+    }));
+
+    return this.pricingService.createVendorProductWithPricingAndDiscounts({
+      vendorTin: body.vendorTin,
+      agricultureProductId: body.agricultureProductId,
+      unit: body.unit,
+      valuePerUnit: body.valuePerUnit,
+      priceValue: body.priceValue,
+      priceCurrency: body.priceCurrency,
+      discounts: normalizedDiscounts,
+    });
+  }
 }

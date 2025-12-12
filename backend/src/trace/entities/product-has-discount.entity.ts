@@ -16,7 +16,7 @@ export class ProductHasDiscount {
   discountId: number;
 
   // Relationships
-  @ManyToOne(() => VendorProduct, (vendorProduct) => vendorProduct.discounts)
+  @ManyToOne(() => VendorProduct, (vendorProduct) => vendorProduct.productHasDiscounts)
   @JoinColumn({ name: 'V_ID' })
   vendorProduct: VendorProduct;
 

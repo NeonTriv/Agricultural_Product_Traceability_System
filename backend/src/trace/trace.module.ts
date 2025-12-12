@@ -32,6 +32,8 @@ import { Vendor } from './entities/vendor.entity';
 import { Distributor } from './entities/distributor.entity';
 import { Retail } from './entities/retail.entity';
 import { Price } from './entities/price.entity';
+import { Discount } from './entities/discount.entity';
+import { ProductHasDiscount } from './entities/product-has-discount.entity';
 import { Shipment } from './entities/shipment.entity';
 import { TransportLeg } from './entities/transport-leg.entity';
 import { CarrierCompany } from './entities/carrier-company.entity';
@@ -58,6 +60,8 @@ import { StoredIn } from './entities/stored-in.entity';
       Distributor,
       Retail,
       Price,
+      Discount,
+      ProductHasDiscount,
       Shipment,
       TransportLeg,
       CarrierCompany,

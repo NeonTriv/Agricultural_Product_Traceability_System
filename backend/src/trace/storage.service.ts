@@ -16,6 +16,7 @@ export class StorageService {
   // Warehouse methods
   async getAllWarehouses() {
     const warehouses = await this.warehouseRepo.find({
+      relations: ['province', 'province.country'],
       order: { id: 'ASC' },
     });
 
@@ -23,12 +24,19 @@ export class StorageService {
       id: w.id,
       capacity: w.capacity,
       storeCondition: w.storeCondition,
+      addressDetail: w.addressDetail,
+      longitude: w.longitude,
+      latitude: w.latitude,
+      provinceId: w.provinceId,
+      provinceName: w.province?.name || 'Unknown',
+      countryName: w.province?.country?.name || 'Unknown',
     }));
   }
 
   async getWarehouse(id: number) {
     const warehouse = await this.warehouseRepo.findOne({
       where: { id },
+      relations: ['province', 'province.country'],
     });
 
     if (!warehouse) {
@@ -39,18 +47,30 @@ export class StorageService {
       id: warehouse.id,
       capacity: warehouse.capacity,
       storeCondition: warehouse.storeCondition,
+      addressDetail: warehouse.addressDetail,
+      longitude: warehouse.longitude,
+      latitude: warehouse.latitude,
+      provinceId: warehouse.provinceId,
+      provinceName: warehouse.province?.name || 'Unknown',
+      countryName: warehouse.province?.country?.name || 'Unknown',
     };
   }
 
   async createWarehouse(data: {
-    id: number;
     capacity?: number;
     storeCondition?: string;
+    addressDetail: string;
+    longitude?: number;
+    latitude?: number;
+    provinceId: number;
   }) {
     const warehouse = this.warehouseRepo.create({
-      id: data.id,
       capacity: data.capacity,
       storeCondition: data.storeCondition,
+      addressDetail: data.addressDetail,
+      longitude: data.longitude,
+      latitude: data.latitude,
+      provinceId: data.provinceId,
     });
 
     await this.warehouseRepo.save(warehouse);
@@ -63,6 +83,10 @@ export class StorageService {
     data: {
       capacity?: number;
       storeCondition?: string;
+      addressDetail?: string;
+      longitude?: number;
+      latitude?: number;
+      provinceId?: number;
     },
   ) {
     const warehouse = await this.warehouseRepo.findOne({ where: { id } });
@@ -73,6 +97,10 @@ export class StorageService {
 
     if (data.capacity !== undefined) warehouse.capacity = data.capacity;
     if (data.storeCondition !== undefined) warehouse.storeCondition = data.storeCondition;
+    if (data.addressDetail !== undefined) warehouse.addressDetail = data.addressDetail;
+    if (data.longitude !== undefined) warehouse.longitude = data.longitude;
+    if (data.latitude !== undefined) warehouse.latitude = data.latitude;
+    if (data.provinceId !== undefined) warehouse.provinceId = data.provinceId;
 
     await this.warehouseRepo.save(warehouse);
 
@@ -89,7 +117,10 @@ export class StorageService {
     // Check for stored items
     const storedItems = await this.storedInRepo.find({ where: { warehouseId: id } });
     if (storedItems.length > 0) {
-      throw new BadRequestException(`Cannot delete warehouse. Please remove ${storedItems.length} stored item(s) first (tab Storage > Stored Items)`);
+      throw new BadRequestException(
+        `Cannot delete Warehouse: It has ${storedItems.length} stored item(s). ` +
+        `Please remove them first (Storage > Stored Items).`
+      );
     }
 
     // Now safe to delete the warehouse
@@ -101,7 +132,7 @@ export class StorageService {
   // Stored In methods
   async getAllStoredIn() {
     const storedIns = await this.storedInRepo.find({
-      relations: ['batch', 'batch.agricultureProduct'],
+      relations: ['batch', 'batch.agricultureProduct', 'warehouse'],
       order: { batchId: 'DESC' },
     });
 
@@ -109,15 +140,18 @@ export class StorageService {
       batchId: si.batchId,
       warehouseId: si.warehouseId,
       quantity: si.quantity,
+      startDate: si.startDate ? new Date(si.startDate).toISOString().split('T')[0] : undefined,
+      endDate: si.endDate ? new Date(si.endDate).toISOString().split('T')[0] : undefined,
       batchQrCode: si.batch?.qrCodeUrl,
       productName: si.batch?.agricultureProduct?.name,
+      warehouseAddress: si.warehouse?.addressDetail,
     }));
   }
 
   async getStoredIn(batchId: number, warehouseId: number) {
     const storedIn = await this.storedInRepo.findOne({
       where: { batchId, warehouseId },
-      relations: ['batch', 'batch.agricultureProduct'],
+      relations: ['batch', 'batch.agricultureProduct', 'warehouse'],
     });
 
     if (!storedIn) {
@@ -130,8 +164,11 @@ export class StorageService {
       batchId: storedIn.batchId,
       warehouseId: storedIn.warehouseId,
       quantity: storedIn.quantity,
+      startDate: storedIn.startDate ? new Date(storedIn.startDate).toISOString().split('T')[0] : undefined,
+      endDate: storedIn.endDate ? new Date(storedIn.endDate).toISOString().split('T')[0] : undefined,
       batchQrCode: storedIn.batch?.qrCodeUrl,
       productName: storedIn.batch?.agricultureProduct?.name,
+      warehouseAddress: storedIn.warehouse?.addressDetail,
     };
   }
 
@@ -146,8 +183,8 @@ export class StorageService {
       batchId: data.batchId,
       warehouseId: data.warehouseId,
       quantity: data.quantity,
-      // startDate: data.startDate ? new Date(data.startDate) : null, // Commented out - column may not exist in DB
-      // endDate: data.endDate ? new Date(data.endDate) : null, // Commented out - column may not exist in DB
+      startDate: data.startDate ? new Date(data.startDate) : null,
+      endDate: data.endDate ? new Date(data.endDate) : null,
     });
 
     await this.storedInRepo.save(storedIn);
@@ -175,12 +212,12 @@ export class StorageService {
     }
 
     if (data.quantity !== undefined) storedIn.quantity = data.quantity;
-    // if (data.startDate !== undefined) {
-    //   storedIn.startDate = data.startDate ? new Date(data.startDate) : null;
-    // }
-    // if (data.endDate !== undefined) {
-    //   storedIn.endDate = data.endDate ? new Date(data.endDate) : null;
-    // }
+    if (data.startDate !== undefined) {
+      storedIn.startDate = data.startDate ? new Date(data.startDate) : null;
+    }
+    if (data.endDate !== undefined) {
+      storedIn.endDate = data.endDate ? new Date(data.endDate) : null;
+    }
 
     await this.storedInRepo.save(storedIn);
 

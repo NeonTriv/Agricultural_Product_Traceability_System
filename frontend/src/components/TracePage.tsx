@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { getSiteUrl } from '../lib/networks'
-import axios from 'axios'
+import { fetchTraceByCode } from '../api/trace'
+import type { TraceResponse } from '../types/trace'
 
 export default function TracePage() {
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null)
   const [apiProducts, setApiProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [detailData, setDetailData] = useState<TraceResponse | null>(null)
+  const [loadingDetail, setLoadingDetail] = useState(false)
 
   // Fallback hardcoded products (if API fails)
   const fallbackProducts = [
@@ -133,11 +136,15 @@ export default function TracePage() {
     const loadProducts = async () => {
       setLoading(true)
       try {
-        const baseUrl = window.location.origin.replace(':5001', ':5000')
-        const response = await axios.get(`${baseUrl}/api/products`)
+        // Use empty baseUrl to leverage Vite proxy
+        const baseUrl = ''
+        // Fetch list of all products/batches with QR codes
+        const response = await fetch(`${baseUrl}/api/trace`)
+        if (!response.ok) throw new Error(`HTTP ${response.status}`)
+        const data = await response.json()
 
         // Map API response to product format
-        const dbProducts = response.data.map((item: any) => ({
+        const dbProducts = data.map((item: any) => ({
           label: item.productName || 'Unknown Product',
           code: item.qrCodeUrl || `QR_BATCH_${item.batchId}`,
           emoji: getEmojiForProduct(item.productName || ''),
@@ -168,8 +175,21 @@ export default function TracePage() {
   // Combine API products with fallback products (API takes priority)
   const products = apiProducts.length > 0 ? apiProducts : fallbackProducts
 
-  const handleProductClick = (code: string) => {
+  const handleProductClick = async (code: string) => {
     setSelectedProduct(code)
+    setLoadingDetail(true)
+    setDetailData(null)
+    
+    try {
+      // Use empty baseUrl to leverage Vite proxy
+      const baseUrl = ''
+      const data = await fetchTraceByCode(baseUrl, code)
+      setDetailData(data)
+    } catch (error) {
+      console.error('Failed to load product detail:', error)
+    } finally {
+      setLoadingDetail(false)
+    }
   }
 
   const getProductUrl = (code: string) => {
@@ -363,35 +383,66 @@ export default function TracePage() {
             </div>
 
             {/* Product Details Section */}
-            {(() => {
-              const product = products.find(p => p.code === selectedProduct)
-              if (!product) return null
-
-              return (
-                <div style={{
-                  marginTop: 32,
-                  width: '100%',
-                  maxWidth: 600,
-                  background: 'white',
-                  padding: 32,
-                  borderRadius: 16,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+            {loadingDetail ? (
+              <div style={{
+                marginTop: 32,
+                width: '100%',
+                textAlign: 'center',
+                padding: 40,
+                color: '#6b7280'
+              }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
+                <div>Loading product details...</div>
+              </div>
+            ) : detailData ? (
+              <div style={{
+                marginTop: 32,
+                width: '100%',
+                maxWidth: 600,
+                background: 'white',
+                padding: 32,
+                borderRadius: 16,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+              }}>
+                <h3 style={{
+                  margin: 0,
+                  marginBottom: 24,
+                  fontSize: 24,
+                  fontWeight: 700,
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  textAlign: 'center'
                 }}>
-                  <h3 style={{
-                    margin: 0,
-                    marginBottom: 24,
-                    fontSize: 24,
-                    fontWeight: 700,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    textAlign: 'center'
-                  }}>
-                    Product Information
-                  </h3>
+                  Product Information
+                </h3>
 
-                  <div style={{ display: 'grid', gap: 20 }}>
-                    {/* Product Name */}
+                <div style={{ display: 'grid', gap: 20 }}>
+                  {/* Product Name */}
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: 12,
+                      color: '#6b7280',
+                      marginBottom: 6,
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      Product Name
+                    </label>
+                    <p style={{
+                      margin: 0,
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: '#374151'
+                    }}>
+                      {getEmojiForProduct(detailData.product.name)} {detailData.product.name}
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                    {/* Variety */}
                     <div>
                       <label style={{
                         display: 'block',
@@ -402,66 +453,73 @@ export default function TracePage() {
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px'
                       }}>
-                        Product Name
+                        Variety
                       </label>
-                      <p style={{
-                        margin: 0,
-                        fontSize: 18,
+                      <p style={{ margin: 0, fontSize: 16, color: '#374151' }}>
+                        {detailData.product.type?.variety || detailData.batch?.seedBatch || '-'}
+                      </p>
+                    </div>
+
+                    {/* Grade */}
+                    <div>
+                      <label style={{
+                        display: 'block',
+                        fontSize: 12,
+                        color: '#6b7280',
+                        marginBottom: 6,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}>
+                        Quality Grade
+                      </label>
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '6px 16px',
+                        background: getBgColorForGrade(detailData.batch?.grade),
+                        color: getColorForGrade(detailData.batch?.grade),
+                        borderRadius: 999,
+                        fontSize: 14,
                         fontWeight: 700,
-                        color: '#374151'
+                        letterSpacing: '0.5px'
                       }}>
-                        {product.emoji} {product.label}
+                        GRADE {detailData.batch?.grade || 'Standard'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Farm / Origin / Location */}
+                  <div>
+                    <label style={{
+                      display: 'block',
+                      fontSize: 12,
+                      color: '#6b7280',
+                      marginBottom: 6,
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      Origin
+                    </label>
+                    <p style={{ margin: 0, fontSize: 16, color: '#374151', marginBottom: 4 }}>
+                      📍 {detailData.farm?.name || detailData.batch?.farmName || 'Unknown Farm'}
+                    </p>
+                    {detailData.farm?.location && (
+                      <p style={{ margin: 0, fontSize: 14, color: '#6b7280' }}>
+                        {detailData.farm.location.province && `${detailData.farm.location.province}`}
+                        {detailData.farm.location.province && detailData.farm.location.country && ', '}
+                        {detailData.farm.location.country && `${detailData.farm.location.country}`}
                       </p>
-                    </div>
+                    )}
+                    {detailData.farm?.ownerName && (
+                      <p style={{ margin: 0, fontSize: 14, color: '#6b7280', marginTop: 4 }}>
+                        Owner: {detailData.farm.ownerName}
+                      </p>
+                    )}
+                  </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                      {/* Variety */}
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          fontSize: 12,
-                          color: '#6b7280',
-                          marginBottom: 6,
-                          fontWeight: 600,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>
-                          Variety
-                        </label>
-                        <p style={{ margin: 0, fontSize: 16, color: '#374151' }}>
-                          {product.variety}
-                        </p>
-                      </div>
-
-                      {/* Grade */}
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          fontSize: 12,
-                          color: '#6b7280',
-                          marginBottom: 6,
-                          fontWeight: 600,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>
-                          Quality Grade
-                        </label>
-                        <span style={{
-                          display: 'inline-block',
-                          padding: '6px 16px',
-                          background: product.bgColor,
-                          color: product.color,
-                          borderRadius: 999,
-                          fontSize: 14,
-                          fontWeight: 700,
-                          letterSpacing: '0.5px'
-                        }}>
-                          GRADE {product.grade}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Farm / Origin / Location */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                    {/* Harvest Date */}
                     <div>
                       <label style={{
                         display: 'block',
@@ -472,22 +530,17 @@ export default function TracePage() {
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px'
                       }}>
-                        Origin
+                        Harvest Date
                       </label>
-                      <p style={{ margin: 0, fontSize: 16, color: '#374151', marginBottom: 4 }}>
-                        📍 {product.origin}
+                      <p style={{ margin: 0, fontSize: 16, color: '#374151' }}>
+                        🌾 {detailData.batch?.harvestDate 
+                          ? new Date(detailData.batch.harvestDate).toLocaleDateString('vi-VN')
+                          : '-'}
                       </p>
-                      {(product.province || product.country) && (
-                        <p style={{ margin: 0, fontSize: 14, color: '#6b7280' }}>
-                          {product.province && `${product.province}`}
-                          {product.province && product.country && ', '}
-                          {product.country && `${product.country}`}
-                        </p>
-                      )}
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                      {/* Harvest Date */}
+                    {/* Processing Date */}
+                    {detailData.processing?.processingDate && (
                       <div>
                         <label style={{
                           display: 'block',
@@ -498,33 +551,17 @@ export default function TracePage() {
                           textTransform: 'uppercase',
                           letterSpacing: '0.5px'
                         }}>
-                          Harvest Date
+                          Processed On
                         </label>
                         <p style={{ margin: 0, fontSize: 16, color: '#374151' }}>
-                          🌾 {new Date(product.harvestDate).toLocaleDateString('vi-VN')}
+                          🏭 {new Date(detailData.processing.processingDate).toLocaleDateString('vi-VN')}
                         </p>
                       </div>
+                    )}
+                  </div>
 
-                      {/* Expiration Date */}
-                      <div>
-                        <label style={{
-                          display: 'block',
-                          fontSize: 12,
-                          color: '#6b7280',
-                          marginBottom: 6,
-                          fontWeight: 600,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px'
-                        }}>
-                          Best Before
-                        </label>
-                        <p style={{ margin: 0, fontSize: 16, color: '#374151' }}>
-                          📅 {new Date(product.expirationDate).toLocaleDateString('vi-VN')}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Certifications */}
+                  {/* Certifications */}
+                  {detailData.farm?.certifications && detailData.farm.certifications.length > 0 && (
                     <div>
                       <label style={{
                         display: 'block',
@@ -537,12 +574,25 @@ export default function TracePage() {
                       }}>
                         Certifications
                       </label>
-                      <p style={{ margin: 0, fontSize: 16, color: '#374151' }}>
-                        ✓ {product.certifications}
-                      </p>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {detailData.farm.certifications.map((cert, idx) => (
+                          <span key={idx} style={{
+                            padding: '4px 12px',
+                            background: '#dbeafe',
+                            color: '#1e40af',
+                            borderRadius: 999,
+                            fontSize: 12,
+                            fontWeight: 600
+                          }}>
+                            ✓ {cert}
+                          </span>
+                        ))}
+                      </div>
                     </div>
+                  )}
 
-                    {/* Description */}
+                  {/* Processing Facility */}
+                  {detailData.processing?.facility && (
                     <div>
                       <label style={{
                         display: 'block',
@@ -553,50 +603,86 @@ export default function TracePage() {
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px'
                       }}>
-                        Description
+                        Processing Facility
                       </label>
-                      <p style={{
-                        margin: 0,
-                        fontSize: 16,
-                        color: '#374151',
-                        lineHeight: 1.6
-                      }}>
-                        {product.description}
+                      <p style={{ margin: 0, fontSize: 16, color: '#374151' }}>
+                        🏭 {detailData.processing.facility.name}
                       </p>
+                      {detailData.processing.facility.location && (
+                        <p style={{ margin: 0, fontSize: 14, color: '#6b7280', marginTop: 4 }}>
+                          {detailData.processing.facility.location}
+                        </p>
+                      )}
                     </div>
+                  )}
 
-                    {/* Batch Code */}
-                    <div style={{
-                      marginTop: 8,
-                      padding: 16,
-                      background: '#f9fafb',
-                      borderRadius: 8,
-                      textAlign: 'center'
-                    }}>
+                  {/* Distributor & Price */}
+                  {(detailData.distributor || detailData.price) && (
+                    <div>
                       <label style={{
                         display: 'block',
-                        fontSize: 11,
+                        fontSize: 12,
                         color: '#6b7280',
-                        marginBottom: 4,
+                        marginBottom: 6,
                         fontWeight: 600,
                         textTransform: 'uppercase',
                         letterSpacing: '0.5px'
                       }}>
-                        Batch Code
+                        Distribution & Pricing
                       </label>
-                      <code style={{
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: '#667eea',
-                        fontFamily: 'monospace'
-                      }}>
-                        {product.code}
-                      </code>
+                      {detailData.distributor?.vendor && (
+                        <p style={{ margin: 0, fontSize: 16, color: '#374151', marginBottom: 4 }}>
+                          🏪 {detailData.distributor.vendor.name || detailData.distributor.vendor.tin}
+                        </p>
+                      )}
+                      {detailData.price && (
+                        <p style={{
+                          margin: 0,
+                          fontSize: 20,
+                          fontWeight: 700,
+                          color: '#10b981',
+                          marginTop: 8
+                        }}>
+                          💰 {new Intl.NumberFormat('vi-VN', {
+                            style: 'currency',
+                            currency: detailData.price.currency || 'VND'
+                          }).format(detailData.price.amount || 0)}
+                        </p>
+                      )}
                     </div>
+                  )}
+
+                  {/* Batch Code */}
+                  <div style={{
+                    marginTop: 8,
+                    padding: 16,
+                    background: '#f9fafb',
+                    borderRadius: 8,
+                    textAlign: 'center'
+                  }}>
+                    <label style={{
+                      display: 'block',
+                      fontSize: 11,
+                      color: '#6b7280',
+                      marginBottom: 4,
+                      fontWeight: 600,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px'
+                    }}>
+                      QR Code / Batch ID
+                    </label>
+                    <code style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: '#667eea',
+                      fontFamily: 'monospace'
+                    }}>
+                      {detailData.code}
+                    </code>
                   </div>
                 </div>
-              )
-            })()}
+              </div>
+            ) : null}
           </div>
         )}
       </div>

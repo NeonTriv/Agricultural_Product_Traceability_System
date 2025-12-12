@@ -132,15 +132,15 @@ CREATE TABLE RETAIL (
     FOREIGN KEY (Vendor_TIN) REFERENCES VENDOR(TIN) ON DELETE CASCADE
 );
 
--- Cần tạo VENDOR_PRODUCT trước BATCH
+
 CREATE TABLE VENDOR_PRODUCT (
     ID INT IDENTITY(1,1) PRIMARY KEY,
-    Unit NVARCHAR(50) NOT NULL,
-    Vendor_TIN VARCHAR(20) NOT NULL,
     AP_ID INT NOT NULL,
+    Vendor_TIN VARCHAR(20) NOT NULL,
+    Unit NVARCHAR(50) NOT NULL, -- Ví dụ: kg, tấn, hộp
+    ValuePerUnit DECIMAL(10, 2), -- Giá gốc mỗi đơn vị
     FOREIGN KEY (Vendor_TIN) REFERENCES VENDOR(TIN),
     FOREIGN KEY (AP_ID) REFERENCES AGRICULTURE_PRODUCT(ID),
-    UNIQUE(Vendor_TIN, AP_ID)
 );
 
 CREATE TABLE BATCH (
@@ -233,13 +233,14 @@ CREATE TABLE PRICE (
 
 CREATE TABLE DISCOUNT (
     ID INT IDENTITY(1,1) PRIMARY KEY,
-    V_TIN VARCHAR(20) NOT NULL,
+    Name NVARCHAR(255),
     Percentage DECIMAL(5, 2) CHECK (Percentage > 0 AND Percentage <= 100),
-    Min_Value DECIMAL(12, 2),
-    Max_Discount_Amount DECIMAL(12, 2),
+    Min_Value DECIMAL(12, 2),       
+    Max_Discount_Amount DECIMAL(12, 2), 
+    Priority INT DEFAULT 0,          
+    Is_Stackable BIT DEFAULT 0,      
     Start_Date DATETIMEOFFSET NOT NULL,
     Expired_Date DATETIMEOFFSET NOT NULL,
-    FOREIGN KEY (V_TIN) REFERENCES VENDOR(TIN),
     CHECK (Expired_Date > Start_Date)
 );
 

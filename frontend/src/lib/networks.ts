@@ -14,5 +14,6 @@ export function parseTargets(): Target[] {
 }
 
 export function getSiteUrl() {
-  return (import.meta.env.VITE_SITE_URL || window.location.origin).replace(/\/$/, '')
+  // Always use localhost for QR code URLs to ensure consistency
+  return 'http://localhost:5001'
 }

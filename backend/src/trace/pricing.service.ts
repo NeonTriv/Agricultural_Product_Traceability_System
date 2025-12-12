@@ -3,6 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Price } from './entities/price.entity';
 import { VendorProduct } from './entities/vendor-product.entity';
+import { Discount } from './entities/discount.entity';
+import { ProductHasDiscount } from './entities/product-has-discount.entity';
 import { Batch } from './entities/batch.entity';
 
 @Injectable()
@@ -14,9 +16,15 @@ export class PricingService {
     private readonly vendorProductRepo: Repository<VendorProduct>,
     @InjectRepository(Batch)
     private readonly batchRepo: Repository<Batch>,
+    @InjectRepository(Discount)
+    private readonly discountRepo: Repository<Discount>,
+    @InjectRepository(ProductHasDiscount)
+    private readonly phdRepo: Repository<ProductHasDiscount>,
   ) {}
 
+  // ==================================================================
   // Vendor Product methods
+  // ==================================================================
   async getAllVendorProducts() {
     const vendorProducts = await this.vendorProductRepo.find({
       relations: ['agricultureProduct', 'vendor'],
@@ -69,9 +77,10 @@ export class PricingService {
   }
 
   async deleteVendorProduct(id: number) {
+    // Cần load relation tới bảng trung gian ProductHasDiscount
     const vendorProduct = await this.vendorProductRepo.findOne({ 
       where: { id },
-      relations: ['prices', 'discounts']
+      relations: ['prices', 'productHasDiscounts'] // Đã đổi tên relation cho đúng schema mới
     });
 
     if (!vendorProduct) {
@@ -81,24 +90,27 @@ export class PricingService {
     // Check for blockers
     const blockers: string[] = [];
 
-    // Check if there's a price for this vendor product
+    // Check prices
     if (vendorProduct.prices?.length > 0) {
-      blockers.push('Price (tab Pricing)');
+      blockers.push(`${vendorProduct.prices.length} Price(s)`);
     }
 
-    // Check if there's discounts
-    if (vendorProduct.discounts?.length > 0) {
-      blockers.push(`${vendorProduct.discounts.length} Discount(s)`);
+    // Check discounts (via Link table)
+    if (vendorProduct.productHasDiscounts?.length > 0) {
+      blockers.push(`${vendorProduct.productHasDiscounts.length} Linked Discount(s)`);
     }
 
-    // Check if any batch uses this vendor product
+    // Check batches
     const batches = await this.batchRepo.find({ where: { vendorProductId: id } });
     if (batches.length > 0) {
-      blockers.push(`${batches.length} Batch(es) (tab Products > Batches)`);
+      blockers.push(`${batches.length} Batch(es)`);
     }
 
     if (blockers.length > 0) {
-      throw new BadRequestException(`Cannot delete vendor product. Please delete the following first: ${blockers.join(', ')}`);
+      throw new BadRequestException(
+        `Cannot delete Vendor Product: It has ${blockers.join(' and ')}. ` +
+        `Please delete them first.`
+      );
     }
 
     await this.vendorProductRepo.delete({ id });
@@ -106,7 +118,9 @@ export class PricingService {
     return { success: true };
   }
 
+  // ==================================================================
   // Price methods
+  // ==================================================================
   async getAllPrices() {
     const prices = await this.priceRepo.find({
       relations: ['vendorProduct', 'vendorProduct.agricultureProduct', 'vendorProduct.vendor'],
@@ -148,7 +162,6 @@ export class PricingService {
     value: number;
     currency: string;
   }) {
-    // Check if vendor product exists
     const vendorProduct = await this.vendorProductRepo.findOne({
       where: { id: data.vendorProductId },
     });
@@ -157,7 +170,6 @@ export class PricingService {
       throw new NotFoundException(`Vendor Product with ID ${data.vendorProductId} not found`);
     }
 
-    // Check if price already exists
     const existingPrice = await this.priceRepo.findOne({
       where: { vendorProductId: data.vendorProductId },
     });
@@ -205,6 +217,191 @@ export class PricingService {
       throw new NotFoundException(`Price for Vendor Product ID ${vendorProductId} not found`);
     }
 
+    return { success: true };
+  }
+
+  // ==================================================================
+  // Discounts methods (UPDATED SCHEMA)
+  // ==================================================================
+  async getAllDiscounts() {
+    const discounts = await this.discountRepo.find({ order: { id: 'ASC' } });
+    return discounts.map((d) => ({
+      id: d.id,
+      name: d.name, // NEW
+      percentage: d.percentage,
+      minValue: d.minValue,
+      maxDiscountAmount: d.maxDiscountAmount,
+      priority: d.priority, // NEW
+      isStackable: d.isStackable, // NEW
+      startDate: d.startDate,
+      expiredDate: d.expiredDate,
+    }));
+  }
+
+  async createDiscount(data: {
+    name: string; // NEW: Required
+    percentage?: number;
+    minValue?: number;
+    maxDiscountAmount?: number;
+    priority?: number;
+    isStackable?: boolean;
+    startDate: Date;
+    expiredDate: Date;
+  }) {
+    const discount = this.discountRepo.create({
+      name: data.name,
+      percentage: data.percentage,
+      minValue: data.minValue,
+      maxDiscountAmount: data.maxDiscountAmount,
+      priority: data.priority,
+      isStackable: data.isStackable,
+      startDate: data.startDate,
+      expiredDate: data.expiredDate,
+    });
+    const saved = await this.discountRepo.save(discount);
+    return { success: true, id: saved.id };
+  }
+
+  async updateDiscount(
+    id: number,
+    data: {
+      name?: string;
+      percentage?: number;
+      minValue?: number;
+      maxDiscountAmount?: number;
+      priority?: number;
+      isStackable?: boolean;
+      startDate?: Date;
+      expiredDate?: Date;
+    },
+  ) {
+    const discount = await this.discountRepo.findOne({ where: { id } });
+    if (!discount) throw new NotFoundException(`Discount ID ${id} not found`);
+    
+    if (data.name !== undefined) discount.name = data.name;
+    if (data.percentage !== undefined) discount.percentage = data.percentage;
+    if (data.minValue !== undefined) discount.minValue = data.minValue;
+    if (data.maxDiscountAmount !== undefined) discount.maxDiscountAmount = data.maxDiscountAmount;
+    if (data.priority !== undefined) discount.priority = data.priority;
+    if (data.isStackable !== undefined) discount.isStackable = data.isStackable;
+    if (data.startDate !== undefined) discount.startDate = data.startDate;
+    if (data.expiredDate !== undefined) discount.expiredDate = data.expiredDate;
+    
+    await this.discountRepo.save(discount);
+    return { success: true, id };
+  }
+
+  async deleteDiscount(id: number) {
+    const result = await this.discountRepo.delete({ id });
+    if (result.affected === 0) throw new NotFoundException(`Discount ID ${id} not found`);
+    return { success: true };
+  }
+
+  async linkProductHasDiscount(vendorProductId: number, discountId: number) {
+    const link = this.phdRepo.create({ vendorProductId, discountId });
+    await this.phdRepo.save(link);
+    return { success: true };
+  }
+
+  // ==================================================================
+  // Orchestration: Create Vendor Product + Price + Discounts
+  // ==================================================================
+  async createVendorProductWithPricingAndDiscounts(data: {
+    vendorTin: string;
+    agricultureProductId: number;
+    unit: string;
+    valuePerUnit?: number;
+    priceValue?: number;
+    priceCurrency?: string;
+    discounts?: Array<{
+      percentage: number;
+      minValue?: number;
+      maxDiscountAmount?: number;
+      priority?: number;
+      isStackable?: boolean;
+      startDate?: Date;
+      expiredDate?: Date;
+    }>;
+  }) {
+    try {
+      // Step 1: Create Vendor Product
+      const vpResult = await this.createVendorProduct({
+        vendorTin: data.vendorTin,
+        agricultureProductId: data.agricultureProductId,
+        unit: data.unit,
+      });
+      
+      if (!vpResult.id) {
+        throw new Error('Failed to create vendor product');
+      }
+
+      const vendorProductId = vpResult.id;
+
+      // Step 2: Create Price (if provided)
+      if (data.priceValue) {
+        await this.createPrice({
+          vendorProductId,
+          value: data.priceValue,
+          currency: data.priceCurrency || 'VND',
+        });
+      }
+
+      // Step 3: Create Discounts and link them
+      if (data.discounts && data.discounts.length > 0) {
+        // Tự động tạo tên mã giảm giá nếu không có (Vì UI setup chỉ gửi % chứ không gửi tên)
+        const autoName = `PROMO-${data.vendorTin}-${data.agricultureProductId}`;
+        
+        for (const discountData of data.discounts) {
+          if (discountData.percentage > 0) {
+            const startDate = discountData.startDate || new Date();
+            const expiredDate = discountData.expiredDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+            // Tạo Discount (Rule) mới
+            const discResult = await this.createDiscount({
+              name: autoName, // Tự đặt tên
+              percentage: discountData.percentage,
+              minValue: discountData.minValue,
+              maxDiscountAmount: discountData.maxDiscountAmount,
+              priority: discountData.priority || 0,
+              isStackable: discountData.isStackable || false,
+              startDate: startDate,
+              expiredDate: expiredDate,
+            });
+
+            // Link vào bảng trung gian
+            if (discResult.id) {
+              await this.linkProductHasDiscount(vendorProductId, discResult.id);
+            }
+          }
+        }
+      }
+
+      return { success: true, vendorProductId };
+    } catch (error) {
+      throw new BadRequestException(
+        `Failed to create vendor product with pricing: ${error.message}`,
+      );
+    }
+  }
+  // Lấy danh sách sản phẩm đã được áp dụng mã giảm giá này
+  async getProductsByDiscount(discountId: number) {
+    const relations = await this.phdRepo.find({
+      where: { discountId },
+      relations: ['vendorProduct', 'vendorProduct.agricultureProduct', 'vendorProduct.vendor'],
+    });
+
+    return relations.map((r) => ({
+      vendorProductId: r.vendorProductId,
+      productName: (r.vendorProduct as any)?.agricultureProduct?.name,
+      vendorName: (r.vendorProduct as any)?.vendor?.name,
+      unit: (r.vendorProduct as any)?.unit,
+    }));
+  }
+
+  // Gỡ bỏ mã giảm giá khỏi sản phẩm
+  async unlinkProductHasDiscount(vendorProductId: number, discountId: number) {
+    const result = await this.phdRepo.delete({ vendorProductId, discountId });
+    if (result.affected === 0) throw new NotFoundException('Link not found');
     return { success: true };
   }
 }

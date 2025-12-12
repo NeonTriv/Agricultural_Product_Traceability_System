@@ -29,7 +29,7 @@ export class StorageController {
       addressDetail: string;
       longitude?: number;
       latitude?: number;
-      provinceId?: number;
+      provinceId: number;
     },
   ) {
     return this.storageService.createWarehouse(body);

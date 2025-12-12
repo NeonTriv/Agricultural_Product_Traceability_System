@@ -17,6 +17,43 @@ export class ProductController {
     return this.traceService.getAllAgricultureProducts();
   }
 
+  @Get('categories')
+  @HttpCode(HttpStatus.OK)
+  async getAllCategories() {
+    return this.traceService.getAllCategories();
+  }
+
+  @Post('categories')
+  @HttpCode(HttpStatus.CREATED)
+  async createCategory(@Body() body: { name: string }) {
+    return this.traceService.createCategory(body.name);
+  }
+
+  @Post('types')
+  @HttpCode(HttpStatus.CREATED)
+  async createType(@Body() body: { variety: string; categoryId: number }) {
+    return this.traceService.createType(body.variety, body.categoryId);
+  }
+
+  @Post('agriculture-products')
+  @HttpCode(HttpStatus.CREATED)
+  async createAgricultureProduct(@Body() body: { name: string; typeId: number }) {
+    return this.traceService.createAgricultureProduct(body.name, body.typeId);
+  }
+  @Patch('agriculture-products/:id')
+  @HttpCode(HttpStatus.OK)
+  async updateAgricultureProduct(
+    @Param('id') id: string,
+    @Body() body: { name?: string; typeId?: number; imageUrl?: string },
+  ) {
+    return this.traceService.updateAgricultureProduct(parseInt(id), body);
+  }
+  @Delete('agriculture-products/:id')
+  @HttpCode(HttpStatus.OK)
+  async deleteAgricultureProduct(@Param('id') id: string) {
+    return this.traceService.deleteAgricultureProduct(parseInt(id));
+  }
+
   @Get('provinces')
   @HttpCode(HttpStatus.OK)
   async getAllProvinces() {
@@ -76,6 +113,19 @@ export class ProductController {
   async getAllBatches() {
     return this.traceService.getAllBatches();
   }
+  @Patch('batches/:id')
+  @HttpCode(HttpStatus.OK)
+  async updateBatch(
+    @Param('id') id: string,
+    @Body() body: { harvestDate?: string | Date; grade?: string; vendorProductId?: number | null; qrCodeUrl?: string },
+  ) {
+    return this.traceService.updateBatch(parseInt(id), body);
+  }
+  @Delete('batches/:id')
+  @HttpCode(HttpStatus.OK)
+  async deleteBatch(@Param('id') id: string) {
+    return this.traceService.deleteBatch(parseInt(id));
+  }
 
   @Get()
   @HttpCode(HttpStatus.OK)
@@ -96,6 +146,26 @@ export class ProductController {
     },
   ) {
     return this.traceService.createProduct(body);
+  }
+
+  @Post('create-full-batch')
+  @HttpCode(HttpStatus.CREATED)
+  async createFullBatch(
+    @Body()
+    body: {
+      farmId: number;
+      harvestDate: string;
+      grade?: string;
+      seedBatch?: string;
+      createdBy?: string;
+      isNewProduct: boolean;
+      productId?: number | null;
+      newProductName?: string | null;
+      newProductTypeId?: number | null;
+      vendorConfig?: any;
+    },
+  ) {
+    return this.traceService.createFullBatch(body);
   }
 
   @Patch(':id')
