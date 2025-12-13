@@ -254,11 +254,11 @@ INSERT INTO SHIP_BATCH (S_ID, B_ID) VALUES
 (@s1, (SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-002'));
 
 -- Transport Legs (4 rows)
-INSERT INTO TRANSPORLEG (Shipment_ID, Driver_Name, Temperature_Profile, Start_Location, To_Location, D_Time, CarrierCompany_TIN) VALUES 
-(@s1, 'Driver Tom', 'Ambient', 'Mekong Processing Hub', 'Thu Duc Warehouse', DATEADD(DAY, -5, GETDATE()), 'LOG-001'),
-(@s1, 'Driver Jerry', 'Ambient', 'Thu Duc Warehouse', 'BigC Supermarket', DATEADD(DAY, -2, GETDATE()), 'LOG-001'),
-(@s2, 'Driver Mike', 'Cool (18C)', 'Highland Roastery', 'Aeon Mall', DATEADD(DAY, -1, GETDATE()), 'LOG-002'),
-((SELECT TOP 1 ID FROM SHIPMENT WHERE Status = 'Pending'), 'Driver Dave', 'Frozen', 'Farm', 'Airport', NULL, 'LOG-002');
+INSERT INTO TRANSPORLEG (Shipment_ID, Driver_Name, Reg_No, Temperature_Profile, Start_Location, To_Location, D_Time, A_Time, CarrierCompany_TIN) VALUES 
+(@s1, 'Driver Tom', '59C-123.45', 'Ambient', 'Mekong Processing Hub', 'Thu Duc Warehouse', DATEADD(DAY, -5, GETDATE()), DATEADD(DAY, -4, GETDATE()), 'LOG-001'),
+(@s1, 'Driver Jerry', '29H-567.89', 'Ambient', 'Thu Duc Warehouse', 'BigC Supermarket', DATEADD(DAY, -2, GETDATE()), DATEADD(DAY, -1, GETDATE()), 'LOG-001'),
+(@s2, 'Driver Mike', '49C-999.00', 'Cool (18C)', 'Highland Roastery', 'Aeon Mall', DATEADD(DAY, -1, GETDATE()), GETDATE(), 'LOG-002'),
+((SELECT TOP 1 ID FROM SHIPMENT WHERE Status = 'Pending'), 'Driver Dave', '51D-333.44', 'Frozen', 'Farm', 'Airport', NULL, NULL, 'LOG-002');
 
 PRINT '============================================================================';
 PRINT 'ALL DATA INSERTED SUCCESSFULLY!';
