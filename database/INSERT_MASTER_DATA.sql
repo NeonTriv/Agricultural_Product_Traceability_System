@@ -157,13 +157,13 @@ DECLARE @ap2 INT = (SELECT ID FROM AGRICULTURE_PRODUCT WHERE Name = 'Highland Ro
 DECLARE @ap3 INT = (SELECT ID FROM AGRICULTURE_PRODUCT WHERE Name = 'Sweet Yellow Mango');
 
 -- Vendor Products (6 rows)
-INSERT INTO VENDOR_PRODUCT (AP_ID, Vendor_TIN, Unit, ValuePerUnit) VALUES 
-(@ap1, 'VEN-001', 'kg', 1.50), -- BigC sells Rice
-(@ap1, 'VEN-001', '5kg bag', 7.00),
-(@ap2, 'VEN-003', '500g pack', 5.00), -- Aeon sells Coffee
-(@ap3, 'VEN-002', 'kg', 2.50), -- WinMart sells Mango
-(@ap1, 'DIST-001', 'ton', 1200.00), -- Distributor sells Rice in tons
-(@ap2, 'DIST-002', 'ton', 4000.00); -- Distributor sells Coffee in tons
+INSERT INTO VENDOR_PRODUCT (Vendor_TIN, Unit, ValuePerUnit) VALUES 
+('VEN-001', 'kg', 1.50), -- BigC sells Rice
+('VEN-001', '5kg bag', 7.00),
+('VEN-003', '500g pack', 5.00), -- Aeon sells Coffee
+('VEN-002', 'kg', 2.50), -- WinMart sells Mango
+('DIST-001', 'ton', 1200.00), -- Distributor sells Rice in tons
+('DIST-002', 'ton', 4000.00); -- Distributor sells Coffee in tons
 
 -- Prices (Link 1-1 with Vendor Product)
 INSERT INTO PRICE (V_ID, Value, Currency)
@@ -254,11 +254,11 @@ INSERT INTO SHIP_BATCH (S_ID, B_ID) VALUES
 (@s1, (SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-002'));
 
 -- Transport Legs (4 rows)
-INSERT INTO TRANSPORLEG (Shipment_ID, Driver_Name, Temperature_Profile, Start_Location, To_Location, D_Time, CarrierCompany_TIN) VALUES 
-(@s1, 'Driver Tom', 'Ambient', 'Mekong Processing Hub', 'Thu Duc Warehouse', DATEADD(DAY, -5, GETDATE()), 'LOG-001'),
-(@s1, 'Driver Jerry', 'Ambient', 'Thu Duc Warehouse', 'BigC Supermarket', DATEADD(DAY, -2, GETDATE()), 'LOG-001'),
-(@s2, 'Driver Mike', 'Cool (18C)', 'Highland Roastery', 'Aeon Mall', DATEADD(DAY, -1, GETDATE()), 'LOG-002'),
-((SELECT TOP 1 ID FROM SHIPMENT WHERE Status = 'Pending'), 'Driver Dave', 'Frozen', 'Farm', 'Airport', NULL, 'LOG-002');
+INSERT INTO TRANSPORLEG (Shipment_ID, Driver_Name, Reg_No, Temperature_Profile, Start_Location, To_Location, D_Time, A_Time, CarrierCompany_TIN) VALUES 
+(@s1, 'Driver Tom', '59C-123.45', 'Ambient', 'Mekong Processing Hub', 'Thu Duc Warehouse', DATEADD(DAY, -5, GETDATE()), DATEADD(DAY, -4, GETDATE()), 'LOG-001'),
+(@s1, 'Driver Jerry', '29H-567.89', 'Ambient', 'Thu Duc Warehouse', 'BigC Supermarket', DATEADD(DAY, -2, GETDATE()), DATEADD(DAY, -1, GETDATE()), 'LOG-001'),
+(@s2, 'Driver Mike', '49C-999.00', 'Cool (18C)', 'Highland Roastery', 'Aeon Mall', DATEADD(DAY, -1, GETDATE()), GETDATE(), 'LOG-002'),
+((SELECT TOP 1 ID FROM SHIPMENT WHERE Status = 'Pending'), 'Driver Dave', '51D-333.44', 'Frozen', 'Farm', 'Airport', NULL, NULL, 'LOG-002');
 
 PRINT '============================================================================';
 PRINT 'ALL DATA INSERTED SUCCESSFULLY!';
