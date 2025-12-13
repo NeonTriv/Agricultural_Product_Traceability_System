@@ -193,6 +193,7 @@ CREATE TABLE TRANSPORLEG (
     ID INT IDENTITY(1,1) PRIMARY KEY,
     Shipment_ID INT NOT NULL,
     Driver_Name NVARCHAR(100),
+    Reg_No NVARCHAR(100),
     Temperature_Profile NVARCHAR(MAX),
     Start_Location NVARCHAR(255) NOT NULL,
     To_Location NVARCHAR(255) NOT NULL,
