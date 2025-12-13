@@ -63,7 +63,7 @@ BEGIN
     -- ==========================================================
     SELECT
         PF.Name AS [Cơ Sở Chế Biến],
-        PF.Address AS [Địa Chỉ CS],
+        PF.Address_detail AS [Địa Chỉ CS],
         PF.License_Number AS [Giấy Phép],
         PF.Contact_Info AS [Liên Hệ CS],
         PR.Processing_Date AS [Ngày Chế Biến],
@@ -80,11 +80,11 @@ BEGIN
     -- BẢNG 4: THÔNG TIN LƯU KHO
     -- ==========================================================
     SELECT
-        W.Address AS [Kho Lưu Trữ],
+        W.Address_detail AS [Kho Lưu Trữ],
         W.Store_Condition AS [Điều Kiện Bảo Quản],
         SI.Quantity AS [Số Lượng Tồn],
-        W.Start_Date AS [Ngày Nhập Kho],
-        W.End_Date AS [Ngày Hết Hạn Lưu Trữ]
+        SI.Start_Date AS [Ngày Nhập Kho],
+        SI.End_Date AS [Ngày Xuất Kho]
     FROM STORED_IN SI
     JOIN WAREHOUSE W ON SI.W_ID = W.ID
     WHERE SI.B_ID = @BatchID;
@@ -103,7 +103,7 @@ BEGIN
 
         -- Nhà Phân Phối
         V.Name AS [Nhà Phân Phối],
-        V.Address AS [Địa Chỉ NPP],
+        V.Address_detail AS [Địa Chỉ NPP],
         V.Contact_Info AS [SĐT NPP],
         D.Type AS [Loại Hình PP],
         
@@ -129,23 +129,23 @@ BEGIN
     SELECT
         V.TIN AS [Mã Số Thuế],
         V.Name AS [Tên Nhà Cung Cấp],
-        V.Address AS [Địa Chỉ],
+        V.Address_detail AS [Địa Chỉ],
         V.Contact_Info AS [Liên Hệ],
         CASE
             WHEN D.Vendor_TIN IS NOT NULL THEN 'Distributor (' + D.Type + ')'
             WHEN R.Vendor_TIN IS NOT NULL THEN 'Retail (' + R.Format + ')'
             ELSE 'Vendor'
         END AS [Loại Hình],
-        P.Unit_Price AS [Giá/Đơn Vị],
-        P.Currency AS [Đơn Vị Tiền],
-        P.Effective_Date AS [Ngày Hiệu Lực],
-        P.Expiration_Date AS [Ngày Hết Hạn]
+        VP.Unit AS [Đơn Vị],
+        VP.ValuePerUnit AS [Giá Gốc/Đơn Vị],
+        P.Value AS [Giá Bán],
+        P.Currency AS [Đơn Vị Tiền]
     FROM BATCH B
     JOIN VENDOR_PRODUCT VP ON B.AP_ID = VP.AP_ID
     JOIN VENDOR V ON VP.Vendor_TIN = V.TIN
     LEFT JOIN DISTRIBUTOR D ON V.TIN = D.Vendor_TIN
     LEFT JOIN RETAIL R ON V.TIN = R.Vendor_TIN
-    LEFT JOIN PRICE P ON VP.Vendor_TIN = P.Vendor_TIN AND VP.AP_ID = P.AP_ID
+    LEFT JOIN PRICE P ON VP.ID = P.V_ID
     WHERE B.ID = @BatchID
     ORDER BY V.Name;
 
