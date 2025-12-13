@@ -2,7 +2,7 @@ USE Traceability;
 GO
 
 PRINT '============================================================================';
-PRINT 'POPULATING DATABASE WITH ENGLISH DATA (3-10 ROWS PER TABLE)...';
+PRINT 'POPULATING DATABASE WITH DATA';
 PRINT '============================================================================';
 
 -- ============================================================================
@@ -10,14 +10,14 @@ PRINT '=========================================================================
 -- ============================================================================
 PRINT '1. Inserting Countries, Provinces, Categories...';
 
--- Countries (5 rows)
+-- Countries
 INSERT INTO COUNTRY (Name) VALUES 
 ('Vietnam'), ('Thailand'), ('United States'), ('Japan'), ('Brazil');
 
 DECLARE @vnId INT = (SELECT ID FROM COUNTRY WHERE Name = 'Vietnam');
 DECLARE @usId INT = (SELECT ID FROM COUNTRY WHERE Name = 'United States');
 
--- Provinces (8 rows)
+-- Provinces 
 INSERT INTO PROVINCE (Name, C_ID) VALUES 
 ('Hanoi', @vnId), 
 ('Ho Chi Minh City', @vnId), 
@@ -28,7 +28,7 @@ INSERT INTO PROVINCE (Name, C_ID) VALUES
 ('Washington', @usId), 
 ('Texas', @usId);
 
--- Categories (5 rows)
+-- Categories 
 INSERT INTO CATEGORY (Name) VALUES 
 ('Cereal & Grain'), 
 ('Fruit'), 
@@ -41,7 +41,7 @@ DECLARE @fruitId INT = (SELECT ID FROM CATEGORY WHERE Name = 'Fruit');
 DECLARE @vegId INT = (SELECT ID FROM CATEGORY WHERE Name = 'Vegetable');
 DECLARE @coffeeId INT = (SELECT ID FROM CATEGORY WHERE Name = 'Coffee & Tea');
 
--- Types (8 rows)
+-- Types 
 INSERT INTO [TYPE] (Variety, C_ID) VALUES 
 ('Jasmine Rice', @grainId), 
 ('ST25 Premium Rice', @grainId), 
@@ -50,9 +50,9 @@ INSERT INTO [TYPE] (Variety, C_ID) VALUES
 ('Cat Chu Mango', @fruitId), 
 ('Red Dragon Fruit', @fruitId), 
 ('Organic Lettuce', @vegId), 
-('Black Pepper', @grainId); -- Assuming Spices/Grain overlap for simplicity
+('Black Pepper', @grainId); 
 
--- Agriculture Products (8 rows)
+-- Agriculture Products 
 DECLARE @t1 INT = (SELECT ID FROM [TYPE] WHERE Variety = 'Jasmine Rice');
 DECLARE @t2 INT = (SELECT ID FROM [TYPE] WHERE Variety = 'ST25 Premium Rice');
 DECLARE @t3 INT = (SELECT ID FROM [TYPE] WHERE Variety = 'Robusta Coffee');
@@ -78,16 +78,16 @@ DECLARE @dalatId INT = (SELECT ID FROM PROVINCE WHERE Name = 'Da Lat');
 DECLARE @hcmId INT = (SELECT ID FROM PROVINCE WHERE Name = 'Ho Chi Minh City');
 DECLARE @mekongId INT = (SELECT ID FROM PROVINCE WHERE Name = 'Mekong Delta');
 
--- Farms (6 rows)
+-- Farms 
 INSERT INTO FARM (Name, Owner_Name, Contact_Info, Address_detail, Longitude, Latitude, P_ID) VALUES 
 ('Sunrise Farm', 'John Doe', 'contact@sunrise.com', 'Valley Rd, Da Lat', 108.45, 11.94, @dalatId),
 ('Mekong Green Fields', 'Nguyen Van A', '0901234567', 'River Side, Can Tho', 105.78, 10.03, @mekongId),
 ('Highland Coffee Estate', 'Tran Thi B', '0909888777', 'Hilltop 5, Buon Ma Thuot', 108.03, 12.66, (SELECT ID FROM PROVINCE WHERE Name = 'Dak Lak')),
 ('Organic Veggie Garden', 'Le Van C', '0912345678', 'Green Zone, Da Lat', 108.44, 11.95, @dalatId),
 ('Golden Rice Paddies', 'Pham Van D', '0905555555', 'Delta Zone, Long An', 106.40, 10.50, @mekongId),
-('Dragon Fruit Kingdom', 'Vo Thi E', '0906666666', 'Sunny Side, Binh Thuan', 108.10, 10.93, @hcmId); -- Mapped to HCM for simplicity
+('Dragon Fruit Kingdom', 'Vo Thi E', '0906666666', 'Sunny Side, Binh Thuan', 108.10, 10.93, @hcmId); 
 
--- Farm Certifications (7 rows)
+-- Farm Certifications 
 DECLARE @f1 INT = (SELECT ID FROM FARM WHERE Name = 'Sunrise Farm');
 DECLARE @f2 INT = (SELECT ID FROM FARM WHERE Name = 'Mekong Green Fields');
 INSERT INTO FARM_CERTIFICATIONS (F_ID, FarmCertifications) VALUES 
@@ -97,7 +97,7 @@ INSERT INTO FARM_CERTIFICATIONS (F_ID, FarmCertifications) VALUES
 ((SELECT ID FROM FARM WHERE Name = 'Organic Veggie Garden'), 'JAS Organic'),
 ((SELECT ID FROM FARM WHERE Name = 'Golden Rice Paddies'), 'HACCP');
 
--- Processing Facilities (4 rows)
+-- Processing Facilities 
 INSERT INTO PROCESSING_FACILITY (Name, Address_detail, Contact_Info, License_Number, Longitude, Latitude, P_ID) VALUES 
 ('Mekong Processing Hub', 'Industrial Zone A, Can Tho', '02923888999', 'LIC-001', 105.75, 10.01, @mekongId),
 ('Highland Roastery', 'Coffee St, Dak Lak', '02623555666', 'LIC-002', 108.00, 12.60, (SELECT ID FROM PROVINCE WHERE Name = 'Dak Lak')),
@@ -110,14 +110,14 @@ INSERT INTO WAREHOUSE (Capacity, Store_Condition, Address_detail, Longitude, Lat
 (2000.00, 'Cold Storage -5C', 'Cold Chain B, Long An', 106.50, 10.60, @mekongId),
 (1500.00, 'Cool Ventilation', 'Coffee Depot, Buon Ma Thuot', 108.02, 12.65, (SELECT ID FROM PROVINCE WHERE Name = 'Dak Lak')),
 (3000.00, 'Controlled Atmosphere', 'Fruit Hub, Tien Giang', 106.35, 10.35, @mekongId),
-(10000.00, 'General Storage', 'Port Logistics, Hai Phong', 106.68, 20.85, (SELECT ID FROM PROVINCE WHERE Name = 'Hanoi')); -- Mapped to Hanoi ID for simplicity
+(10000.00, 'General Storage', 'Port Logistics, Hai Phong', 106.68, 20.85, (SELECT ID FROM PROVINCE WHERE Name = 'Hanoi'));
 
 -- ============================================================================
 -- 3. VENDORS & ROLES
 -- ============================================================================
 PRINT '3. Inserting Vendors...';
 
--- Vendors (8 rows)
+-- Vendors 
 INSERT INTO VENDOR (TIN, Name, Address_detail, Contact_Info, Longitude, Latitude, P_ID) VALUES 
 ('VEN-001', 'BigC Supermarket', '268 To Hien Thanh, D10', '0283863299', 106.66, 10.78, @hcmId),
 ('VEN-002', 'WinMart Plus', '72 Le Thanh Ton, D1', '0283520123', 106.70, 10.77, @hcmId),
@@ -158,14 +158,14 @@ DECLARE @ap3 INT = (SELECT ID FROM AGRICULTURE_PRODUCT WHERE Name = 'Sweet Yello
 
 -- Vendor Products (6 rows)
 INSERT INTO VENDOR_PRODUCT (Vendor_TIN, Unit, ValuePerUnit) VALUES 
-('VEN-001', 'kg', 1.50), -- BigC sells Rice
+('VEN-001', 'kg', 1.50),
 ('VEN-001', '5kg bag', 7.00),
-('VEN-003', '500g pack', 5.00), -- Aeon sells Coffee
-('VEN-002', 'kg', 2.50), -- WinMart sells Mango
-('DIST-001', 'ton', 1200.00), -- Distributor sells Rice in tons
-('DIST-002', 'ton', 4000.00); -- Distributor sells Coffee in tons
+('VEN-003', '500g pack', 5.00),
+('VEN-002', 'kg', 2.50), 
+('DIST-001', 'ton', 1200.00), 
+('DIST-002', 'ton', 4000.00); 
 
--- Prices (Link 1-1 with Vendor Product)
+-- Prices 
 INSERT INTO PRICE (V_ID, Value, Currency)
 SELECT ID, ValuePerUnit, 'USD' FROM VENDOR_PRODUCT;
 
@@ -181,7 +181,7 @@ INSERT INTO DISCOUNT (Name, Percentage, Min_Value, Max_Discount_Amount, Priority
 ('Bulk Order Discount', 5.00, 1000.00, 100.00, 1, 1, GETDATE(), DATEADD(YEAR, 1, GETDATE())),
 ('Flash Deal Weekend', 20.00, 20.00, 10.00, 3, 0, GETDATE(), DATEADD(DAY, 7, GETDATE()));
 
--- Mapping Products to Discounts (5 rows)
+-- Mapping Products to Discounts 
 DECLARE @d1 INT = (SELECT ID FROM DISCOUNT WHERE Name = 'Summer Sale 2025');
 DECLARE @d2 INT = (SELECT ID FROM DISCOUNT WHERE Name = 'Bulk Order Discount');
 
@@ -205,9 +205,9 @@ INSERT INTO BATCH (Harvest_Date, Created_By, Grade, Seed_Batch, Qr_Code_URL, Far
 ('2024-11-05 08:00:00 +07:00', 'Farmer John', 'B', 'SEED-RICE-002', 'QR-002', @farmId1, @ap1),
 ('2024-10-20 09:00:00 +07:00', 'Ms. Tran', 'Premium', 'SEED-COF-001', 'QR-003', @farmId2, @ap2),
 ('2024-10-25 07:30:00 +07:00', 'Ms. Tran', 'Standard', 'SEED-COF-002', 'QR-004', @farmId2, @ap2),
-('2024-12-01 06:00:00 +07:00', 'Mr. Le', 'A', 'SEED-MANGO-001', 'QR-005', (SELECT ID FROM FARM WHERE Name = 'Organic Veggie Garden'), @ap3); -- Actually Mango not veggie but logic holds
+('2024-12-01 06:00:00 +07:00', 'Mr. Le', 'A', 'SEED-MANGO-001', 'QR-005', (SELECT ID FROM FARM WHERE Name = 'Organic Veggie Garden'), @ap3); 
 
--- Processing (3 rows)
+-- Processing 
 DECLARE @b1 INT = (SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-001');
 DECLARE @b3 INT = (SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-003');
 DECLARE @fac1 INT = (SELECT ID FROM PROCESSING_FACILITY WHERE Name = 'Mekong Processing Hub');
@@ -217,7 +217,7 @@ INSERT INTO PROCESSING (Packaging_Date, Weight_per_unit, Processed_By, Packaging
 ('2024-10-22 10:00:00 +07:00', 1.00, 'Worker Y', 'Vacuum Pack', '2024-10-21 09:00:00 +07:00', (SELECT ID FROM PROCESSING_FACILITY WHERE Name = 'Highland Roastery'), @b3),
 ('2024-11-04 15:00:00 +07:00', 25.00, 'Worker Z', 'Plastic Sack', '2024-11-03 09:00:00 +07:00', @fac1, (SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-002'));
 
--- Process Steps (6 rows)
+-- Process Steps 
 DECLARE @proc1 INT = (SELECT TOP 1 ID FROM PROCESSING WHERE Batch_ID = @b1);
 INSERT INTO PROCESS_STEP (P_ID, Step) VALUES 
 (@proc1, 'Drying'), (@proc1, 'Milling'), (@proc1, 'Sorting'), (@proc1, 'Packaging');
@@ -226,7 +226,7 @@ DECLARE @proc2 INT = (SELECT TOP 1 ID FROM PROCESSING WHERE Batch_ID = @b3);
 INSERT INTO PROCESS_STEP (P_ID, Step) VALUES 
 (@proc2, 'Roasting'), (@proc2, 'Grinding');
 
--- Stored In (4 rows)
+-- Stored In 
 DECLARE @wh1 INT = (SELECT ID FROM WAREHOUSE WHERE Address_detail LIKE '%Thu Duc%');
 INSERT INTO STORED_IN (B_ID, W_ID, Quantity, Start_Date) VALUES 
 (@b1, @wh1, 500.00, '2024-11-05 09:00:00 +07:00'),
@@ -247,13 +247,13 @@ INSERT INTO SHIPMENT (Status, Destination, Start_Location, Distributor_TIN) VALU
 DECLARE @s1 INT = (SELECT TOP 1 ID FROM SHIPMENT WHERE Destination = 'BigC Supermarket');
 DECLARE @s2 INT = (SELECT TOP 1 ID FROM SHIPMENT WHERE Destination = 'Aeon Mall');
 
--- Link Batches to Shipment (3 rows)
+-- Link Batches to Shipment 
 INSERT INTO SHIP_BATCH (S_ID, B_ID) VALUES 
 (@s1, @b1), 
 (@s2, @b3),
 (@s1, (SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-002'));
 
--- Transport Legs (4 rows)
+-- Transport Legs 
 INSERT INTO TRANSPORLEG (Shipment_ID, Driver_Name, Reg_No, Temperature_Profile, Start_Location, To_Location, D_Time, A_Time, CarrierCompany_TIN) VALUES 
 (@s1, 'Driver Tom', '59C-123.45', 'Ambient', 'Mekong Processing Hub', 'Thu Duc Warehouse', DATEADD(DAY, -5, GETDATE()), DATEADD(DAY, -4, GETDATE()), 'LOG-001'),
 (@s1, 'Driver Jerry', '29H-567.89', 'Ambient', 'Thu Duc Warehouse', 'BigC Supermarket', DATEADD(DAY, -2, GETDATE()), DATEADD(DAY, -1, GETDATE()), 'LOG-001'),

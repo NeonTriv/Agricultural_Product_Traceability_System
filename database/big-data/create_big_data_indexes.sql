@@ -1,9 +1,7 @@
 -- ============================================================================
--- BIG DATA INDEXES - Optimized for 1M+ Records
+-- BIG DATA INDEXES - Optimized.
 -- ============================================================================
--- Purpose: Create indexes to handle large-scale queries efficiently
--- Target: BATCH table with 1,000,000+ records
--- ============================================================================
+
 
 USE Traceability;
 GO
