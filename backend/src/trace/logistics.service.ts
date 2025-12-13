@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { BaseService } from '../shared/base/base.service';
 import { Shipment } from './entities/shipment.entity';
 import { TransportLeg } from './entities/transport-leg.entity';
 import { CarrierCompany } from './entities/carrier-company.entity';
@@ -8,10 +9,10 @@ import { Distributor } from './entities/distributor.entity';
 import { Vendor } from './entities/vendor.entity';
 
 @Injectable()
-export class LogisticsService {
+export class LogisticsService extends BaseService<Shipment> {
   constructor(
     @InjectRepository(Shipment)
-    private readonly shipmentRepo: Repository<Shipment>,
+    shipmentRepo: Repository<Shipment>,
     @InjectRepository(TransportLeg)
     private readonly transportLegRepo: Repository<TransportLeg>,
     @InjectRepository(CarrierCompany)
@@ -20,7 +21,9 @@ export class LogisticsService {
     private readonly distributorRepo: Repository<Distributor>,
     @InjectRepository(Vendor)
     private readonly vendorRepo: Repository<Vendor>,
-  ) {}
+  ) {
+    super(shipmentRepo);
+  }
 
   // Carrier Companies methods
   async getAllCarriers() {
@@ -128,8 +131,7 @@ export class LogisticsService {
   }
 
   async deleteCarrier(tin: string) {
-    // Check if carrier exists
-    const carrier = await this.carrierRepo.findOne({ 
+    const carrier = await this.carrierRepo.findOne({
       where: { vTin: tin },
       relations: ['transportLegs']
     });
@@ -137,20 +139,19 @@ export class LogisticsService {
       throw new NotFoundException(`Carrier Company with TIN ${tin} not found`);
     }
 
-    // Check for related records and provide helpful error message
     if (carrier.transportLegs?.length > 0) {
-      throw new BadRequestException(`Cannot delete carrier. Please delete ${carrier.transportLegs.length} Transport Leg(s) first (tab Logistics > Transport Legs)`);
+      throw new BadRequestException(
+        `Cannot delete carrier. Please delete ${carrier.transportLegs.length} Transport Leg(s) first (tab Logistics > Transport Legs)`
+      );
     }
 
-    // Delete the carrier company
     await this.carrierRepo.delete({ vTin: tin });
-
     return { success: true };
   }
 
-  // Shipments methods
+  // Shipments methods (using BaseService)
   async getAllShipments() {
-    const shipments = await this.shipmentRepo.find({
+    const shipments = await this.findAll({
       relations: ['distributor', 'distributor.vendor', 'transportLegs'],
       order: { id: 'DESC' },
     });
@@ -159,7 +160,7 @@ export class LogisticsService {
       id: s.id,
       status: s.status,
       destination: s.destination,
-        startLocation: s.startLocation,
+      startLocation: s.startLocation,
       distributorTin: s.distributorTin,
       distributorName: s.distributor?.vendor?.name,
       transportLegCount: s.transportLegs?.length || 0,
@@ -167,20 +168,13 @@ export class LogisticsService {
   }
 
   async getShipment(id: number) {
-    const shipment = await this.shipmentRepo.findOne({
-      where: { id },
-      relations: ['distributor', 'distributor.vendor', 'transportLegs'],
-    });
-
-    if (!shipment) {
-      throw new NotFoundException(`Shipment with ID ${id} not found`);
-    }
+    const shipment = await this.findOne(id, ['distributor', 'distributor.vendor', 'transportLegs']);
 
     return {
       id: shipment.id,
       status: shipment.status,
       destination: shipment.destination,
-        startLocation: shipment.startLocation,
+      startLocation: shipment.startLocation,
       distributorTin: shipment.distributorTin,
       distributorName: shipment.distributor?.vendor?.name,
       transportLegCount: shipment.transportLegs?.length || 0,
@@ -191,17 +185,14 @@ export class LogisticsService {
     status: string;
     destination?: string;
     distributorTin: string;
-      startLocation?: string;
+    startLocation?: string;
   }) {
-    const shipment = this.shipmentRepo.create({
+    const shipment = await this.create({
       status: data.status,
       destination: data.destination,
-        startLocation: data.startLocation,
+      startLocation: data.startLocation,
       distributorTin: data.distributorTin,
     });
-
-    await this.shipmentRepo.save(shipment);
-
     return { success: true, id: shipment.id };
   }
 
@@ -211,27 +202,15 @@ export class LogisticsService {
       status?: string;
       destination?: string;
       distributorTin?: string;
-        startLocation?: string;
+      startLocation?: string;
     },
   ) {
-    const shipment = await this.shipmentRepo.findOne({ where: { id } });
-
-    if (!shipment) {
-      throw new NotFoundException(`Shipment with ID ${id} not found`);
-    }
-
-    if (data.status) shipment.status = data.status;
-    if (data.destination !== undefined) shipment.destination = data.destination;
-      if (data.startLocation !== undefined) shipment.startLocation = data.startLocation;
-    if (data.distributorTin) shipment.distributorTin = data.distributorTin;
-
-    await this.shipmentRepo.save(shipment);
-
+    const shipment = await this.update(id, data);
     return { success: true, id: shipment.id };
   }
 
   async deleteShipment(id: number) {
-    const shipment = await this.shipmentRepo.findOne({
+    const shipment = await this.repository.findOne({
       where: { id },
       relations: ['shipBatches', 'transportLegs']
     });
@@ -240,7 +219,6 @@ export class LogisticsService {
       throw new NotFoundException(`Shipment with ID ${id} not found`);
     }
 
-    // Check for related batches in shipment
     if (shipment.shipBatches && shipment.shipBatches.length > 0) {
       throw new BadRequestException(
         `Cannot delete Shipment: It contains ${shipment.shipBatches.length} batch(es). ` +
@@ -248,7 +226,6 @@ export class LogisticsService {
       );
     }
 
-    // Check for related transport legs
     if (shipment.transportLegs && shipment.transportLegs.length > 0) {
       throw new BadRequestException(
         `Cannot delete Shipment: It has ${shipment.transportLegs.length} transport leg(s). ` +
@@ -256,7 +233,7 @@ export class LogisticsService {
       );
     }
 
-    await this.shipmentRepo.remove(shipment);
+    await this.delete(id);
     return { success: true };
   }
 
@@ -329,7 +306,6 @@ export class LogisticsService {
     });
 
     await this.transportLegRepo.save(leg);
-
     return { success: true, id: leg.id };
   }
 
@@ -362,7 +338,6 @@ export class LogisticsService {
     if (data.carrierCompanyTin) leg.carrierCompanyTin = data.carrierCompanyTin;
 
     await this.transportLegRepo.save(leg);
-
     return { success: true, id: leg.id };
   }
 

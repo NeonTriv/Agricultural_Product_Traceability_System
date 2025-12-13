@@ -10,6 +10,7 @@ import { StorageController } from './storage.controller';
 import { PricingController } from './pricing.controller';
 import { TraceabilityController } from './traceability.controller';
 import { TraceService } from './trace.service';
+import { ProductService } from './product.service';
 import { VendorService } from './vendor.service';
 import { ProcessingService } from './processing.service';
 import { LogisticsService } from './logistics.service';
@@ -71,7 +72,7 @@ import { StoredIn } from './entities/stored-in.entity';
     ]),
   ],
   controllers: [TraceController, ProductController, FarmController, VendorController, ProcessingController, LogisticsController, StorageController, PricingController, TraceabilityController],
-  providers: [TraceService, VendorService, ProcessingService, LogisticsService, StorageService, PricingService, TraceabilityService],
-  exports: [TraceService, VendorService, ProcessingService, LogisticsService, StorageService, PricingService, TraceabilityService],
+  providers: [TraceService, ProductService, VendorService, ProcessingService, LogisticsService, StorageService, PricingService, TraceabilityService],
+  exports: [TraceService, ProductService, VendorService, ProcessingService, LogisticsService, StorageService, PricingService, TraceabilityService],
 })
 export class TraceModule {}

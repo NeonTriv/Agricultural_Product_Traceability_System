@@ -3,8 +3,6 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { Vegetable } from './vegetable/vegetable.entity';
-import { VegetableModule } from './vegetable/vegetable.module';
 import { TraceModule } from './trace/trace.module';
 import { AgricultureProduct } from './trace/entities/agriculture-product.entity';
 import { Batch } from './trace/entities/batch.entity';
@@ -44,7 +42,6 @@ import { User } from './trace/entities/user.entity';
       password: process.env.DB_PASSWORD ?? 'test',
       database: process.env.DB_NAME ?? 'Traceability',
       entities: [
-        Vegetable,
         AgricultureProduct,
         Batch,
         Farm,
@@ -79,7 +76,6 @@ import { User } from './trace/entities/user.entity';
     },
       // logging: true,
     }),
-    VegetableModule,
     TraceModule,
   ],
   controllers: [AppController],

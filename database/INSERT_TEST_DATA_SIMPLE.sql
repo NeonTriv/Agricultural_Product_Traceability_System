@@ -46,10 +46,17 @@ BEGIN
     RETURN;
 END
 
--- Delete existing batches for clean test
+-- Delete existing data for clean test (in correct order - child to parent)
 IF @batchCount > 0
 BEGIN
     PRINT 'Deleting existing ' + CAST(@batchCount AS VARCHAR(10)) + ' batches for clean test...';
+    -- Delete child tables first
+    DELETE FROM TRANSPORLEG WHERE Shipment_ID IN (SELECT S_ID FROM SHIP_BATCH WHERE B_ID IN (SELECT ID FROM BATCH));
+    DELETE FROM SHIP_BATCH;
+    DELETE FROM STORED_IN;
+    DELETE FROM PROCESS_STEP WHERE P_ID IN (SELECT ID FROM PROCESSING);
+    DELETE FROM PROCESSING;
+    -- Now can delete parent
     DELETE FROM BATCH;
     PRINT 'Deleted successfully.';
     PRINT '';

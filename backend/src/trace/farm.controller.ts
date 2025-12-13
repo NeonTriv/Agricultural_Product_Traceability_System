@@ -1,20 +1,20 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
-import { TraceService } from './trace.service';
+import { ProductService } from './product.service';
 
 @Controller('farms')
 export class FarmController {
-  constructor(private readonly traceService: TraceService) {}
+  constructor(private readonly productService: ProductService) {}
 
   @Get()
   @HttpCode(HttpStatus.OK)
   async getAllFarms() {
-    return this.traceService.getAllFarms();
+    return this.productService.getAllFarms();
   }
 
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getFarmById(@Param('id') id: number) {
-    return this.traceService.getFarmById(id);
+    return this.productService.getFarmById(id);
   }
 
   @Post()
@@ -31,7 +31,7 @@ export class FarmController {
       provinceId: number;
     },
   ) {
-    return this.traceService.createFarm(body);
+    return this.productService.createFarm(body);
   }
 
   @Put(':id')
@@ -49,20 +49,20 @@ export class FarmController {
       provinceId?: number;
     },
   ) {
-    return this.traceService.updateFarm(id, body);
+    return this.productService.updateFarm(id, body);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   async deleteFarm(@Param('id') id: number) {
-    return this.traceService.deleteFarm(id);
+    return this.productService.deleteFarm(id);
   }
 
   // Farm Certifications endpoints
   @Get(':id/certifications')
   @HttpCode(HttpStatus.OK)
   async getFarmCertifications(@Param('id') farmId: number) {
-    return this.traceService.getFarmCertifications(farmId);
+    return this.productService.getFarmCertifications(farmId);
   }
 
   @Post(':id/certifications')
@@ -71,7 +71,7 @@ export class FarmController {
     @Param('id') farmId: number,
     @Body() body: { certification: string },
   ) {
-    return this.traceService.addFarmCertification(farmId, body.certification);
+    return this.productService.addFarmCertification(farmId, body.certification);
   }
 
   @Delete(':id/certifications/:certification')
@@ -80,6 +80,6 @@ export class FarmController {
     @Param('id') farmId: number,
     @Param('certification') certification: string,
   ) {
-    return this.traceService.deleteFarmCertification(farmId, certification);
+    return this.productService.deleteFarmCertification(farmId, certification);
   }
 }

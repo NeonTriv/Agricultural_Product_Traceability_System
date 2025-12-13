@@ -1,21 +1,24 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { BaseService } from '../shared/base/base.service';
 import { Warehouse } from './entities/warehouse.entity';
 import { StoredIn } from './entities/stored-in.entity';
 
 @Injectable()
-export class StorageService {
+export class StorageService extends BaseService<Warehouse> {
   constructor(
     @InjectRepository(Warehouse)
-    private readonly warehouseRepo: Repository<Warehouse>,
+    warehouseRepo: Repository<Warehouse>,
     @InjectRepository(StoredIn)
     private readonly storedInRepo: Repository<StoredIn>,
-  ) {}
+  ) {
+    super(warehouseRepo);
+  }
 
-  // Warehouse methods
+  // Warehouse methods (using inherited BaseService methods)
   async getAllWarehouses() {
-    const warehouses = await this.warehouseRepo.find({
+    const warehouses = await this.findAll({
       relations: ['province', 'province.country'],
       order: { id: 'ASC' },
     });
@@ -34,14 +37,7 @@ export class StorageService {
   }
 
   async getWarehouse(id: number) {
-    const warehouse = await this.warehouseRepo.findOne({
-      where: { id },
-      relations: ['province', 'province.country'],
-    });
-
-    if (!warehouse) {
-      throw new NotFoundException(`Warehouse with ID ${id} not found`);
-    }
+    const warehouse = await this.findOne(id, ['province', 'province.country']);
 
     return {
       id: warehouse.id,
@@ -56,80 +52,32 @@ export class StorageService {
     };
   }
 
-  async createWarehouse(data: {
-    capacity?: number;
-    storeCondition?: string;
-    addressDetail: string;
-    longitude?: number;
-    latitude?: number;
-    provinceId: number;
-  }) {
-    const warehouse = this.warehouseRepo.create({
-      capacity: data.capacity,
-      storeCondition: data.storeCondition,
-      addressDetail: data.addressDetail,
-      longitude: data.longitude,
-      latitude: data.latitude,
-      provinceId: data.provinceId,
-    });
-
-    await this.warehouseRepo.save(warehouse);
-
+  async createWarehouse(data: Partial<Warehouse>) {
+    const warehouse = await this.create(data);
     return { success: true, id: warehouse.id };
   }
 
-  async updateWarehouse(
-    id: number,
-    data: {
-      capacity?: number;
-      storeCondition?: string;
-      addressDetail?: string;
-      longitude?: number;
-      latitude?: number;
-      provinceId?: number;
-    },
-  ) {
-    const warehouse = await this.warehouseRepo.findOne({ where: { id } });
-
-    if (!warehouse) {
-      throw new NotFoundException(`Warehouse with ID ${id} not found`);
-    }
-
-    if (data.capacity !== undefined) warehouse.capacity = data.capacity;
-    if (data.storeCondition !== undefined) warehouse.storeCondition = data.storeCondition;
-    if (data.addressDetail !== undefined) warehouse.addressDetail = data.addressDetail;
-    if (data.longitude !== undefined) warehouse.longitude = data.longitude;
-    if (data.latitude !== undefined) warehouse.latitude = data.latitude;
-    if (data.provinceId !== undefined) warehouse.provinceId = data.provinceId;
-
-    await this.warehouseRepo.save(warehouse);
-
+  async updateWarehouse(id: number, data: Partial<Warehouse>) {
+    const warehouse = await this.update(id, data);
     return { success: true, id: warehouse.id };
   }
 
   async deleteWarehouse(id: number) {
-    // Check if warehouse exists with relations
-    const warehouse = await this.warehouseRepo.findOne({ where: { id } });
-    if (!warehouse) {
-      throw new NotFoundException(`Warehouse with ID ${id} not found`);
-    }
-
-    // Check for stored items
+    // Check for dependencies before deleting
     const storedItems = await this.storedInRepo.find({ where: { warehouseId: id } });
+
     if (storedItems.length > 0) {
       throw new BadRequestException(
         `Cannot delete Warehouse: It has ${storedItems.length} stored item(s). ` +
-        `Please remove them first (Storage > Stored Items).`
+        `Please remove them first.`
       );
     }
 
-    // Now safe to delete the warehouse
-    await this.warehouseRepo.delete({ id });
-
+    await this.delete(id);
     return { success: true };
   }
 
-  // Stored In methods
+  // Stored In methods (kept as-is for composite key handling)
   async getAllStoredIn() {
     const storedIns = await this.storedInRepo.find({
       relations: ['batch', 'batch.agricultureProduct', 'warehouse'],
@@ -155,9 +103,7 @@ export class StorageService {
     });
 
     if (!storedIn) {
-      throw new NotFoundException(
-        `Stored In record for Batch ${batchId} and Warehouse ${warehouseId} not found`,
-      );
+      throw new BadRequestException(`Stored In record not found`);
     }
 
     return {
@@ -180,57 +126,37 @@ export class StorageService {
     endDate?: string;
   }) {
     const storedIn = this.storedInRepo.create({
-      batchId: data.batchId,
-      warehouseId: data.warehouseId,
-      quantity: data.quantity,
+      ...data,
       startDate: data.startDate ? new Date(data.startDate) : null,
       endDate: data.endDate ? new Date(data.endDate) : null,
     });
 
     await this.storedInRepo.save(storedIn);
-
     return { success: true, batchId: storedIn.batchId, warehouseId: storedIn.warehouseId };
   }
 
   async updateStoredIn(
     batchId: number,
     warehouseId: number,
-    data: {
-      quantity?: number;
-      startDate?: string;
-      endDate?: string;
-    },
+    data: { quantity?: number; startDate?: string; endDate?: string }
   ) {
-    const storedIn = await this.storedInRepo.findOne({
+    const storedIn = await this.storedInRepo.findOneOrFail({
       where: { batchId, warehouseId },
     });
 
-    if (!storedIn) {
-      throw new NotFoundException(
-        `Stored In record for Batch ${batchId} and Warehouse ${warehouseId} not found`,
-      );
-    }
-
     if (data.quantity !== undefined) storedIn.quantity = data.quantity;
-    if (data.startDate !== undefined) {
-      storedIn.startDate = data.startDate ? new Date(data.startDate) : null;
-    }
-    if (data.endDate !== undefined) {
-      storedIn.endDate = data.endDate ? new Date(data.endDate) : null;
-    }
+    if (data.startDate !== undefined) storedIn.startDate = data.startDate ? new Date(data.startDate) : null;
+    if (data.endDate !== undefined) storedIn.endDate = data.endDate ? new Date(data.endDate) : null;
 
     await this.storedInRepo.save(storedIn);
-
-    return { success: true, batchId: storedIn.batchId, warehouseId: storedIn.warehouseId };
+    return { success: true, batchId, warehouseId };
   }
 
   async deleteStoredIn(batchId: number, warehouseId: number) {
     const result = await this.storedInRepo.delete({ batchId, warehouseId });
 
     if (result.affected === 0) {
-      throw new NotFoundException(
-        `Stored In record for Batch ${batchId} and Warehouse ${warehouseId} not found`,
-      );
+      throw new BadRequestException(`Stored In record not found`);
     }
 
     return { success: true };

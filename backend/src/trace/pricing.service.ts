@@ -1,32 +1,33 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Price } from './entities/price.entity';
+import { BaseService } from '../shared/base/base.service';
 import { VendorProduct } from './entities/vendor-product.entity';
+import { Price } from './entities/price.entity';
 import { Discount } from './entities/discount.entity';
 import { ProductHasDiscount } from './entities/product-has-discount.entity';
 import { Batch } from './entities/batch.entity';
 
 @Injectable()
-export class PricingService {
+export class PricingService extends BaseService<VendorProduct> {
   constructor(
+    @InjectRepository(VendorProduct)
+    vendorProductRepo: Repository<VendorProduct>,
     @InjectRepository(Price)
     private readonly priceRepo: Repository<Price>,
-    @InjectRepository(VendorProduct)
-    private readonly vendorProductRepo: Repository<VendorProduct>,
     @InjectRepository(Batch)
     private readonly batchRepo: Repository<Batch>,
     @InjectRepository(Discount)
     private readonly discountRepo: Repository<Discount>,
     @InjectRepository(ProductHasDiscount)
     private readonly phdRepo: Repository<ProductHasDiscount>,
-  ) {}
+  ) {
+    super(vendorProductRepo);
+  }
 
-  // ==================================================================
-  // Vendor Product methods
-  // ==================================================================
+  // Vendor Product CRUD (using BaseService)
   async getAllVendorProducts() {
-    const vendorProducts = await this.vendorProductRepo.find({
+    const vendorProducts = await this.findAll({
       relations: ['agricultureProduct', 'vendor'],
       order: { id: 'ASC' },
     });
@@ -46,61 +47,37 @@ export class PricingService {
     vendorTin: string;
     agricultureProductId: number;
   }) {
-    const vendorProduct = this.vendorProductRepo.create({
+    const vendorProduct = await this.create({
       unit: data.unit,
       vendorTin: data.vendorTin,
       agricultureProductId: data.agricultureProductId,
     });
-
-    await this.vendorProductRepo.save(vendorProduct);
-
     return { success: true, id: vendorProduct.id };
   }
 
-  async updateVendorProduct(
-    id: number,
-    data: {
-      unit?: string;
-    },
-  ) {
-    const vendorProduct = await this.vendorProductRepo.findOne({ where: { id } });
-
-    if (!vendorProduct) {
-      throw new NotFoundException(`Vendor Product with ID ${id} not found`);
-    }
-
-    if (data.unit !== undefined) vendorProduct.unit = data.unit;
-
-    await this.vendorProductRepo.save(vendorProduct);
-
+  async updateVendorProduct(id: number, data: { unit?: string }) {
+    const vendorProduct = await this.update(id, data);
     return { success: true, id: vendorProduct.id };
   }
 
   async deleteVendorProduct(id: number) {
-    // Cần load relation tới bảng trung gian ProductHasDiscount
-    const vendorProduct = await this.vendorProductRepo.findOne({ 
+    const vendorProduct = await this.repository.findOne({
       where: { id },
-      relations: ['prices', 'productHasDiscounts'] // Đã đổi tên relation cho đúng schema mới
+      relations: ['prices', 'productHasDiscounts']
     });
 
     if (!vendorProduct) {
       throw new NotFoundException(`Vendor Product with ID ${id} not found`);
     }
 
-    // Check for blockers
     const blockers: string[] = [];
-
-    // Check prices
     if (vendorProduct.prices?.length > 0) {
       blockers.push(`${vendorProduct.prices.length} Price(s)`);
     }
-
-    // Check discounts (via Link table)
     if (vendorProduct.productHasDiscounts?.length > 0) {
       blockers.push(`${vendorProduct.productHasDiscounts.length} Linked Discount(s)`);
     }
 
-    // Check batches
     const batches = await this.batchRepo.find({ where: { vendorProductId: id } });
     if (batches.length > 0) {
       blockers.push(`${batches.length} Batch(es)`);
@@ -113,14 +90,11 @@ export class PricingService {
       );
     }
 
-    await this.vendorProductRepo.delete({ id });
-
+    await this.delete(id);
     return { success: true };
   }
 
-  // ==================================================================
-  // Price methods
-  // ==================================================================
+  // Price CRUD
   async getAllPrices() {
     const prices = await this.priceRepo.find({
       relations: ['vendorProduct', 'vendorProduct.agricultureProduct', 'vendorProduct.vendor'],
@@ -162,10 +136,7 @@ export class PricingService {
     value: number;
     currency: string;
   }) {
-    const vendorProduct = await this.vendorProductRepo.findOne({
-      where: { id: data.vendorProductId },
-    });
-
+    const vendorProduct = await this.findOne(data.vendorProductId);
     if (!vendorProduct) {
       throw new NotFoundException(`Vendor Product with ID ${data.vendorProductId} not found`);
     }
@@ -175,7 +146,7 @@ export class PricingService {
     });
 
     if (existingPrice) {
-      throw new Error(`Price for Vendor Product ID ${data.vendorProductId} already exists`);
+      throw new BadRequestException(`Price for Vendor Product ID ${data.vendorProductId} already exists`);
     }
 
     const price = this.priceRepo.create({
@@ -185,16 +156,12 @@ export class PricingService {
     });
 
     await this.priceRepo.save(price);
-
     return { success: true, vendorProductId: price.vendorProductId };
   }
 
   async updatePrice(
     vendorProductId: number,
-    data: {
-      value?: number;
-      currency?: string;
-    },
+    data: { value?: number; currency?: string },
   ) {
     const price = await this.priceRepo.findOne({ where: { vendorProductId } });
 
@@ -206,7 +173,6 @@ export class PricingService {
     if (data.currency !== undefined) price.currency = data.currency;
 
     await this.priceRepo.save(price);
-
     return { success: true, vendorProductId: price.vendorProductId };
   }
 
@@ -220,26 +186,24 @@ export class PricingService {
     return { success: true };
   }
 
-  // ==================================================================
-  // Discounts methods (UPDATED SCHEMA)
-  // ==================================================================
+  // Discount CRUD
   async getAllDiscounts() {
     const discounts = await this.discountRepo.find({ order: { id: 'ASC' } });
     return discounts.map((d) => ({
       id: d.id,
-      name: d.name, // NEW
+      name: d.name,
       percentage: d.percentage,
       minValue: d.minValue,
       maxDiscountAmount: d.maxDiscountAmount,
-      priority: d.priority, // NEW
-      isStackable: d.isStackable, // NEW
+      priority: d.priority,
+      isStackable: d.isStackable,
       startDate: d.startDate,
       expiredDate: d.expiredDate,
     }));
   }
 
   async createDiscount(data: {
-    name: string; // NEW: Required
+    name: string;
     percentage?: number;
     minValue?: number;
     maxDiscountAmount?: number;
@@ -277,7 +241,7 @@ export class PricingService {
   ) {
     const discount = await this.discountRepo.findOne({ where: { id } });
     if (!discount) throw new NotFoundException(`Discount ID ${id} not found`);
-    
+
     if (data.name !== undefined) discount.name = data.name;
     if (data.percentage !== undefined) discount.percentage = data.percentage;
     if (data.minValue !== undefined) discount.minValue = data.minValue;
@@ -286,7 +250,7 @@ export class PricingService {
     if (data.isStackable !== undefined) discount.isStackable = data.isStackable;
     if (data.startDate !== undefined) discount.startDate = data.startDate;
     if (data.expiredDate !== undefined) discount.expiredDate = data.expiredDate;
-    
+
     await this.discountRepo.save(discount);
     return { success: true, id };
   }
@@ -303,9 +267,7 @@ export class PricingService {
     return { success: true };
   }
 
-  // ==================================================================
-  // Orchestration: Create Vendor Product + Price + Discounts
-  // ==================================================================
+  // Orchestration: Full vendor product setup with pricing and discounts
   async createVendorProductWithPricingAndDiscounts(data: {
     vendorTin: string;
     agricultureProductId: number;
@@ -330,9 +292,9 @@ export class PricingService {
         agricultureProductId: data.agricultureProductId,
         unit: data.unit,
       });
-      
+
       if (!vpResult.id) {
-        throw new Error('Failed to create vendor product');
+        throw new BadRequestException('Failed to create vendor product');
       }
 
       const vendorProductId = vpResult.id;
@@ -348,17 +310,15 @@ export class PricingService {
 
       // Step 3: Create Discounts and link them
       if (data.discounts && data.discounts.length > 0) {
-        // Tự động tạo tên mã giảm giá nếu không có (Vì UI setup chỉ gửi % chứ không gửi tên)
         const autoName = `PROMO-${data.vendorTin}-${data.agricultureProductId}`;
-        
+
         for (const discountData of data.discounts) {
-          if (discountData.percentage > 0) {
+          if (discountData.percentage && discountData.percentage > 0) {
             const startDate = discountData.startDate || new Date();
             const expiredDate = discountData.expiredDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
-            // Tạo Discount (Rule) mới
             const discResult = await this.createDiscount({
-              name: autoName, // Tự đặt tên
+              name: autoName,
               percentage: discountData.percentage,
               minValue: discountData.minValue,
               maxDiscountAmount: discountData.maxDiscountAmount,
@@ -368,7 +328,6 @@ export class PricingService {
               expiredDate: expiredDate,
             });
 
-            // Link vào bảng trung gian
             if (discResult.id) {
               await this.linkProductHasDiscount(vendorProductId, discResult.id);
             }
@@ -383,7 +342,7 @@ export class PricingService {
       );
     }
   }
-  // Lấy danh sách sản phẩm đã được áp dụng mã giảm giá này
+
   async getProductsByDiscount(discountId: number) {
     const relations = await this.phdRepo.find({
       where: { discountId },
@@ -398,7 +357,6 @@ export class PricingService {
     }));
   }
 
-  // Gỡ bỏ mã giảm giá khỏi sản phẩm
   async unlinkProductHasDiscount(vendorProductId: number, discountId: number) {
     const result = await this.phdRepo.delete({ vendorProductId, discountId });
     if (result.affected === 0) throw new NotFoundException('Link not found');

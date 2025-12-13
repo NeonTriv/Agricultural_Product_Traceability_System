@@ -108,7 +108,6 @@ export default function StorageTab() {
   const fetchWarehouses = async () => { 
     try { 
       const res = await axios.get(`${baseUrl}/api/storage/warehouses`)
-      console.log('📦 Warehouse API Response:', res.data)
       setWarehouses(res.data)
     } catch (err: any) { console.error(err) } 
   }
@@ -124,7 +123,6 @@ export default function StorageTab() {
     setLoading(true)
     try { 
       const res = await axios.get(`${baseUrl}/api/storage/stored-in`)
-      console.log('📦 StoredIn API Response:', res.data)
       setStoredInList(res.data)
       setError('')
     } catch (err: any) { setError(err.response?.data?.message || err.message) } 
