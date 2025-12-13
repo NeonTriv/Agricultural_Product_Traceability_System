@@ -8,7 +8,7 @@ param(
     [string]$SchemaFile = "$PSScriptRoot\..\..\database\BTL_LEADER_SCHEMA.sql"
 )
 
-# --- 0. PRE-FLIGHT CHECK ---
+# --- PRE-FLIGHT CHECK ---
 $ErrorActionPreference = "Stop"
 
 if (-not (Get-Command "sqlcmd" -ErrorAction SilentlyContinue)) {
@@ -17,13 +17,12 @@ if (-not (Get-Command "sqlcmd" -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-# Override params from Environment Variables
 if ($env:INIT_SQLSERVER) { $SqlServer = $env:INIT_SQLSERVER }
-if ($env:INIT_APPDB)     { $AppDb = $env:INIT_APPDB }
-if ($env:INIT_SAUSER)    { $SaUser = $env:INIT_SAUSER }
+if ($env:INIT_APPDB) { $AppDb = $env:INIT_APPDB }
+if ($env:INIT_SAUSER) { $SaUser = $env:INIT_SAUSER }
 if ($env:INIT_SAPASSWORD){ $SaPassword = $env:INIT_SAPASSWORD }
 
-# Function to run SQL safely
+# SQL
 function Run-Sql {
     param(
         [string]$Query,
@@ -32,11 +31,10 @@ function Run-Sql {
 
     $params = @("-S", $SqlServer)
     
-    # Auth Logic
     if (-not [string]::IsNullOrWhiteSpace($SaPassword)) {
         $params += ("-U", $SaUser, "-P", $SaPassword)
     } else {
-        $params += "-E" # Windows Auth
+        $params += "-E" 
     }
 
     if (-not [string]::IsNullOrWhiteSpace($Database)) {
@@ -68,7 +66,7 @@ function Run-SqlFile {
         [string]$FilePath
     )
     
-    $params = @("-S", $SqlServer, "-b")  # -b causes sqlcmd to terminate on error
+    $params = @("-S", $SqlServer, "-b")  
     if (-not [string]::IsNullOrWhiteSpace($SaPassword)) {
         $params += ("-U", $SaUser, "-P", $SaPassword)
     } else {
@@ -91,7 +89,7 @@ Write-Host "`n=========================================="
 Write-Host "   DATABASE SETUP STARTED"
 Write-Host "==========================================`n"
 
-# --- 1. RESET DATABASE ---
+
 Write-Host "[1/5] Resetting Database '$AppDb'..."
 $dropQuery = "
     IF DB_ID('$AppDb') IS NOT NULL 
@@ -120,7 +118,6 @@ Remove-Item $tempSqlFile -Force
 Write-Host "[3/5] Importing Master Data..."
 $masterDataFile = "$PSScriptRoot\..\..\database\INSERT_MASTER_DATA.sql"
 if (Test-Path $masterDataFile) {
-    # Temp file for data
     $tempDataFile = "$PSScriptRoot\temp_data.sql"
     $dataContent = Get-Content $masterDataFile -Raw -Encoding UTF8
     $finalData = "USE [$AppDb];`r`n" + $dataContent
@@ -155,7 +152,6 @@ $userQuery = "
 Run-Sql -Query $userQuery
 
 Write-Host "[5/5] Verifying Login..."
-# Test login with new user credentials
 $verifyParams = @("-S", $SqlServer, "-U", $AppLogin, "-P", $AppPassword, "-d", $AppDb, "-Q", "SELECT 'OK'")
 $verifyResult = & sqlcmd @verifyParams 2>&1
 

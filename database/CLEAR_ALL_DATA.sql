@@ -1,7 +1,5 @@
 -- ============================================================================
--- CLEAR ALL DATA - Delete all data from all tables (keep schema)
--- ============================================================================
--- Run this before INSERT_MASTER_DATA.sql for clean population
+-- CLEAR ALL DATA - Delete all data from all tables
 -- ============================================================================
 
 USE Traceability;
@@ -10,10 +8,6 @@ GO
 PRINT '============================================================================';
 PRINT 'CLEARING ALL DATA FROM DATABASE';
 PRINT '============================================================================';
-PRINT '';
-PRINT 'WARNING: This will delete ALL data while keeping table structure.';
-PRINT 'Press Ctrl+C to cancel, or wait 3 seconds to continue...';
-PRINT '';
 
 WAITFOR DELAY '00:00:03';
 
