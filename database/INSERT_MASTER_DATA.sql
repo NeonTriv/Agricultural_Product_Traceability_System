@@ -157,13 +157,13 @@ DECLARE @ap2 INT = (SELECT ID FROM AGRICULTURE_PRODUCT WHERE Name = 'Highland Ro
 DECLARE @ap3 INT = (SELECT ID FROM AGRICULTURE_PRODUCT WHERE Name = 'Sweet Yellow Mango');
 
 -- Vendor Products (6 rows)
-INSERT INTO VENDOR_PRODUCT (AP_ID, Vendor_TIN, Unit, ValuePerUnit) VALUES 
-(@ap1, 'VEN-001', 'kg', 1.50), -- BigC sells Rice
-(@ap1, 'VEN-001', '5kg bag', 7.00),
-(@ap2, 'VEN-003', '500g pack', 5.00), -- Aeon sells Coffee
-(@ap3, 'VEN-002', 'kg', 2.50), -- WinMart sells Mango
-(@ap1, 'DIST-001', 'ton', 1200.00), -- Distributor sells Rice in tons
-(@ap2, 'DIST-002', 'ton', 4000.00); -- Distributor sells Coffee in tons
+INSERT INTO VENDOR_PRODUCT (Vendor_TIN, Unit, ValuePerUnit) VALUES 
+('VEN-001', 'kg', 1.50), -- BigC sells Rice
+('VEN-001', '5kg bag', 7.00),
+('VEN-003', '500g pack', 5.00), -- Aeon sells Coffee
+('VEN-002', 'kg', 2.50), -- WinMart sells Mango
+('DIST-001', 'ton', 1200.00), -- Distributor sells Rice in tons
+('DIST-002', 'ton', 4000.00); -- Distributor sells Coffee in tons
 
 -- Prices (Link 1-1 with Vendor Product)
 INSERT INTO PRICE (V_ID, Value, Currency)
