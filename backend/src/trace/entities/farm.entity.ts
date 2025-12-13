@@ -41,6 +41,6 @@ export class Farm {
   @OneToMany(() => Batch, (batch) => batch.farm)
   batches: Batch[];
 
-  @OneToMany(() => FarmCertification, (cert) => cert.farm)
+  @OneToMany(() => FarmCertification, (cert) => cert.farm, { cascade: ['remove'] })
   certifications: FarmCertification[];
 }

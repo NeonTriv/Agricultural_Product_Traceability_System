@@ -23,16 +23,25 @@ SELECT @CurrentCount = COUNT(*) FROM BATCH;
 PRINT 'Current BATCH records: ' + CAST(@CurrentCount AS VARCHAR(20));
 PRINT '';
 
--- 2. Check if CATEGORY, TYPE, PROVINCE, AGRICULTURE_PRODUCT and FARM exist
-DECLARE @CategoryId INT, @TypeId INT, @ProvinceId INT;
+-- 2. Check if COUNTRY, CATEGORY, TYPE, PROVINCE, AGRICULTURE_PRODUCT and FARM exist
+DECLARE @CountryId INT, @CategoryId INT, @TypeId INT, @ProvinceId INT;
 DECLARE @ProductIdA INT, @ProductIdB INT, @ProductIdC INT;
 DECLARE @FarmIdA INT, @FarmIdB INT;
 
+SELECT TOP 1 @CountryId = ID FROM COUNTRY ORDER BY ID;
 SELECT TOP 1 @CategoryId = ID FROM CATEGORY ORDER BY ID;
 SELECT TOP 1 @TypeId = ID FROM [TYPE] ORDER BY ID;
 SELECT TOP 1 @ProvinceId = ID FROM PROVINCE ORDER BY ID;
 SELECT TOP 1 @ProductIdA = ID FROM AGRICULTURE_PRODUCT ORDER BY ID;
 SELECT TOP 1 @FarmIdA = ID FROM FARM ORDER BY ID;
+
+-- Create COUNTRY if not exists
+IF @CountryId IS NULL
+BEGIN
+    PRINT 'Creating dummy COUNTRY record...';
+    INSERT INTO COUNTRY (Name) VALUES (N'Vietnam');
+    SELECT TOP 1 @CountryId = ID FROM COUNTRY ORDER BY ID;
+END;
 
 -- Create CATEGORY if not exists
 IF @CategoryId IS NULL
@@ -46,16 +55,15 @@ END;
 IF @TypeId IS NULL
 BEGIN
     PRINT 'Creating dummy TYPE record...';
-    -- SỬA: Bỏ Name, chỉ dùng Variety
-    INSERT INTO [TYPE] (Variety, C_ID) VALUES (N'Test Type', @CategoryId);
+    INSERT INTO [TYPE] (Variety, C_ID) VALUES (N'Test Variety', @CategoryId);
     SELECT TOP 1 @TypeId = ID FROM [TYPE] ORDER BY ID;
 END;
 
--- Create PROVINCE if not exists
+-- Create PROVINCE if not exists (requires COUNTRY)
 IF @ProvinceId IS NULL
 BEGIN
     PRINT 'Creating dummy PROVINCE record...';
-    INSERT INTO PROVINCE (Name) VALUES (N'Test Province');
+    INSERT INTO PROVINCE (Name, C_ID) VALUES (N'Test Province', @CountryId);
     SELECT TOP 1 @ProvinceId = ID FROM PROVINCE ORDER BY ID;
 END;
 

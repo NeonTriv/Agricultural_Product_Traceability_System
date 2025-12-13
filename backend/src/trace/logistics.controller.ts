@@ -32,7 +32,8 @@ export class LogisticsController {
     body: {
       vTin: string;
       name: string;
-      address?: string;
+      addressDetail?: string;
+      provinceId?: number;
       contactInfo?: string;
     },
   ) {
@@ -46,7 +47,8 @@ export class LogisticsController {
     @Body()
     body: {
       name?: string;
-      address?: string;
+      addressDetail?: string;
+      provinceId?: number;
       contactInfo?: string;
     },
   ) {
@@ -77,9 +79,9 @@ export class LogisticsController {
   async createShipment(
     @Body()
     body: {
-      id: number;
       status: string;
       destination?: string;
+      startLocation?: string;
       distributorTin: string;
     },
   ) {
@@ -94,6 +96,7 @@ export class LogisticsController {
     body: {
       status?: string;
       destination?: string;
+      startLocation?: string;
       distributorTin?: string;
     },
   ) {

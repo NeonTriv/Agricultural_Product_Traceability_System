@@ -218,7 +218,7 @@ export class VendorService {
     // Check if vendor exists
     const vendor = await this.vendorRepo.findOne({
       where: { tin },
-      relations: ['distributors', 'distributors.shipments', 'retails', 'vendorProducts', 'discounts']
+      relations: ['distributors', 'distributors.shipments', 'retails', 'vendorProducts']
     });
     if (!vendor) {
       throw new NotFoundException(`Vendor with TIN ${tin} not found`);
@@ -242,19 +242,18 @@ export class VendorService {
     // (no other tables reference RETAIL)
 
     if (vendor.vendorProducts?.length > 0) {
-      blockers.push(`${vendor.vendorProducts.length} Vendor Product(s) (tab Vendors > Vendor Products)`);
-    }
-
-    if (vendor.discounts?.length > 0) {
-      blockers.push(`${vendor.discounts.length} Discount(s) (tab Pricing > Discounts)`);
+      blockers.push(`${vendor.vendorProducts.length} Vendor Product(s)`);
     }
 
     if (carrierCompany) {
-      blockers.push('Carrier Company record (tab Logistics > Carrier Companies)');
+      blockers.push('Carrier Company record');
     }
 
     if (blockers.length > 0) {
-      throw new BadRequestException(`Cannot delete vendor. Please delete the following first: ${blockers.join('; ')}`);
+      throw new BadRequestException(
+        `Cannot delete Vendor: It has ${blockers.join(' and ')}. ` +
+        `Please delete them first.`
+      );
     }
 
     // Now safe to delete the vendor

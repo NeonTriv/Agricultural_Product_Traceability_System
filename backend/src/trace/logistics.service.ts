@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { BaseService } from '../shared/base/base.service';
 import { Shipment } from './entities/shipment.entity';
 import { TransportLeg } from './entities/transport-leg.entity';
 import { CarrierCompany } from './entities/carrier-company.entity';
@@ -8,10 +9,10 @@ import { Distributor } from './entities/distributor.entity';
 import { Vendor } from './entities/vendor.entity';
 
 @Injectable()
-export class LogisticsService {
+export class LogisticsService extends BaseService<Shipment> {
   constructor(
     @InjectRepository(Shipment)
-    private readonly shipmentRepo: Repository<Shipment>,
+    shipmentRepo: Repository<Shipment>,
     @InjectRepository(TransportLeg)
     private readonly transportLegRepo: Repository<TransportLeg>,
     @InjectRepository(CarrierCompany)
@@ -20,19 +21,24 @@ export class LogisticsService {
     private readonly distributorRepo: Repository<Distributor>,
     @InjectRepository(Vendor)
     private readonly vendorRepo: Repository<Vendor>,
-  ) {}
+  ) {
+    super(shipmentRepo);
+  }
 
   // Carrier Companies methods
   async getAllCarriers() {
     const carriers = await this.carrierRepo.find({
-      relations: ['vendor', 'transportLegs'],
+      relations: ['vendor', 'vendor.province', 'vendor.province.country', 'transportLegs'],
       order: { vTin: 'ASC' },
     });
 
     return carriers.map((c) => ({
       vTin: c.vTin,
       name: c.vendor?.name,
-      address: c.vendor?.address,
+      addressDetail: c.vendor?.address,
+      provinceId: c.vendor?.provinceId,
+      provinceName: c.vendor?.province?.name,
+      countryName: c.vendor?.province?.country?.name,
       contactInfo: c.vendor?.contactInfo,
       transportLegCount: c.transportLegs?.length || 0,
     }));
@@ -41,7 +47,7 @@ export class LogisticsService {
   async getCarrier(tin: string) {
     const carrier = await this.carrierRepo.findOne({
       where: { vTin: tin },
-      relations: ['vendor', 'transportLegs'],
+      relations: ['vendor', 'vendor.province', 'vendor.province.country', 'transportLegs'],
     });
 
     if (!carrier) {
@@ -51,7 +57,10 @@ export class LogisticsService {
     return {
       vTin: carrier.vTin,
       name: carrier.vendor?.name,
-      address: carrier.vendor?.address,
+      addressDetail: carrier.vendor?.address,
+      provinceId: carrier.vendor?.provinceId,
+      provinceName: carrier.vendor?.province?.name,
+      countryName: carrier.vendor?.province?.country?.name,
       contactInfo: carrier.vendor?.contactInfo,
       transportLegCount: carrier.transportLegs?.length || 0,
     };
@@ -60,7 +69,8 @@ export class LogisticsService {
   async createCarrier(data: {
     vTin: string;
     name: string;
-    address?: string;
+    addressDetail?: string;
+    provinceId?: number;
     contactInfo?: string;
   }) {
     // First create or update vendor
@@ -69,27 +79,35 @@ export class LogisticsService {
       vendor = this.vendorRepo.create({
         tin: data.vTin,
         name: data.name,
-        address: data.address || '',
+        address: data.addressDetail || '',
         contactInfo: data.contactInfo,
+        provinceId: data.provinceId,
       });
+      await this.vendorRepo.save(vendor);
+    } else {
+      vendor.name = data.name;
+      if (data.addressDetail !== undefined) vendor.address = data.addressDetail;
+      if (data.provinceId !== undefined) vendor.provinceId = data.provinceId;
+      if (data.contactInfo !== undefined) vendor.contactInfo = data.contactInfo;
       await this.vendorRepo.save(vendor);
     }
 
-    // Then create carrier company
-    const carrier = this.carrierRepo.create({
-      vTin: data.vTin,
-    });
+    // Then create carrier company (if not exists)
+    let carrier = await this.carrierRepo.findOne({ where: { vTin: data.vTin } });
+    if (!carrier) {
+      carrier = this.carrierRepo.create({ vTin: data.vTin });
+      await this.carrierRepo.save(carrier);
+    }
 
-    await this.carrierRepo.save(carrier);
-
-    return { success: true, vTin: carrier.vTin };
+    return { success: true, vTin: data.vTin };
   }
 
   async updateCarrier(
     tin: string,
     data: {
       name?: string;
-      address?: string;
+      addressDetail?: string;
+      provinceId?: number;
       contactInfo?: string;
     },
   ) {
@@ -103,7 +121,8 @@ export class LogisticsService {
     const vendor = await this.vendorRepo.findOne({ where: { tin } });
     if (vendor) {
       if (data.name) vendor.name = data.name;
-      if (data.address !== undefined) vendor.address = data.address;
+      if (data.addressDetail !== undefined) vendor.address = data.addressDetail;
+      if (data.provinceId !== undefined) vendor.provinceId = data.provinceId;
       if (data.contactInfo !== undefined) vendor.contactInfo = data.contactInfo;
       await this.vendorRepo.save(vendor);
     }
@@ -112,8 +131,7 @@ export class LogisticsService {
   }
 
   async deleteCarrier(tin: string) {
-    // Check if carrier exists
-    const carrier = await this.carrierRepo.findOne({ 
+    const carrier = await this.carrierRepo.findOne({
       where: { vTin: tin },
       relations: ['transportLegs']
     });
@@ -121,20 +139,19 @@ export class LogisticsService {
       throw new NotFoundException(`Carrier Company with TIN ${tin} not found`);
     }
 
-    // Check for related records and provide helpful error message
     if (carrier.transportLegs?.length > 0) {
-      throw new BadRequestException(`Cannot delete carrier. Please delete ${carrier.transportLegs.length} Transport Leg(s) first (tab Logistics > Transport Legs)`);
+      throw new BadRequestException(
+        `Cannot delete carrier. Please delete ${carrier.transportLegs.length} Transport Leg(s) first (tab Logistics > Transport Legs)`
+      );
     }
 
-    // Delete the carrier company
     await this.carrierRepo.delete({ vTin: tin });
-
     return { success: true };
   }
 
-  // Shipments methods
+  // Shipments methods (using BaseService)
   async getAllShipments() {
-    const shipments = await this.shipmentRepo.find({
+    const shipments = await this.findAll({
       relations: ['distributor', 'distributor.vendor', 'transportLegs'],
       order: { id: 'DESC' },
     });
@@ -143,6 +160,7 @@ export class LogisticsService {
       id: s.id,
       status: s.status,
       destination: s.destination,
+      startLocation: s.startLocation,
       distributorTin: s.distributorTin,
       distributorName: s.distributor?.vendor?.name,
       transportLegCount: s.transportLegs?.length || 0,
@@ -150,19 +168,13 @@ export class LogisticsService {
   }
 
   async getShipment(id: number) {
-    const shipment = await this.shipmentRepo.findOne({
-      where: { id },
-      relations: ['distributor', 'distributor.vendor', 'transportLegs'],
-    });
-
-    if (!shipment) {
-      throw new NotFoundException(`Shipment with ID ${id} not found`);
-    }
+    const shipment = await this.findOne(id, ['distributor', 'distributor.vendor', 'transportLegs']);
 
     return {
       id: shipment.id,
       status: shipment.status,
       destination: shipment.destination,
+      startLocation: shipment.startLocation,
       distributorTin: shipment.distributorTin,
       distributorName: shipment.distributor?.vendor?.name,
       transportLegCount: shipment.transportLegs?.length || 0,
@@ -173,15 +185,14 @@ export class LogisticsService {
     status: string;
     destination?: string;
     distributorTin: string;
+    startLocation?: string;
   }) {
-    const shipment = this.shipmentRepo.create({
+    const shipment = await this.create({
       status: data.status,
       destination: data.destination,
+      startLocation: data.startLocation,
       distributorTin: data.distributorTin,
     });
-
-    await this.shipmentRepo.save(shipment);
-
     return { success: true, id: shipment.id };
   }
 
@@ -191,30 +202,38 @@ export class LogisticsService {
       status?: string;
       destination?: string;
       distributorTin?: string;
+      startLocation?: string;
     },
   ) {
-    const shipment = await this.shipmentRepo.findOne({ where: { id } });
+    const shipment = await this.update(id, data);
+    return { success: true, id: shipment.id };
+  }
+
+  async deleteShipment(id: number) {
+    const shipment = await this.repository.findOne({
+      where: { id },
+      relations: ['shipBatches', 'transportLegs']
+    });
 
     if (!shipment) {
       throw new NotFoundException(`Shipment with ID ${id} not found`);
     }
 
-    if (data.status) shipment.status = data.status;
-    if (data.destination !== undefined) shipment.destination = data.destination;
-    if (data.distributorTin) shipment.distributorTin = data.distributorTin;
-
-    await this.shipmentRepo.save(shipment);
-
-    return { success: true, id: shipment.id };
-  }
-
-  async deleteShipment(id: number) {
-    const result = await this.shipmentRepo.delete({ id });
-
-    if (result.affected === 0) {
-      throw new NotFoundException(`Shipment with ID ${id} not found`);
+    if (shipment.shipBatches && shipment.shipBatches.length > 0) {
+      throw new BadRequestException(
+        `Cannot delete Shipment: It contains ${shipment.shipBatches.length} batch(es). ` +
+        `Please remove them first (Logistics > Shipments).`
+      );
     }
 
+    if (shipment.transportLegs && shipment.transportLegs.length > 0) {
+      throw new BadRequestException(
+        `Cannot delete Shipment: It has ${shipment.transportLegs.length} transport leg(s). ` +
+        `Please delete them first (Logistics > Transport Legs).`
+      );
+    }
+
+    await this.delete(id);
     return { success: true };
   }
 
@@ -287,7 +306,6 @@ export class LogisticsService {
     });
 
     await this.transportLegRepo.save(leg);
-
     return { success: true, id: leg.id };
   }
 
@@ -320,7 +338,6 @@ export class LogisticsService {
     if (data.carrierCompanyTin) leg.carrierCompanyTin = data.carrierCompanyTin;
 
     await this.transportLegRepo.save(leg);
-
     return { success: true, id: leg.id };
   }
 

@@ -1,18 +1,7 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AgricultureProduct } from './entities/agriculture-product.entity';
 import { Batch } from './entities/batch.entity';
-import { Farm } from './entities/farm.entity';
-import { FarmCertification } from './entities/farm-certification.entity';
-import { Type } from './entities/type.entity';
-import { Province } from './entities/province.entity';
-import { Country } from './entities/country.entity';
-import { Processing } from './entities/processing.entity';
-import { ProcessingFacility } from './entities/processing-facility.entity';
-import { VendorProduct } from './entities/vendor-product.entity';
-import { Vendor } from './entities/vendor.entity';
-import { Price } from './entities/price.entity';
 import {
   TraceResponseDto,
   ProductDto,
@@ -21,253 +10,86 @@ import {
   ProcessingDto,
   DistributorDto,
   PriceDto,
+  TypeDto,
+  LocationDto,
+  VendorDto,
+  ProcessingFacilityDto,
+  WarehouseDto,
+  DiscountDto,
+  ShipmentDto,
+  TransportLegDto,
 } from './dto/trace-response.dto';
 
+/**
+ * TraceService - Core Traceability Lookup
+ * 
+ * Single Responsibility: QR code lookup and traceability response mapping.
+ * All CRUD operations moved to ProductService.
+ */
 @Injectable()
 export class TraceService {
   constructor(
-    @InjectRepository(AgricultureProduct)
-    private readonly productRepo: Repository<AgricultureProduct>,
     @InjectRepository(Batch)
     private readonly batchRepo: Repository<Batch>,
-    @InjectRepository(Farm)
-    private readonly farmRepo: Repository<Farm>,
-    @InjectRepository(FarmCertification)
-    private readonly farmCertRepo: Repository<FarmCertification>,
-    @InjectRepository(Type)
-    private readonly typeRepo: Repository<Type>,
-    @InjectRepository(Province)
-    private readonly provinceRepo: Repository<Province>,
-    @InjectRepository(Country)
-    private readonly countryRepo: Repository<Country>,
-    @InjectRepository(Processing)
-    private readonly processingRepo: Repository<Processing>,
-    @InjectRepository(ProcessingFacility)
-    private readonly facilityRepo: Repository<ProcessingFacility>,
-    @InjectRepository(VendorProduct)
-    private readonly vendorProductRepo: Repository<VendorProduct>,
-    @InjectRepository(Vendor)
-    private readonly vendorRepo: Repository<Vendor>,
-    @InjectRepository(Price)
-    private readonly priceRepo: Repository<Price>,
   ) {}
 
   /**
-   * OPTIMIZED QUERY: Fetch product traceability by QR code
-   *
-   * KEY SCHEMA CHANGES:
-   * - QR code is now in BATCH table (Qr_Code_URL column)
-   * - BATCH links to AGRICULTURE_PRODUCT via AP_ID
-   * - BATCH links to FARM via Farm_ID
-   * - FARM links to PROVINCE via P_ID
-   * - PROVINCE links to COUNTRY via C_ID
-   *
-   * OPTIMIZATION TECHNIQUES:
-   * 1. Single query with JOINs instead of N+1 queries
-   * 2. Select only required columns
-   * 3. Use index on Qr_Code_URL for fast lookup
+   * Fetch full traceability by QR code (single optimized query)
    */
   async getTraceByCode(qrCodeUrl: string): Promise<TraceResponseDto> {
-    // Start from BATCH table since QR code is there
     const batch = await this.batchRepo
       .createQueryBuilder('batch')
-      .select([
-        // Batch fields
-        'batch.id',
-        'batch.harvestDate',
-        'batch.grade',
-        'batch.qrCodeUrl',
-        'batch.createdBy',
-        'batch.seedBatch',
-        // Agriculture Product fields
-        'product.id',
-        'product.name',
-        'product.imageUrl',
-        // Type fields
-        'type.id',
-        'type.name',
-        'type.variety',
-        // Farm fields
-        'farm.id',
-        'farm.name',
-        'farm.ownerName',
-        'farm.contactInfo',
-        'farm.longitude',
-        'farm.latitude',
-        // Province fields
-        'province.id',
-        'province.name',
-        // Country fields
-        'country.id',
-        'country.name',
-      ])
+      .leftJoinAndSelect('batch.farm', 'farm')
+      .leftJoinAndSelect('farm.province', 'province')
+      .leftJoinAndSelect('province.country', 'country')
+      .leftJoinAndSelect('farm.certifications', 'cert')
+      .leftJoinAndSelect('batch.agricultureProduct', 'product')
+      .leftJoinAndSelect('product.type', 'type')
+      .leftJoinAndSelect('product.vendorProducts', 'vendorProduct')
+      .leftJoinAndSelect('vendorProduct.vendor', 'vendor')
+      .leftJoinAndSelect('vendorProduct.prices', 'price')
+      .leftJoinAndSelect('vendorProduct.productHasDiscounts', 'productDiscount')
+      .leftJoinAndSelect('productDiscount.discount', 'discount')
+      .leftJoinAndSelect('batch.processings', 'processing')
+      .leftJoinAndSelect('processing.facility', 'facility')
+      .leftJoinAndSelect('batch.storedIn', 'storedIn')
+      .leftJoinAndSelect('storedIn.warehouse', 'warehouse')
+      .leftJoinAndSelect('warehouse.province', 'warehouseProvince')
+      .leftJoinAndSelect('batch.shipBatches', 'shipBatch')
+      .leftJoinAndSelect('shipBatch.shipment', 'shipment')
+      .leftJoinAndSelect('shipment.transportLegs', 'transportLeg')
+      .leftJoinAndSelect('transportLeg.carrierCompany', 'carrierCompany')
+      .leftJoinAndSelect('carrierCompany.vendor', 'carrierVendor')
       .where('batch.qrCodeUrl = :qrCodeUrl', { qrCodeUrl })
-      // Join agriculture product
-      .leftJoin('batch.agricultureProduct', 'product')
-      // Join type
-      .leftJoin('product.type', 'type')
-      // Join farm
-      .leftJoin('batch.farm', 'farm')
-      // Join province
-      .leftJoin('farm.province', 'province')
-      // Join country
-      .leftJoin('province.country', 'country')
       .getOne();
 
     if (!batch) {
-      throw new NotFoundException(
-        `Product with QR code "${qrCodeUrl}" not found`,
-      );
+      throw new NotFoundException(`Product with QR code "${qrCodeUrl}" not found`);
     }
 
-    // Fetch farm certifications
-    let certifications: string[] = [];
-    if (batch.farm) {
-      const certs = await this.farmCertRepo.find({
-        where: { farmId: batch.farm.id },
-      });
-      certifications = certs.map((c) => c.farmCertifications);
-    }
-
-    // Fetch processing info
-    let processingDto: ProcessingDto | undefined;
-    const processing = await this.processingRepo
-      .createQueryBuilder('p')
-      .select([
-        'p.id',
-        'p.packagingDate',
-        'p.processedBy',
-        'p.packagingType',
-        'p.processingDate',
-        'facility.id',
-        'facility.name',
-      ])
-      .leftJoin('p.facility', 'facility')
-      .where('p.batchId = :batchId', { batchId: batch.id })
-      .getOne();
-
-    if (processing) {
-      processingDto = {
-        facility: processing.facility?.name,
-        packedAt: processing.packagingDate
-          ? new Date(processing.packagingDate).toISOString().split('T')[0]
-          : undefined,
-        processedBy: processing.processedBy,
-        packagingType: processing.packagingType,
-      };
-    }
-
-    // Fetch vendor and price info
-    // Find vendor product by agriculture product ID
-    let distributorDto: DistributorDto | undefined;
-    let priceDto: PriceDto | undefined;
-
-    if (batch.agricultureProduct) {
-      const vendorProduct = await this.vendorProductRepo
-        .createQueryBuilder('vp')
-        .select([
-          'vp.id',
-          'vp.unit',
-          'vendor.tin',
-          'vendor.name',
-          'vendor.address',
-        ])
-        .leftJoin('vp.vendor', 'vendor')
-        .where('vp.agricultureProductId = :apId', {
-          apId: batch.agricultureProduct.id,
-        })
-        .getOne();
-
-      if (vendorProduct) {
-        distributorDto = {
-          name: vendorProduct.vendor?.name,
-          location: vendorProduct.vendor?.address,
-        };
-
-        // Fetch price
-        const price = await this.priceRepo.findOne({
-          where: { vendorProductId: vendorProduct.id },
-        });
-
-        if (price) {
-          priceDto = {
-            amount: Number(price.value),
-            currency: price.currency,
-          };
-        }
-      }
-    }
-
-    // Map to DTOs
-    const productDto: ProductDto = {
-      id: batch.agricultureProduct?.id?.toString() || 'unknown',
-      name: batch.agricultureProduct?.name || 'Unknown Product',
-      imageUrl: batch.agricultureProduct?.imageUrl,
-    };
-
-    const batchDto: BatchDto = {
-      id: batch.id.toString(),
-      farmName: batch.farm?.name || 'Unknown Farm',
-      harvestDate: batch.harvestDate
-        ? new Date(batch.harvestDate).toISOString().split('T')[0]
-        : undefined,
-      grade: batch.grade,
-    };
-
-    let farmDto: FarmDto | undefined;
-    if (batch.farm) {
-      farmDto = {
-        name: batch.farm.name,
-        address: `${batch.farm.province?.name || ''}, ${batch.farm.province?.country?.name || ''}`.trim(),
-        country: batch.farm.province?.country?.name,
-        province: batch.farm.province?.name,
-        certifications,
-      };
-    }
-
-    return {
-      code: qrCodeUrl,
-      product: productDto,
-      batch: batchDto,
-      farm: farmDto,
-      processing: processingDto,
-      distributor: distributorDto,
-      price: priceDto,
-    };
+    return this.mapToResponse(batch);
   }
 
   /**
-   * Get all batches with QR codes (for testing)
-   * OPTIMIZED: Select only necessary columns
+   * Get all batches for testing/listing
    */
   async getAllProducts(): Promise<any[]> {
     const batches = await this.batchRepo
       .createQueryBuilder('batch')
       .select([
-        'batch.id',
-        'batch.qrCodeUrl',
-        'batch.harvestDate',
-        'batch.grade',
-        'batch.seedBatch',
-        'batch.farmId',
-        'batch.agricultureProductId',
-        'batch.vendorProductId',
-        'product.id',
-        'product.name',
-        'product.imageUrl',
-        'farm.id',
-        'farm.name',
-        'province.id',
-        'province.name',
-        'country.id',
-        'country.name',
+        'batch.id', 'batch.qrCodeUrl', 'batch.harvestDate', 'batch.grade',
+        'batch.seedBatch', 'batch.farmId', 'batch.agricultureProductId', 'batch.vendorProductId',
+        'product.id', 'product.name', 'product.imageUrl',
+        'farm.id', 'farm.name',
+        'province.id', 'province.name',
+        'country.id', 'country.name',
       ])
       .leftJoin('batch.agricultureProduct', 'product')
       .leftJoin('batch.farm', 'farm')
       .leftJoin('farm.province', 'province')
       .leftJoin('province.country', 'country')
-      .orderBy('batch.id', 'DESC') // Show newest products first
-      .take(100) // Limit for performance
+      .orderBy('batch.id', 'DESC')
+      .take(100)
       .getMany();
 
     return batches.map((b) => ({
@@ -287,396 +109,198 @@ export class TraceService {
     }));
   }
 
-  /**
-   * Create a new batch
-   */
-  async createProduct(data: {
-    qrCodeUrl: string;
-    farmId: number;
-    agricultureProductId: number;
-    harvestDate: Date;
-    grade?: string;
-    vendorProductId?: number;
-  }) {
-    const batch = this.batchRepo.create({
-      qrCodeUrl: data.qrCodeUrl,
-      farmId: data.farmId,
-      agricultureProductId: data.agricultureProductId,
-      harvestDate: data.harvestDate,
-      grade: data.grade,
-      vendorProductId: data.vendorProductId,
-    });
+  // === Private Mapping Helpers ===
 
-    const saved = await this.batchRepo.save(batch);
-    return { success: true, id: saved.id };
-  }
-
-  /**
-   * Update an existing batch
-   */
-  async updateProduct(
-    id: number,
-    data: {
-      qrCodeUrl?: string;
-      farmId?: number;
-      agricultureProductId?: number;
-      harvestDate?: Date;
-      grade?: string;
-      seedBatch?: string;
-    },
-  ) {
-    const batch = await this.batchRepo.findOne({
-      where: { id },
-    });
-
-    if (!batch) {
-      throw new NotFoundException(`Batch with ID "${id}" not found`);
-    }
-
-    if (data.qrCodeUrl) batch.qrCodeUrl = data.qrCodeUrl;
-    if (data.farmId) batch.farmId = data.farmId;
-    if (data.agricultureProductId)
-      batch.agricultureProductId = data.agricultureProductId;
-    if (data.harvestDate) batch.harvestDate = data.harvestDate;
-    if (data.grade) batch.grade = data.grade;
-    if (data.seedBatch !== undefined) batch.seedBatch = data.seedBatch;
-
-    await this.batchRepo.save(batch);
-    return { success: true, id };
-  }
-
-  /**
-   * Delete a batch
-   */
-  async deleteProduct(id: number) {
-    const result = await this.batchRepo.delete({ id });
-
-    if (result.affected === 0) {
-      throw new NotFoundException(`Batch with ID "${id}" not found`);
-    }
-
-    return { success: true, id };
-  }
-
-  /**
-   * Delete a province
-   */
-  async deleteProvince(id: number) {
-    const result = await this.provinceRepo.delete({ id });
-
-    if (result.affected === 0) {
-      throw new NotFoundException(`Province with ID "${id}" not found`);
-    }
-
-    return { success: true, id };
-  }
-
-  /**
-   * Delete a country
-   */
-  async deleteCountry(id: number) {
-    const result = await this.countryRepo.delete({ id });
-
-    if (result.affected === 0) {
-      throw new NotFoundException(`Country with ID "${id}" not found`);
-    }
-
-    return { success: true, id };
-  }
-
-  /**
-   * Get all farms for dropdown selection
-   */
-  async getAllFarms() {
-    const farms = await this.farmRepo.find({
-      relations: ['province', 'province.country'],
-      take: 100,
-    });
-    return farms.map((f) => ({
-      id: f.id,
-      name: f.name,
-      ownerName: f.ownerName,
-      contactInfo: f.contactInfo,
-      longitude: f.longitude,
-      latitude: f.latitude,
-      provinceId: f.provinceId,
-      provinceName: f.province?.name || 'Unknown',
-      countryName: f.province?.country?.name || 'Unknown',
-    }));
-  }
-
-  /**
-   * Get all agriculture products for dropdown selection
-   */
-  async getAllAgricultureProducts() {
-    const products = await this.productRepo.find({
-      take: 100,
-    });
-    return products.map((p) => ({
-      id: p.id,
-      name: p.name,
-    }));
-  }
-
-  /**
-   * Get all provinces with their country information
-   */
-  async getAllProvinces() {
-    const provinces = await this.provinceRepo.find({
-      relations: ['country'],
-      take: 100,
-    });
-    return provinces.map((p) => ({
-      id: p.id,
-      name: p.name,
-      countryId: p.countryId,
-      countryName: p.country?.name || 'Unknown',
-    }));
-  }
-
-  /**
-   * Get all countries for dropdown selection
-   */
-  async getAllCountries() {
-    const countries = await this.countryRepo.find({
-      take: 100,
-    });
-    return countries.map((c) => ({
-      id: c.id,
-      name: c.name,
-    }));
-  }
-
-  /**
-   * Create a new country
-   */
-  async createCountry(data: { name: string }) {
-    const name = (data.name || '').trim();
-    if (!name) {
-      throw new BadRequestException('Country name is required');
-    }
-
-    const exists = await this.countryRepo.findOne({ where: { name } });
-    if (exists) {
-      return { success: true, id: exists.id };
-    }
-
-    const country = this.countryRepo.create({ name });
-    const saved = await this.countryRepo.save(country);
-    return { success: true, id: saved.id };
-  }
-
-  /**
-   * Create a new province, with either existing countryId or new countryName
-   */
-  async createProvince(data: { name: string; countryId?: number; countryName?: string }) {
-    const name = (data.name || '').trim();
-    if (!name) throw new BadRequestException('Province name is required');
-
-    let countryId = data.countryId;
-    if (!countryId && data.countryName) {
-      const countryName = data.countryName.trim();
-      if (!countryName) throw new BadRequestException('countryName is empty');
-      let country = await this.countryRepo.findOne({ where: { name: countryName } });
-      if (!country) {
-        country = await this.countryRepo.save(this.countryRepo.create({ name: countryName }));
-      }
-      countryId = country.id;
-    }
-
-    if (!countryId) throw new BadRequestException('countryId or countryName is required');
-
-    // Unique(Name, C_ID) in schema: check existence
-    const exists = await this.provinceRepo.findOne({ where: { name, countryId } });
-    if (exists) return { success: true, id: exists.id };
-
-    const province = this.provinceRepo.create({ name, countryId });
-    const saved = await this.provinceRepo.save(province);
-    return { success: true, id: saved.id };
-  }
-
-  /**
-   * Get all types for dropdown selection
-   */
-  async getAllTypes() {
-    const types = await this.typeRepo.find({
-      relations: ['category'],
-      take: 100,
-    });
-    return types.map((t) => ({
-      id: t.id,
-      variety: t.variety,
-      categoryName: t.category?.name || 'Unknown',
-    }));
-  }
-
-  /**
-   * Get all batches for dropdown selection in Storage and Processing tabs
-   */
-  async getAllBatches() {
-    const batches = await this.batchRepo.find({
-      relations: ['agricultureProduct'],
-      take: 200,
-    });
-    return batches.map((b) => ({
-      id: b.id,
-      productName: b.agricultureProduct?.name || 'Unknown Product',
-      qrCodeUrl: b.qrCodeUrl,
-      harvestDate: b.harvestDate,
-      grade: b.grade,
-    }));
-  }
-
-  /**
-   * Create a new farm
-   */
-  async createFarm(data: {
-    name: string;
-    ownerName?: string;
-    contactInfo?: string;
-    addressDetail?: string;
-    longitude?: number;
-    latitude?: number;
-    provinceId: number;
-  }) {
-    const farm = this.farmRepo.create({
-      name: data.name,
-      ownerName: data.ownerName,
-      contactInfo: data.contactInfo,
-      addressDetail: data.addressDetail,
-      longitude: data.longitude || 0,
-      latitude: data.latitude || 0,
-      provinceId: data.provinceId,
-    });
-
-    const saved = await this.farmRepo.save(farm);
-    return { success: true, id: saved.id };
-  }
-
-  /**
-   * Get farm by ID with relations
-   */
-  async getFarmById(id: number) {
-    const farm = await this.farmRepo.findOne({
-      where: { id },
-      relations: ['province', 'province.country', 'certifications'],
-    });
-
-    if (!farm) {
-      throw new NotFoundException(`Farm with ID ${id} not found`);
-    }
-
+  private mapToResponse(batch: Batch): TraceResponseDto {
     return {
-      id: farm.id,
-      name: farm.name,
-      ownerName: farm.ownerName,
-      contactInfo: farm.contactInfo,
-      addressDetail: farm.addressDetail,
-      longitude: farm.longitude,
-      latitude: farm.latitude,
-      provinceId: farm.provinceId,
-      provinceName: farm.province?.name || 'Unknown',
-      countryName: farm.province?.country?.name || 'Unknown',
-      certifications: farm.certifications?.map(c => c.farmCertifications) || [],
+      code: batch.qrCodeUrl,
+      product: this.mapProduct(batch),
+      batch: this.mapBatch(batch),
+      farm: this.mapFarm(batch),
+      processing: this.mapProcessing(batch),
+      distributor: this.mapDistributor(batch),
+      price: this.mapPrice(batch),
+      warehouses: this.mapWarehouses(batch),
+      discounts: this.mapDiscounts(batch),
+      shipments: this.mapShipments(batch),
     };
   }
 
-  /**
-   * Update farm
-   */
-  async updateFarm(
-    id: number,
-    data: {
-      name?: string;
-      ownerName?: string;
-      contactInfo?: string;
-      addressDetail?: string;
-      longitude?: number;
-      latitude?: number;
-      provinceId?: number;
-    },
-  ) {
-    const farm = await this.farmRepo.findOne({ where: { id } });
-    if (!farm) {
-      throw new NotFoundException(`Farm with ID ${id} not found`);
-    }
+  private mapProduct(batch: Batch): ProductDto {
+    const type: TypeDto | undefined = batch.agricultureProduct?.type ? {
+      id: String(batch.agricultureProduct.type.id || ''),
+      name: batch.agricultureProduct.type.variety || '',
+      variety: batch.agricultureProduct.type.variety,
+    } : undefined;
 
-    Object.assign(farm, data);
-    await this.farmRepo.save(farm);
-    return { success: true, id: farm.id };
+    return {
+      id: String(batch.agricultureProduct?.id || 'unknown'),
+      name: batch.agricultureProduct?.name || 'Unknown Product',
+      imageUrl: batch.agricultureProduct?.imageUrl,
+      qrCodeUrl: batch.qrCodeUrl,
+      batchId: String(batch.id),
+      type,
+    };
   }
 
-  /**
-   * Delete farm
-   */
-  async deleteFarm(id: number) {
-    const farm = await this.farmRepo.findOne({ where: { id } });
-    if (!farm) {
-      throw new NotFoundException(`Farm with ID ${id} not found`);
-    }
-
-    await this.farmRepo.remove(farm);
-    return { success: true, message: 'Farm deleted successfully' };
+  private mapBatch(batch: Batch): BatchDto {
+    return {
+      id: String(batch.id),
+      harvestDate: this.formatDate(batch.harvestDate),
+      grade: batch.grade,
+      seedBatch: (batch as any).seedBatch,
+      createdBy: (batch as any).createdBy,
+      farmName: batch.farm?.name || 'Unknown Farm',
+    };
   }
 
-  /**
-   * Get farm certifications
-   */
-  async getFarmCertifications(farmId: number) {
-    const certifications = await this.farmCertRepo.find({
-      where: { farmId },
-    });
-    return certifications.map(c => ({
-      farmId: c.farmId,
-      certification: c.farmCertifications,
-    }));
+  private mapFarm(batch: Batch): FarmDto | undefined {
+    if (!batch.farm) return undefined;
+
+    const location: LocationDto = {
+      country: batch.farm.province?.country?.name,
+      province: batch.farm.province?.name,
+      address: batch.farm.addressDetail,
+      latitude: batch.farm.latitude ? Number(batch.farm.latitude) : undefined,
+      longitude: batch.farm.longitude ? Number(batch.farm.longitude) : undefined,
+    };
+
+    return {
+      id: String(batch.farm.id || ''),
+      name: batch.farm.name,
+      ownerName: batch.farm.ownerName,
+      contactInfo: batch.farm.contactInfo,
+      location,
+      certifications: batch.farm.certifications?.map(c => c.farmCertifications) || [],
+    };
   }
 
-  /**
-   * Add farm certification
-   */
-  async addFarmCertification(farmId: number, certification: string) {
-    const farm = await this.farmRepo.findOne({ where: { id: farmId } });
-    if (!farm) {
-      throw new NotFoundException(`Farm with ID ${farmId} not found`);
-    }
+  private mapProcessing(batch: Batch): ProcessingDto | undefined {
+    const proc = (batch as any).processings?.[0];
+    if (!proc) return undefined;
 
-    const trimmedCert = certification.trim();
-    if (!trimmedCert) {
-      throw new BadRequestException('Certification name is required');
-    }
+    const facility: ProcessingFacilityDto | undefined = proc.facility ? {
+      id: String(proc.facility.id || ''),
+      name: proc.facility.name,
+      location: proc.facility.address,
+    } : undefined;
 
-    // Check if certification already exists
-    const exists = await this.farmCertRepo.findOne({
-      where: { farmId, farmCertifications: trimmedCert },
-    });
-
-    if (exists) {
-      return { success: true, message: 'Certification already exists' };
-    }
-
-    const cert = this.farmCertRepo.create({
-      farmId,
-      farmCertifications: trimmedCert,
-    });
-
-    await this.farmCertRepo.save(cert);
-    return { success: true, message: 'Certification added successfully' };
+    return {
+      id: String(proc.id || ''),
+      facility,
+      processingDate: this.formatDate(proc.processingDate),
+      packagingDate: this.formatDate(proc.packagingDate),
+      processedBy: proc.processedBy,
+      packagingType: proc.packagingType,
+      weightPerUnit: proc.weightPerUnit ? Number(proc.weightPerUnit) : undefined,
+    };
   }
 
-  /**
-   * Delete farm certification
-   */
-  async deleteFarmCertification(farmId: number, certification: string) {
-    const cert = await this.farmCertRepo.findOne({
-      where: { farmId, farmCertifications: certification },
-    });
+  private mapDistributor(batch: Batch): DistributorDto | undefined {
+    const vp = batch.agricultureProduct?.vendorProducts?.[0];
+    if (!vp?.vendor) return undefined;
 
-    if (!cert) {
-      throw new NotFoundException('Certification not found');
+    const vendor: VendorDto = {
+      tin: vp.vendor.tin || '',
+      name: vp.vendor.name,
+      address: vp.vendor.address,
+      contactInfo: vp.vendor.contactInfo,
+    };
+
+    return { vendor, unit: vp.unit };
+  }
+
+  private mapPrice(batch: Batch): PriceDto | undefined {
+    const price = batch.agricultureProduct?.vendorProducts?.[0]?.prices?.[0];
+    if (!price) return undefined;
+
+    return {
+      amount: price.value ? Number(price.value) : undefined,
+      currency: price.currency,
+    };
+  }
+
+  private mapWarehouses(batch: Batch): WarehouseDto[] | undefined {
+    const storedIn = (batch as any).storedIn;
+    if (!storedIn?.length) return undefined;
+
+    const warehouses = storedIn
+      .filter((s: any) => s.warehouse)
+      .map((s: any) => ({
+        id: s.warehouse.id,
+        address: s.warehouse.addressDetail || '',
+        capacity: s.warehouse.capacity ? Number(s.warehouse.capacity) : undefined,
+        storeCondition: s.warehouse.storeCondition,
+        province: s.warehouse.province?.name,
+        quantity: s.quantity ? Number(s.quantity) : undefined,
+        startDate: this.formatDate(s.startDate),
+        endDate: this.formatDate(s.endDate),
+      }));
+
+    return warehouses.length ? warehouses : undefined;
+  }
+
+  private mapDiscounts(batch: Batch): DiscountDto[] | undefined {
+    const vendorProducts = batch.agricultureProduct?.vendorProducts || [];
+    const discounts: DiscountDto[] = [];
+
+    for (const vp of vendorProducts) {
+      const phds = (vp as any).productHasDiscounts || [];
+      for (const phd of phds) {
+        if (phd.discount) {
+          discounts.push({
+            id: phd.discount.id,
+            name: phd.discount.name,
+            percentage: phd.discount.percentage ? Number(phd.discount.percentage) : undefined,
+            minValue: phd.discount.minValue ? Number(phd.discount.minValue) : undefined,
+            maxDiscountAmount: phd.discount.maxDiscountAmount ? Number(phd.discount.maxDiscountAmount) : undefined,
+            startDate: this.formatDate(phd.discount.startDate),
+            expiredDate: this.formatDate(phd.discount.expiredDate),
+            isStackable: phd.discount.isStackable,
+          });
+        }
+      }
     }
 
-    await this.farmCertRepo.remove(cert);
-    return { success: true, message: 'Certification deleted successfully' };
+    return discounts.length ? discounts : undefined;
+  }
+
+  private mapShipments(batch: Batch): ShipmentDto[] | undefined {
+    const shipBatches = (batch as any).shipBatches;
+    if (!shipBatches?.length) return undefined;
+
+    const shipments = shipBatches
+      .filter((sb: any) => sb.shipment)
+      .map((sb: any) => {
+        const legs = sb.shipment.transportLegs?.map((leg: any): TransportLegDto => ({
+          id: leg.id,
+          startLocation: leg.startLocation,
+          toLocation: leg.toLocation,
+          departureTime: leg.departureTime ? new Date(leg.departureTime).toISOString() : undefined,
+          arrivalTime: leg.arrivalTime ? new Date(leg.arrivalTime).toISOString() : undefined,
+          driverName: leg.driverName,
+          temperatureProfile: leg.temperatureProfile,
+          carrierCompany: leg.carrierCompany?.vendor ? {
+            name: leg.carrierCompany.vendor.name,
+            tin: leg.carrierCompany.vTin,
+            contactInfo: leg.carrierCompany.vendor.contactInfo,
+          } : undefined,
+        })) || [];
+
+        return {
+          id: sb.shipment.id,
+          status: sb.shipment.status,
+          startLocation: sb.shipment.startLocation,
+          destination: sb.shipment.destination,
+          transportLegs: legs.length ? legs : undefined,
+        };
+      });
+
+    return shipments.length ? shipments : undefined;
+  }
+
+  private formatDate(date?: Date | string): string | undefined {
+    if (!date) return undefined;
+    return new Date(date).toISOString().split('T')[0];
   }
 }

@@ -46,5 +46,10 @@ frontend/Desktop.ini
 
 # Bun specific
 frontend/.bun
+
 # Claude Code
 .claude/
+
+# Root level logs and artifacts
+*.log
+nul

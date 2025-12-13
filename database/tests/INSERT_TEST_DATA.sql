@@ -130,20 +130,21 @@ GO
 PRINT '';
 PRINT '--- STEP 5: Inserting AGRICULTURE_PRODUCT ---';
 
-DECLARE @LeafyGreensID INT = (SELECT ID FROM [TYPE] WHERE Name = N'Leafy Greens');
-DECLARE @RootVegID INT = (SELECT ID FROM [TYPE] WHERE Name = N'Root Vegetables');
-DECLARE @BerriesID INT = (SELECT ID FROM [TYPE] WHERE Name = N'Berries');
-DECLARE @CitrusID INT = (SELECT ID FROM [TYPE] WHERE Name = N'Citrus');
-DECLARE @TropicalID INT = (SELECT ID FROM [TYPE] WHERE Name = N'Tropical Fruits');
+-- TYPE table only has Variety column (not Name) - query by Variety
+DECLARE @LettuceTypeID INT = (SELECT ID FROM [TYPE] WHERE Variety = N'Lettuce');
+DECLARE @CarrotTypeID INT = (SELECT ID FROM [TYPE] WHERE Variety = N'Carrot');
+DECLARE @StrawberryTypeID INT = (SELECT ID FROM [TYPE] WHERE Variety = N'Strawberry');
+DECLARE @OrangeTypeID INT = (SELECT ID FROM [TYPE] WHERE Variety = N'Orange');
+DECLARE @MangoTypeID INT = (SELECT ID FROM [TYPE] WHERE Variety = N'Mango');
 
 IF NOT EXISTS (SELECT * FROM AGRICULTURE_PRODUCT WHERE Name = N'Organic Lettuce')
 BEGIN
     INSERT INTO AGRICULTURE_PRODUCT (Name, Image_URL, T_ID) VALUES
-        (N'Organic Lettuce', 'https://example.com/lettuce.jpg', @LeafyGreensID),
-        (N'Fresh Carrot', 'https://example.com/carrot.jpg', @RootVegID),
-        (N'Premium Strawberry', 'https://example.com/strawberry.jpg', @BerriesID),
-        (N'Sweet Orange', 'https://example.com/orange.jpg', @CitrusID),
-        (N'Tropical Mango', 'https://example.com/mango.jpg', @TropicalID);
+        (N'Organic Lettuce', 'https://example.com/lettuce.jpg', @LettuceTypeID),
+        (N'Fresh Carrot', 'https://example.com/carrot.jpg', @CarrotTypeID),
+        (N'Premium Strawberry', 'https://example.com/strawberry.jpg', @StrawberryTypeID),
+        (N'Sweet Orange', 'https://example.com/orange.jpg', @OrangeTypeID),
+        (N'Tropical Mango', 'https://example.com/mango.jpg', @MangoTypeID);
     PRINT '✓ Inserted: AGRICULTURE_PRODUCT (5 records)';
 END
 

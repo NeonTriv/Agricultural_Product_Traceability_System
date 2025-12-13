@@ -1,6 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Country } from './country.entity';
 import { Farm } from './farm.entity';
+import { Warehouse } from './warehouse.entity';
 
 /**
  * PROVINCE Entity
@@ -24,4 +25,7 @@ export class Province {
 
   @OneToMany(() => Farm, (farm) => farm.province)
   farms: Farm[];
+
+  @OneToMany(() => Warehouse, (warehouse) => warehouse.province)
+  warehouses: Warehouse[];
 }

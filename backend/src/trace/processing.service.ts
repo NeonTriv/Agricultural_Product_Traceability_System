@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Processing } from './entities/processing.entity';
@@ -117,12 +117,24 @@ export class ProcessingService {
   }
 
   async deleteFacility(id: number) {
-    const result = await this.facilityRepo.delete({ id });
+    const facility = await this.facilityRepo.findOne({
+      where: { id },
+      relations: ['processings']
+    });
 
-    if (result.affected === 0) {
+    if (!facility) {
       throw new NotFoundException(`Processing Facility with ID ${id} not found`);
     }
 
+    // Check for related processing operations
+    if (facility.processings && facility.processings.length > 0) {
+      throw new BadRequestException(
+        `Cannot delete Processing Facility: It has ${facility.processings.length} processing operation(s). ` +
+        `Please delete them first (Processing > Operations).`
+      );
+    }
+
+    await this.facilityRepo.remove(facility);
     return { success: true };
   }
 
