@@ -2,292 +2,265 @@ USE Traceability;
 GO
 
 PRINT '============================================================================';
-PRINT 'INSERTING MASTER DATA...';
+PRINT 'POPULATING DATABASE WITH ENGLISH DATA (3-10 ROWS PER TABLE)...';
 PRINT '============================================================================';
-PRINT '';
 
 -- ============================================================================
--- 1. INSERT COUNTRIES
+-- 1. MASTER DATA: LOCATIONS & CATEGORIES
 -- ============================================================================
-PRINT '1. Inserting Countries...';
-IF NOT EXISTS (SELECT * FROM COUNTRY WHERE Name = N'Vietnam') INSERT INTO COUNTRY (Name) VALUES (N'Vietnam');
-IF NOT EXISTS (SELECT * FROM COUNTRY WHERE Name = N'Thailand') INSERT INTO COUNTRY (Name) VALUES (N'Thailand');
-IF NOT EXISTS (SELECT * FROM COUNTRY WHERE Name = N'United States') INSERT INTO COUNTRY (Name) VALUES (N'United States');
-IF NOT EXISTS (SELECT * FROM COUNTRY WHERE Name = N'Japan') INSERT INTO COUNTRY (Name) VALUES (N'Japan');
-IF NOT EXISTS (SELECT * FROM COUNTRY WHERE Name = N'China') INSERT INTO COUNTRY (Name) VALUES (N'China');
+PRINT '1. Inserting Countries, Provinces, Categories...';
 
--- ============================================================================
--- 2. INSERT CATEGORIES
--- ============================================================================
-PRINT '2. Inserting Categories...';
-IF NOT EXISTS (SELECT * FROM CATEGORY WHERE Name = N'Rice') INSERT INTO CATEGORY (Name) VALUES (N'Rice');
-IF NOT EXISTS (SELECT * FROM CATEGORY WHERE Name = N'Vegetables') INSERT INTO CATEGORY (Name) VALUES (N'Vegetables');
-IF NOT EXISTS (SELECT * FROM CATEGORY WHERE Name = N'Fruits') INSERT INTO CATEGORY (Name) VALUES (N'Fruits');
-IF NOT EXISTS (SELECT * FROM CATEGORY WHERE Name = N'Coffee') INSERT INTO CATEGORY (Name) VALUES (N'Coffee');
-IF NOT EXISTS (SELECT * FROM CATEGORY WHERE Name = N'Tea') INSERT INTO CATEGORY (Name) VALUES (N'Tea');
+-- Countries (5 rows)
+INSERT INTO COUNTRY (Name) VALUES 
+('Vietnam'), ('Thailand'), ('United States'), ('Japan'), ('Brazil');
 
--- ============================================================================
--- 3. INSERT PROVINCES
--- ============================================================================
-PRINT '3. Inserting Provinces...';
-DECLARE @vietnamID INT;
-SELECT @vietnamID = ID FROM COUNTRY WHERE Name = N'Vietnam';
+DECLARE @vnId INT = (SELECT ID FROM COUNTRY WHERE Name = 'Vietnam');
+DECLARE @usId INT = (SELECT ID FROM COUNTRY WHERE Name = 'United States');
 
-IF NOT EXISTS (SELECT * FROM PROVINCE WHERE Name = N'Hà Nội')
-BEGIN
-    INSERT INTO PROVINCE (Name, C_ID) VALUES
-    (N'Hà Nội', @vietnamID), (N'TP. Hồ Chí Minh', @vietnamID), (N'Đà Nẵng', @vietnamID),
-    (N'An Giang', @vietnamID), (N'Đồng Tháp', @vietnamID), (N'Tiền Giang', @vietnamID),
-    (N'Long An', @vietnamID), (N'Bến Tre', @vietnamID), (N'Cần Thơ', @vietnamID),
-    (N'Vĩnh Long', @vietnamID), (N'Thái Bình', @vietnamID), (N'Nam Định', @vietnamID),
-    (N'Nghệ An', @vietnamID), (N'Thanh Hóa', @vietnamID), (N'Lâm Đồng', @vietnamID);
-END
+-- Provinces (8 rows)
+INSERT INTO PROVINCE (Name, C_ID) VALUES 
+('Hanoi', @vnId), 
+('Ho Chi Minh City', @vnId), 
+('Da Lat', @vnId), 
+('Dak Lak', @vnId), 
+('Mekong Delta', @vnId), 
+('California', @usId), 
+('Washington', @usId), 
+('Texas', @usId);
 
--- ============================================================================
--- 4. INSERT TYPES & AGRICULTURE PRODUCTS
--- ============================================================================
-PRINT '4. Inserting Types & Agriculture Products...';
+-- Categories (5 rows)
+INSERT INTO CATEGORY (Name) VALUES 
+('Cereal & Grain'), 
+('Fruit'), 
+('Vegetable'), 
+('Coffee & Tea'), 
+('Spices');
 
-DECLARE @riceCat INT, @veggieCat INT, @fruitCat INT, @coffeeCat INT;
-SELECT @riceCat = ID FROM CATEGORY WHERE Name = N'Rice';
-SELECT @veggieCat = ID FROM CATEGORY WHERE Name = N'Vegetables';
-SELECT @fruitCat = ID FROM CATEGORY WHERE Name = N'Fruits';
-SELECT @coffeeCat = ID FROM CATEGORY WHERE Name = N'Coffee';
+DECLARE @grainId INT = (SELECT ID FROM CATEGORY WHERE Name = 'Cereal & Grain');
+DECLARE @fruitId INT = (SELECT ID FROM CATEGORY WHERE Name = 'Fruit');
+DECLARE @vegId INT = (SELECT ID FROM CATEGORY WHERE Name = 'Vegetable');
+DECLARE @coffeeId INT = (SELECT ID FROM CATEGORY WHERE Name = 'Coffee & Tea');
 
--- Insert TYPE 
-IF NOT EXISTS (SELECT * FROM [TYPE] WHERE Variety = N'Jasmine Rice Premium')
-BEGIN
-    INSERT INTO [TYPE] (Variety, C_ID) VALUES
-    (N'Jasmine Rice Premium', @riceCat),
-    (N'Sticky Rice Organic', @riceCat),
-    (N'Brown Rice Healthy', @riceCat),
-    (N'Tomato Cherry', @veggieCat),
-    (N'Cucumber Long', @veggieCat),
-    (N'Lettuce Green', @veggieCat),
-    (N'Dragon Fruit White', @fruitCat),
-    (N'Dragon Fruit Red', @fruitCat),
-    (N'Mango Cat Hoa Loc', @fruitCat),
-    (N'Coffee Beans Arabica', @coffeeCat),
-    (N'Coffee Beans Robusta', @coffeeCat);
-END
+-- Types (8 rows)
+INSERT INTO [TYPE] (Variety, C_ID) VALUES 
+('Jasmine Rice', @grainId), 
+('ST25 Premium Rice', @grainId), 
+('Robusta Coffee', @coffeeId), 
+('Arabica Coffee', @coffeeId), 
+('Cat Chu Mango', @fruitId), 
+('Red Dragon Fruit', @fruitId), 
+('Organic Lettuce', @vegId), 
+('Black Pepper', @grainId); -- Assuming Spices/Grain overlap for simplicity
 
--- Insert AGRICULTURE_PRODUCT 
-INSERT INTO AGRICULTURE_PRODUCT (Name, Image_URL, T_ID)
-SELECT 
-    t.Variety, -- Dùng Variety làm tên sản phẩm
-    'https://via.placeholder.com/300x200?text=' + REPLACE(t.Variety, ' ', '+'),
-    t.ID
-FROM [TYPE] t
-WHERE NOT EXISTS (SELECT 1 FROM AGRICULTURE_PRODUCT ap WHERE ap.T_ID = t.ID);
+-- Agriculture Products (8 rows)
+DECLARE @t1 INT = (SELECT ID FROM [TYPE] WHERE Variety = 'Jasmine Rice');
+DECLARE @t2 INT = (SELECT ID FROM [TYPE] WHERE Variety = 'ST25 Premium Rice');
+DECLARE @t3 INT = (SELECT ID FROM [TYPE] WHERE Variety = 'Robusta Coffee');
+DECLARE @t4 INT = (SELECT ID FROM [TYPE] WHERE Variety = 'Cat Chu Mango');
+DECLARE @t5 INT = (SELECT ID FROM [TYPE] WHERE Variety = 'Red Dragon Fruit');
+
+INSERT INTO AGRICULTURE_PRODUCT (Name, Image_URL, T_ID) VALUES 
+('Golden Jasmine Rice', 'https://img.com/rice1.jpg', @t1),
+('Royal ST25 Rice', 'https://img.com/st25.jpg', @t2),
+('Highland Robusta Beans', 'https://img.com/robusta.jpg', @t3),
+('Da Lat Arabica Beans', 'https://img.com/arabica.jpg', (SELECT ID FROM [TYPE] WHERE Variety = 'Arabica Coffee')),
+('Sweet Yellow Mango', 'https://img.com/mango.jpg', @t4),
+('Premium Dragon Fruit', 'https://img.com/dragon.jpg', @t5),
+('Fresh Green Lettuce', 'https://img.com/lettuce.jpg', (SELECT ID FROM [TYPE] WHERE Variety = 'Organic Lettuce')),
+('Phu Quoc Black Pepper', 'https://img.com/pepper.jpg', (SELECT ID FROM [TYPE] WHERE Variety = 'Black Pepper'));
 
 -- ============================================================================
--- 5. INSERT FARMS 
+-- 2. ENTITIES: FARMS, FACILITIES, WAREHOUSES
 -- ============================================================================
-PRINT '5. Inserting Farms...';
-DECLARE @hanoi INT, @hcm INT, @angiang INT, @dongtap INT, @lamdong INT;
-SELECT @hanoi = ID FROM PROVINCE WHERE Name = N'Hà Nội';
-SELECT @hcm = ID FROM PROVINCE WHERE Name = N'TP. Hồ Chí Minh';
-SELECT @angiang = ID FROM PROVINCE WHERE Name = N'An Giang';
-SELECT @dongtap = ID FROM PROVINCE WHERE Name = N'Đồng Tháp';
-SELECT @lamdong = ID FROM PROVINCE WHERE Name = N'Lâm Đồng';
+PRINT '2. Inserting Farms, Facilities, Warehouses...';
 
-IF NOT EXISTS (SELECT * FROM FARM WHERE Name = N'Green Valley Farm')
-BEGIN
-    INSERT INTO FARM (Name, Owner_Name, Contact_Info, Address_detail, Longitude, Latitude, P_ID) VALUES
-    (N'Green Valley Farm', N'Nguyen Van A', '0901234567', N'Ap 1, Xa A', 105.783333, 10.033333, @angiang),
-    (N'Golden Rice Farm', N'Tran Thi B', '0902345678', N'Ap 2, Xa B', 105.683333, 10.433333, @dongtap),
-    (N'Organic Rice Paradise', N'Le Van C', '0903456789', N'Ap 3, Xa C', 105.883333, 10.233333, @angiang),
-    (N'Mekong Delta Farm Co.', N'Pham Thi D', '0904567890', N'Ap 4, Xa D', 105.583333, 10.533333, @dongtap),
-    (N'Highland Organic Farm', N'Hoang Van E', '0905678901', N'Duong X, Da Lat', 108.433333, 11.933333, @lamdong),
-    (N'Fresh Veggie Farm', N'Nguyen Thi F', '0906789012', N'Duong Y, Duc Trong', 108.533333, 11.833333, @lamdong),
-    (N'Red River Delta Farm', N'Vu Van G', '0907890123', N'Xom 1, Soc Son', 105.850000, 21.020000, @hanoi),
-    (N'Saigon Green Farm', N'Bui Thi H', '0908901234', N'Cu Chi', 106.700000, 10.800000, @hcm),
-    (N'Tropical Fruit Farm', N'Do Van I', '0909012345', N'Hoc Mon', 106.600000, 10.900000, @hcm),
-    (N'Superior Rice Farm', N'Mai Van J', '0900123456', N'Thap Muoi', 105.683333, 10.333333, @dongtap);
-END
+DECLARE @dalatId INT = (SELECT ID FROM PROVINCE WHERE Name = 'Da Lat');
+DECLARE @hcmId INT = (SELECT ID FROM PROVINCE WHERE Name = 'Ho Chi Minh City');
+DECLARE @mekongId INT = (SELECT ID FROM PROVINCE WHERE Name = 'Mekong Delta');
 
--- Insert Farm Certifications
-DECLARE @farm1 INT = (SELECT TOP 1 ID FROM FARM WHERE Name = N'Green Valley Farm');
-DECLARE @farm2 INT = (SELECT TOP 1 ID FROM FARM WHERE Name = N'Golden Rice Farm');
+-- Farms (6 rows)
+INSERT INTO FARM (Name, Owner_Name, Contact_Info, Address_detail, Longitude, Latitude, P_ID) VALUES 
+('Sunrise Farm', 'John Doe', 'contact@sunrise.com', 'Valley Rd, Da Lat', 108.45, 11.94, @dalatId),
+('Mekong Green Fields', 'Nguyen Van A', '0901234567', 'River Side, Can Tho', 105.78, 10.03, @mekongId),
+('Highland Coffee Estate', 'Tran Thi B', '0909888777', 'Hilltop 5, Buon Ma Thuot', 108.03, 12.66, (SELECT ID FROM PROVINCE WHERE Name = 'Dak Lak')),
+('Organic Veggie Garden', 'Le Van C', '0912345678', 'Green Zone, Da Lat', 108.44, 11.95, @dalatId),
+('Golden Rice Paddies', 'Pham Van D', '0905555555', 'Delta Zone, Long An', 106.40, 10.50, @mekongId),
+('Dragon Fruit Kingdom', 'Vo Thi E', '0906666666', 'Sunny Side, Binh Thuan', 108.10, 10.93, @hcmId); -- Mapped to HCM for simplicity
 
-IF NOT EXISTS (SELECT * FROM FARM_CERTIFICATIONS WHERE F_ID = @farm1)
-BEGIN
-    INSERT INTO FARM_CERTIFICATIONS (F_ID, FarmCertifications) VALUES
-    (@farm1, N'Organic Certification'),
-    (@farm1, N'GlobalGAP'),
-    (@farm2, N'VietGAP');
-END
+-- Farm Certifications (7 rows)
+DECLARE @f1 INT = (SELECT ID FROM FARM WHERE Name = 'Sunrise Farm');
+DECLARE @f2 INT = (SELECT ID FROM FARM WHERE Name = 'Mekong Green Fields');
+INSERT INTO FARM_CERTIFICATIONS (F_ID, FarmCertifications) VALUES 
+(@f1, 'VietGAP'), (@f1, 'GlobalGAP'),
+(@f2, 'Organic USDA'), (@f2, 'VietGAP'),
+((SELECT ID FROM FARM WHERE Name = 'Highland Coffee Estate'), 'Rainforest Alliance'),
+((SELECT ID FROM FARM WHERE Name = 'Organic Veggie Garden'), 'JAS Organic'),
+((SELECT ID FROM FARM WHERE Name = 'Golden Rice Paddies'), 'HACCP');
 
--- ============================================================================
--- 6. INSERT PROCESSING FACILITIES (Dùng Address_detail)
--- ============================================================================
-PRINT '6. Inserting Processing Facilities...';
-IF NOT EXISTS (SELECT * FROM PROCESSING_FACILITY WHERE License_Number = 'PF-AG-001')
-BEGIN
-    INSERT INTO PROCESSING_FACILITY (Name, Address_detail, Contact_Info, License_Number, P_ID) VALUES
-    (N'Central Processing Plant', N'123 Industrial Zone, An Giang', '0281234567', 'PF-AG-001', @angiang),
-    (N'Modern Packaging Facility', N'456 Export Processing Zone, Dong Thap', '0277654321', 'PF-DT-002', @dongtap),
-    (N'Quality Control Center', N'789 Tech Park, HCMC', '0283456789', 'PF-HCM-003', @hcm);
-END
+-- Processing Facilities (4 rows)
+INSERT INTO PROCESSING_FACILITY (Name, Address_detail, Contact_Info, License_Number, Longitude, Latitude, P_ID) VALUES 
+('Mekong Processing Hub', 'Industrial Zone A, Can Tho', '02923888999', 'LIC-001', 105.75, 10.01, @mekongId),
+('Highland Roastery', 'Coffee St, Dak Lak', '02623555666', 'LIC-002', 108.00, 12.60, (SELECT ID FROM PROVINCE WHERE Name = 'Dak Lak')),
+('Fresh Pack Center', 'Cool Zone, Da Lat', '02633777888', 'LIC-003', 108.46, 11.96, @dalatId),
+('Saigon Export Factory', 'Tan Thuan EPZ, D7', '02839990000', 'LIC-004', 106.70, 10.75, @hcmId);
+
+-- Warehouses (5 rows)
+INSERT INTO WAREHOUSE (Capacity, Store_Condition, Address_detail, Longitude, Latitude, P_ID) VALUES 
+(5000.00, 'Dry Storage', 'Warehouse A, Thu Duc', 106.75, 10.85, @hcmId),
+(2000.00, 'Cold Storage -5C', 'Cold Chain B, Long An', 106.50, 10.60, @mekongId),
+(1500.00, 'Cool Ventilation', 'Coffee Depot, Buon Ma Thuot', 108.02, 12.65, (SELECT ID FROM PROVINCE WHERE Name = 'Dak Lak')),
+(3000.00, 'Controlled Atmosphere', 'Fruit Hub, Tien Giang', 106.35, 10.35, @mekongId),
+(10000.00, 'General Storage', 'Port Logistics, Hai Phong', 106.68, 20.85, (SELECT ID FROM PROVINCE WHERE Name = 'Hanoi')); -- Mapped to Hanoi ID for simplicity
 
 -- ============================================================================
--- 7. INSERT VENDORS (Dùng Address_detail)
+-- 3. VENDORS & ROLES
 -- ============================================================================
-PRINT '7. Inserting Vendors...';
-DECLARE @danang INT;
-SELECT @danang = ID FROM PROVINCE WHERE Name = N'Đà Nẵng';
+PRINT '3. Inserting Vendors...';
 
-IF NOT EXISTS (SELECT * FROM VENDOR WHERE TIN = '1234567890')
-BEGIN
-    INSERT INTO VENDOR (TIN, Name, Address_detail, Contact_Info, P_ID, Longitude, Latitude) VALUES
-    ('1234567890', N'BigC Supermarket', N'268 Vo Van Kiet, Q1', '0281111111', @hcm, 106.6, 10.8),
-    ('2345678901', N'VinMart', N'72 Tran Duy Hung, Cau Giay', '0242222222', @hanoi, 105.8, 21.0),
-    ('3456789012', N'Co.opMart', N'478 Dien Bien Phu, Q. Thanh Khe', '0263333333', @danang, 108.2, 16.0),
-    ('4567890123', N'Lotte Mart', N'469 Nguyen Huu Tho, Q7', '0284444444', @hcm, 106.7, 10.75),
-    ('5678901234', N'AEON Mall', N'30 Bo Bao Tan Thang, Tan Phu', '0285555555', @hcm, 106.65, 10.82),
-    ('6789012345', N'Metro Cash & Carry', N'Song Hanh, Thu Duc', '0286666666', @hcm, 106.75, 10.85);
+-- Vendors (8 rows)
+INSERT INTO VENDOR (TIN, Name, Address_detail, Contact_Info, Longitude, Latitude, P_ID) VALUES 
+('VEN-001', 'BigC Supermarket', '268 To Hien Thanh, D10', '0283863299', 106.66, 10.78, @hcmId),
+('VEN-002', 'WinMart Plus', '72 Le Thanh Ton, D1', '0283520123', 106.70, 10.77, @hcmId),
+('VEN-003', 'Aeon Mall', '30 Bo Bao Tan Thang, Tan Phu', '02862887777', 106.60, 10.80, @hcmId),
+('VEN-004', 'Whole Foods Market', '500 Lamar Blvd, Austin', '+1 512-555-0100', -97.75, 30.27, (SELECT ID FROM PROVINCE WHERE Name = 'Texas')),
+('DIST-001', 'Global Food Distribution', 'Song Than IZ, Binh Duong', '02743777888', 106.75, 10.95, @hcmId),
+('DIST-002', 'Mekong Wholesaler', 'Cai Rang, Can Tho', '02923666777', 105.70, 10.00, @mekongId),
+('LOG-001', 'Fast Express', 'Tan Binh, HCMC', '19001234', 106.65, 10.80, @hcmId),
+('LOG-002', 'Cold Chain Logistics', 'VSIP, Binh Duong', '19005678', 106.72, 10.92, @hcmId);
 
-    -- Insert Distributors
-    INSERT INTO DISTRIBUTOR (Vendor_TIN, Type) VALUES
-    ('1234567890', 'Direct'),
-    ('2345678901', 'Direct'),
-    ('4567890123', 'Indirect');
+-- Assign Roles
+INSERT INTO RETAIL (Vendor_TIN, Format) VALUES 
+('VEN-001', 'Supermarket'), 
+('VEN-002', 'Convenience Store'), 
+('VEN-003', 'Supermarket'), 
+('VEN-004', 'Specialty Shop'),
+('LOG-001', 'Supermarket'),
+('LOG-002', 'Convenience Store');
 
-    -- Insert Retail
-    INSERT INTO RETAIL (Vendor_TIN, Format) VALUES
-    ('1234567890', N'Supermarket'),
-    ('2345678901', N'Supermarket'),
-    ('3456789012', N'Supermarket'),
-    ('5678901234', N'Supermarket'),
-    ('6789012345', N'Traditional Market');
-END
+INSERT INTO DISTRIBUTOR (Vendor_TIN, Type) VALUES 
+('DIST-001', 'Direct'), 
+('DIST-002', 'Indirect'),
+('LOG-001', 'Indirect'),
+('LOG-002', 'Direct');
 
--- ============================================================================
--- 8. INSERT CARRIER COMPANIES
--- ============================================================================
-PRINT '8. Inserting Carrier Companies...';
-IF NOT EXISTS (SELECT * FROM VENDOR WHERE TIN = 'CARRIER001')
-BEGIN
-    INSERT INTO VENDOR (TIN, Name, Address_detail, Contact_Info, P_ID, Longitude, Latitude) VALUES
-    ('CARRIER001', N'Giao Hang Nhanh', N'405/15 Xo Viet Nghe Tinh, Binh Thanh', '0287777777', @hcm, 106.68, 10.81),
-    ('CARRIER002', N'Viettel Post', N'285 CMT8, Q10', '0288888888', @hcm, 106.67, 10.78),
-    ('CARRIER003', N'J&T Express', N'Tan Binh Industrial', '0289999999', @hcm, 106.64, 10.80);
-
-    INSERT INTO CARRIERCOMPANY (V_TIN) VALUES
-    ('CARRIER001'),
-    ('CARRIER002'),
-    ('CARRIER003');
-END
+INSERT INTO CARRIERCOMPANY (V_TIN) VALUES 
+('LOG-001'), 
+('LOG-002');
 
 -- ============================================================================
--- 9. INSERT WAREHOUSES
+-- 4. VENDOR PRODUCTS & PRICING
 -- ============================================================================
-PRINT '9. Inserting Warehouses...';
-IF NOT EXISTS (SELECT * FROM WAREHOUSE WHERE Address_detail = N'KCN Tan Tao, Binh Tan')
-BEGIN
-    INSERT INTO WAREHOUSE (Capacity, Store_Condition, Address_detail, Longitude, Latitude, P_ID) VALUES
-    (5000.00, N'Cold Storage -5°C to 5°C', N'KCN Tan Tao, Binh Tan', 106.58, 10.75, @hcm),
-    (3000.00, N'Dry Storage, Climate Controlled', N'KCN VSIP, Binh Duong', 106.72, 10.92, @hcm),
-    (8000.00, N'Cold Storage -20°C to 0°C', N'KCN Long Hau, Long An', 106.55, 10.68, @angiang),
-    (2000.00, N'Normal Temperature', N'KCN Hoa Khanh, Da Nang', 108.15, 16.05, @danang);
-END
+PRINT '4. Inserting Vendor Products & Prices...';
+
+DECLARE @ap1 INT = (SELECT ID FROM AGRICULTURE_PRODUCT WHERE Name = 'Golden Jasmine Rice');
+DECLARE @ap2 INT = (SELECT ID FROM AGRICULTURE_PRODUCT WHERE Name = 'Highland Robusta Beans');
+DECLARE @ap3 INT = (SELECT ID FROM AGRICULTURE_PRODUCT WHERE Name = 'Sweet Yellow Mango');
+
+-- Vendor Products (6 rows)
+INSERT INTO VENDOR_PRODUCT (Vendor_TIN, Unit, ValuePerUnit) VALUES 
+('VEN-001', 'kg', 1.50), -- BigC sells Rice
+('VEN-001', '5kg bag', 7.00),
+('VEN-003', '500g pack', 5.00), -- Aeon sells Coffee
+('VEN-002', 'kg', 2.50), -- WinMart sells Mango
+('DIST-001', 'ton', 1200.00), -- Distributor sells Rice in tons
+('DIST-002', 'ton', 4000.00); -- Distributor sells Coffee in tons
+
+-- Prices (Link 1-1 with Vendor Product)
+INSERT INTO PRICE (V_ID, Value, Currency)
+SELECT ID, ValuePerUnit, 'USD' FROM VENDOR_PRODUCT;
 
 -- ============================================================================
--- 10. INSERT VENDOR_PRODUCT (Liên kết Vendor với Agriculture Product)
+-- 5. DISCOUNTS & MAPPING
 -- ============================================================================
-PRINT '10. Inserting Vendor Products...';
-IF NOT EXISTS (SELECT * FROM VENDOR_PRODUCT WHERE Vendor_TIN = '1234567890')
-BEGIN
-    DECLARE @ap1 INT, @ap2 INT, @ap3 INT, @ap4 INT, @ap5 INT;
-    SELECT @ap1 = ID FROM AGRICULTURE_PRODUCT ORDER BY ID OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY;
-    SELECT @ap2 = ID FROM AGRICULTURE_PRODUCT ORDER BY ID OFFSET 1 ROWS FETCH NEXT 1 ROWS ONLY;
-    SELECT @ap3 = ID FROM AGRICULTURE_PRODUCT ORDER BY ID OFFSET 2 ROWS FETCH NEXT 1 ROWS ONLY;
-    SELECT @ap4 = ID FROM AGRICULTURE_PRODUCT ORDER BY ID OFFSET 3 ROWS FETCH NEXT 1 ROWS ONLY;
-    SELECT @ap5 = ID FROM AGRICULTURE_PRODUCT ORDER BY ID OFFSET 4 ROWS FETCH NEXT 1 ROWS ONLY;
+PRINT '5. Inserting Discounts...';
 
-    INSERT INTO VENDOR_PRODUCT (Unit, Vendor_TIN, AP_ID) VALUES
-    (N'kg', '1234567890', @ap1),
-    (N'túi 5kg', '1234567890', @ap2),
-    (N'kg', '2345678901', @ap1),
-    (N'thùng 10kg', '2345678901', @ap3),
-    (N'kg', '3456789012', @ap2),
-    (N'bao 25kg', '3456789012', @ap4),
-    (N'kg', '4567890123', @ap1),
-    (N'túi 2kg', '4567890123', @ap5),
-    (N'kg', '5678901234', @ap3),
-    (N'thùng 20kg', '5678901234', @ap4),
-    (N'tấn', '6789012345', @ap1),
-    (N'tấn', '6789012345', @ap2);
-END
+-- Discounts (4 rows)
+INSERT INTO DISCOUNT (Name, Percentage, Min_Value, Max_Discount_Amount, Priority, Is_Stackable, Start_Date, Expired_Date) VALUES 
+('Summer Sale 2025', 10.00, 50.00, 10.00, 1, 1, GETDATE(), DATEADD(MONTH, 3, GETDATE())),
+('New Customer Promo', 15.00, 0.00, 5.00, 2, 0, GETDATE(), DATEADD(YEAR, 1, GETDATE())),
+('Bulk Order Discount', 5.00, 1000.00, 100.00, 1, 1, GETDATE(), DATEADD(YEAR, 1, GETDATE())),
+('Flash Deal Weekend', 20.00, 20.00, 10.00, 3, 0, GETDATE(), DATEADD(DAY, 7, GETDATE()));
+
+-- Mapping Products to Discounts (5 rows)
+DECLARE @d1 INT = (SELECT ID FROM DISCOUNT WHERE Name = 'Summer Sale 2025');
+DECLARE @d2 INT = (SELECT ID FROM DISCOUNT WHERE Name = 'Bulk Order Discount');
+
+INSERT INTO PRODUCT_HAS_DISCOUNT (V_ID, Discount_ID) 
+SELECT TOP 3 ID, @d1 FROM VENDOR_PRODUCT WHERE Unit = 'kg';
+
+INSERT INTO PRODUCT_HAS_DISCOUNT (V_ID, Discount_ID) 
+SELECT ID, @d2 FROM VENDOR_PRODUCT WHERE Unit = 'ton';
 
 -- ============================================================================
--- 11. INSERT PRICES
+-- 6. BATCHES & OPERATIONS
 -- ============================================================================
-PRINT '11. Inserting Prices...';
-IF NOT EXISTS (SELECT * FROM PRICE)
-BEGIN
-    INSERT INTO PRICE (V_ID, Value, Currency)
-    SELECT ID, 
-        CASE 
-            WHEN Unit = N'kg' THEN 25000 + (ID * 1000)
-            WHEN Unit LIKE N'túi%' THEN 120000 + (ID * 5000)
-            WHEN Unit LIKE N'thùng%' THEN 250000 + (ID * 10000)
-            WHEN Unit LIKE N'bao%' THEN 500000 + (ID * 15000)
-            WHEN Unit = N'tấn' THEN 20000000 + (ID * 100000)
-            ELSE 50000
-        END,
-        'VND'
-    FROM VENDOR_PRODUCT;
-END
+PRINT '6. Inserting Batches...';
+
+-- Batches (5 rows)
+DECLARE @farmId1 INT = (SELECT ID FROM FARM WHERE Name = 'Mekong Green Fields');
+DECLARE @farmId2 INT = (SELECT ID FROM FARM WHERE Name = 'Highland Coffee Estate');
+
+INSERT INTO BATCH (Harvest_Date, Created_By, Grade, Seed_Batch, Qr_Code_URL, Farm_ID, AP_ID) VALUES 
+('2024-11-01 07:00:00 +07:00', 'Farmer John', 'A', 'SEED-RICE-001', 'QR-001', @farmId1, @ap1),
+('2024-11-05 08:00:00 +07:00', 'Farmer John', 'B', 'SEED-RICE-002', 'QR-002', @farmId1, @ap1),
+('2024-10-20 09:00:00 +07:00', 'Ms. Tran', 'Premium', 'SEED-COF-001', 'QR-003', @farmId2, @ap2),
+('2024-10-25 07:30:00 +07:00', 'Ms. Tran', 'Standard', 'SEED-COF-002', 'QR-004', @farmId2, @ap2),
+('2024-12-01 06:00:00 +07:00', 'Mr. Le', 'A', 'SEED-MANGO-001', 'QR-005', (SELECT ID FROM FARM WHERE Name = 'Organic Veggie Garden'), @ap3); -- Actually Mango not veggie but logic holds
+
+-- Processing (3 rows)
+DECLARE @b1 INT = (SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-001');
+DECLARE @b3 INT = (SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-003');
+DECLARE @fac1 INT = (SELECT ID FROM PROCESSING_FACILITY WHERE Name = 'Mekong Processing Hub');
+
+INSERT INTO PROCESSING (Packaging_Date, Weight_per_unit, Processed_By, Packaging_Type, Processing_Date, Facility_ID, Batch_ID) VALUES 
+('2024-11-03 14:00:00 +07:00', 50.00, 'Worker X', 'Jute Bag', '2024-11-02 08:00:00 +07:00', @fac1, @b1),
+('2024-10-22 10:00:00 +07:00', 1.00, 'Worker Y', 'Vacuum Pack', '2024-10-21 09:00:00 +07:00', (SELECT ID FROM PROCESSING_FACILITY WHERE Name = 'Highland Roastery'), @b3),
+('2024-11-04 15:00:00 +07:00', 25.00, 'Worker Z', 'Plastic Sack', '2024-11-03 09:00:00 +07:00', @fac1, (SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-002'));
+
+-- Process Steps (6 rows)
+DECLARE @proc1 INT = (SELECT TOP 1 ID FROM PROCESSING WHERE Batch_ID = @b1);
+INSERT INTO PROCESS_STEP (P_ID, Step) VALUES 
+(@proc1, 'Drying'), (@proc1, 'Milling'), (@proc1, 'Sorting'), (@proc1, 'Packaging');
+
+DECLARE @proc2 INT = (SELECT TOP 1 ID FROM PROCESSING WHERE Batch_ID = @b3);
+INSERT INTO PROCESS_STEP (P_ID, Step) VALUES 
+(@proc2, 'Roasting'), (@proc2, 'Grinding');
+
+-- Stored In (4 rows)
+DECLARE @wh1 INT = (SELECT ID FROM WAREHOUSE WHERE Address_detail LIKE '%Thu Duc%');
+INSERT INTO STORED_IN (B_ID, W_ID, Quantity, Start_Date) VALUES 
+(@b1, @wh1, 500.00, '2024-11-05 09:00:00 +07:00'),
+(@b3, (SELECT ID FROM WAREHOUSE WHERE Address_detail LIKE '%Coffee%'), 200.00, '2024-10-23 08:00:00 +07:00'),
+((SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-002'), @wh1, 300.00, '2024-11-06 10:00:00 +07:00'),
+((SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-005'), (SELECT ID FROM WAREHOUSE WHERE Address_detail LIKE '%Fruit%'), 1000.00, '2024-12-02 07:00:00 +07:00');
 
 -- ============================================================================
--- 12. INSERT SHIPMENTS & TRANSPORT LEGS
+-- 7. LOGISTICS: SHIPMENTS & LEGS
 -- ============================================================================
-PRINT '12. Inserting Shipments...';
-IF NOT EXISTS (SELECT * FROM SHIPMENT)
-BEGIN
-    INSERT INTO SHIPMENT (Status, Destination, Distributor_TIN) VALUES
-    ('Delivered', N'BigC Supermarket - HCMC', '1234567890'),
-    ('In-Transit', N'VinMart - Hanoi', '2345678901'),
-    ('Pending', N'Lotte Mart - HCMC', '4567890123'),
-    ('Delivered', N'BigC Supermarket - HCMC', '1234567890'),
-    ('In-Transit', N'VinMart - Hanoi', '2345678901');
-END
+PRINT '7. Inserting Shipments...';
 
-PRINT '13. Inserting Transport Legs...';
-IF NOT EXISTS (SELECT * FROM TRANSPORLEG)
-BEGIN
-    DECLARE @ship1 INT, @ship2 INT;
-    SELECT @ship1 = ID FROM SHIPMENT ORDER BY ID OFFSET 0 ROWS FETCH NEXT 1 ROWS ONLY;
-    SELECT @ship2 = ID FROM SHIPMENT ORDER BY ID OFFSET 1 ROWS FETCH NEXT 1 ROWS ONLY;
+INSERT INTO SHIPMENT (Status, Destination, Start_Location, Distributor_TIN) VALUES 
+('Delivered', 'BigC Supermarket', 'Mekong Processing Hub', 'DIST-001'),
+('In-Transit', 'Aeon Mall', 'Highland Roastery', 'DIST-002'),
+('Pending', 'Whole Foods Market', 'Tan Son Nhat Airport', 'DIST-001');
 
-    INSERT INTO TRANSPORLEG (Shipment_ID, Driver_Name, Temperature_Profile, Start_Location, To_Location, D_Time, A_Time, CarrierCompany_TIN) VALUES
-    (@ship1, N'Nguyen Van Tai', N'{"min": 2, "max": 8, "unit": "C"}', N'KCN Long Hau, Long An', N'BigC Q1, HCMC', DATEADD(DAY, -5, GETDATE()), DATEADD(DAY, -4, GETDATE()), 'CARRIER001'),
-    (@ship1, N'Tran Van Xe', N'{"min": 0, "max": 5, "unit": "C"}', N'BigC Q1, HCMC', N'BigC Q7, HCMC', DATEADD(DAY, -4, GETDATE()), DATEADD(DAY, -3, GETDATE()), 'CARRIER002'),
-    (@ship2, N'Le Van Giao', N'{"min": 2, "max": 8, "unit": "C"}', N'KCN VSIP, Binh Duong', N'VinMart Cau Giay, Hanoi', DATEADD(DAY, -2, GETDATE()), NULL, 'CARRIER003');
-END
+DECLARE @s1 INT = (SELECT TOP 1 ID FROM SHIPMENT WHERE Destination = 'BigC Supermarket');
+DECLARE @s2 INT = (SELECT TOP 1 ID FROM SHIPMENT WHERE Destination = 'Aeon Mall');
 
--- ============================================================================
--- 13. INSERT DISCOUNTS
--- ============================================================================
-PRINT '14. Inserting Discounts...';
-IF NOT EXISTS (SELECT * FROM DISCOUNT)
-BEGIN
-    INSERT INTO DISCOUNT (V_TIN, Percentage, Min_Value, Max_Discount_Amount, Start_Date, Expired_Date) VALUES
-    ('1234567890', 10.00, 100000, 50000, GETDATE(), DATEADD(MONTH, 1, GETDATE())),
-    ('2345678901', 15.00, 200000, 100000, GETDATE(), DATEADD(MONTH, 2, GETDATE())),
-    ('3456789012', 5.00, 50000, 25000, GETDATE(), DATEADD(WEEK, 2, GETDATE())),
-    ('4567890123', 20.00, 500000, 200000, GETDATE(), DATEADD(MONTH, 1, GETDATE()));
+-- Link Batches to Shipment (3 rows)
+INSERT INTO SHIP_BATCH (S_ID, B_ID) VALUES 
+(@s1, @b1), 
+(@s2, @b3),
+(@s1, (SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-002'));
 
-    -- Link discounts to vendor products
-    INSERT INTO PRODUCT_HAS_DISCOUNT (V_ID, Discount_ID)
-    SELECT vp.ID, d.ID
-    FROM VENDOR_PRODUCT vp
-    CROSS JOIN DISCOUNT d
-    WHERE vp.Vendor_TIN = d.V_TIN;
-END
+-- Transport Legs (4 rows)
+INSERT INTO TRANSPORLEG (Shipment_ID, Driver_Name, Reg_No, Temperature_Profile, Start_Location, To_Location, D_Time, A_Time, CarrierCompany_TIN) VALUES 
+(@s1, 'Driver Tom', '59C-123.45', 'Ambient', 'Mekong Processing Hub', 'Thu Duc Warehouse', DATEADD(DAY, -5, GETDATE()), DATEADD(DAY, -4, GETDATE()), 'LOG-001'),
+(@s1, 'Driver Jerry', '29H-567.89', 'Ambient', 'Thu Duc Warehouse', 'BigC Supermarket', DATEADD(DAY, -2, GETDATE()), DATEADD(DAY, -1, GETDATE()), 'LOG-001'),
+(@s2, 'Driver Mike', '49C-999.00', 'Cool (18C)', 'Highland Roastery', 'Aeon Mall', DATEADD(DAY, -1, GETDATE()), GETDATE(), 'LOG-002'),
+((SELECT TOP 1 ID FROM SHIPMENT WHERE Status = 'Pending'), 'Driver Dave', '51D-333.44', 'Frozen', 'Farm', 'Airport', NULL, NULL, 'LOG-002');
 
 PRINT '============================================================================';
-PRINT 'MASTER DATA INSERTION COMPLETED SUCCESSFULLY!';
+PRINT 'ALL DATA INSERTED SUCCESSFULLY!';
 PRINT '============================================================================';
 GO
