@@ -197,13 +197,13 @@ export default function ProvincesTab({ baseUrl }: ProvincesTabProps) {
                 <td style={{ padding: 16, textAlign: 'right' }}>
                   <button
                     onClick={() => handleEditProvince(p)}
-                    style={{ marginRight: 8, padding: '6px 12px', border: '1px solid #3b82f6', color: '#3b82f6', borderRadius: 6, background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
+                    style={{ marginRight: 8, padding: '6px 12px', background: '#dbeafe', color: '#1e40af', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDeleteProvince(p.id)}
-                    style={{ padding: '6px 12px', border: '1px solid #ef4444', color: '#ef4444', borderRadius: 6, background: 'white', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
+                    style={{ padding: '6px 12px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
                   >
                     Delete
                   </button>

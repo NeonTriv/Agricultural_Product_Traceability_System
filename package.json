@@ -8,7 +8,7 @@
     "dotenv-cli": "^7.4.2"
   },
   "scripts": {
-    "init": "powershell -ExecutionPolicy Bypass -File ./init-dev.ps1",
+    "init": "powershell -ExecutionPolicy Bypass -File ./backend/scripts/setup-db.ps1",
     "setup": "npm install",
     "dev": "concurrently -n FE,BE -c green,cyan \"npm run dev:fe\" \"npm run dev:be\"",
     "dev:fe": "npm --workspace ./frontend run dev",

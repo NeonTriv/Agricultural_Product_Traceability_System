@@ -197,7 +197,7 @@ export class TraceService {
   }
 
   private mapDistributor(batch: Batch): DistributorDto | undefined {
-    const vp = batch.agricultureProduct?.vendorProducts?.[0];
+    const vp = (batch as any).vendorProduct;
     if (!vp?.vendor) return undefined;
 
     const vendor: VendorDto = {
@@ -211,7 +211,7 @@ export class TraceService {
   }
 
   private mapPrice(batch: Batch): PriceDto | undefined {
-    const price = batch.agricultureProduct?.vendorProducts?.[0]?.prices?.[0];
+    const price = (batch as any).vendorProduct?.prices?.[0];
     if (!price) return undefined;
 
     return {
@@ -241,24 +241,23 @@ export class TraceService {
   }
 
   private mapDiscounts(batch: Batch): DiscountDto[] | undefined {
-    const vendorProducts = batch.agricultureProduct?.vendorProducts || [];
+    const vp = (batch as any).vendorProduct;
+    if (!vp) return undefined;
+    
     const discounts: DiscountDto[] = [];
-
-    for (const vp of vendorProducts) {
-      const phds = (vp as any).productHasDiscounts || [];
-      for (const phd of phds) {
-        if (phd.discount) {
-          discounts.push({
-            id: phd.discount.id,
-            name: phd.discount.name,
-            percentage: phd.discount.percentage ? Number(phd.discount.percentage) : undefined,
-            minValue: phd.discount.minValue ? Number(phd.discount.minValue) : undefined,
-            maxDiscountAmount: phd.discount.maxDiscountAmount ? Number(phd.discount.maxDiscountAmount) : undefined,
-            startDate: this.formatDate(phd.discount.startDate),
-            expiredDate: this.formatDate(phd.discount.expiredDate),
-            isStackable: phd.discount.isStackable,
-          });
-        }
+    const phds = (vp as any).productHasDiscounts || [];
+    for (const phd of phds) {
+      if (phd.discount) {
+        discounts.push({
+          id: phd.discount.id,
+          name: phd.discount.name,
+          percentage: phd.discount.percentage ? Number(phd.discount.percentage) : undefined,
+          minValue: phd.discount.minValue ? Number(phd.discount.minValue) : undefined,
+          maxDiscountAmount: phd.discount.maxDiscountAmount ? Number(phd.discount.maxDiscountAmount) : undefined,
+          startDate: this.formatDate(phd.discount.startDate),
+          expiredDate: this.formatDate(phd.discount.expiredDate),
+          isStackable: phd.discount.isStackable,
+        });
       }
     }
 

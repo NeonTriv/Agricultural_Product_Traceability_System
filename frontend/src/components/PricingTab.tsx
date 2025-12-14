@@ -7,10 +7,13 @@ const baseUrl = 'http://localhost:5000'
 interface VendorProduct {
   id: number
   vendorName: string
-  productName: string
+  productName?: string
   unit: string
   vendorTin: string
-  agricultureProductId: number
+  valuePerUnit?: number
+  price?: number // Price value
+  currency?: string // Price currency
+  batches?: Array<{ id: number; seedBatch: string | null; productName?: string | null }>
 }
 
 interface Price {
@@ -36,7 +39,7 @@ interface Discount {
 // Linked products applied to a discount
 interface LinkedProduct {
   vendorProductId: number
-  productName: string
+  productName?: string
   vendorName: string
   unit: string
 }
@@ -121,7 +124,7 @@ export default function PricingTab() {
 
   // --- Forms State ---
   const [showProductForm, setShowProductForm] = useState(false)
-  const [productFormData, setProductFormData] = useState({ vendorTin: '', agriProductId: '', unit: '' })
+  const [productFormData, setProductFormData] = useState({ vendorTin: '', unit: '', valuePerUnit: '', price: '', currency: 'VND' })
   const [editingProductId, setEditingProductId] = useState<number | null>(null)
 
   const [showPriceForm, setShowPriceForm] = useState(false)
@@ -133,6 +136,7 @@ export default function PricingTab() {
     name: '', percentage: '', minValue: '', maxDiscountAmount: '', 
     priority: '0', isStackable: false, startDate: '', expiredDate: '' 
   })
+  const [editingDiscountId, setEditingDiscountId] = useState<number | null>(null)
 
   useEffect(() => {
     loadData()
@@ -145,6 +149,7 @@ export default function PricingTab() {
     try {
       if (subTab === 'products') {
         const res = await axios.get(`${baseUrl}/api/pricing/vendor-products`)
+        console.log('Vendor products API response:', JSON.stringify(res.data, null, 2))
         setVendorProducts(res.data)
       } else if (subTab === 'prices') {
         const res = await axios.get(`${baseUrl}/api/pricing/prices`)
@@ -176,21 +181,41 @@ export default function PricingTab() {
     try {
       if (editingProductId) {
         await axios.patch(`${baseUrl}/api/pricing/vendor-products/${editingProductId}`, {
-          unit: productFormData.unit
+          unit: productFormData.unit,
+          valuePerUnit: productFormData.valuePerUnit ? parseFloat(productFormData.valuePerUnit) : null
         })
+        if (productFormData.price) {
+          await axios.patch(`${baseUrl}/api/pricing/prices/${editingProductId}`, {
+            value: parseFloat(productFormData.price),
+            currency: productFormData.currency
+          })
+        }
       } else {
-        await axios.post(`${baseUrl}/api/pricing/vendor-products`, {
+        const vpRes = await axios.post(`${baseUrl}/api/pricing/vendor-products`, {
           vendorTin: productFormData.vendorTin,
-          agricultureProductId: parseInt(productFormData.agriProductId),
-          unit: productFormData.unit
+          unit: productFormData.unit,
+          valuePerUnit: productFormData.valuePerUnit ? parseFloat(productFormData.valuePerUnit) : null
         })
+        if (productFormData.price) {
+          await axios.post(`${baseUrl}/api/pricing/prices`, {
+            vendorProductId: vpRes.data.id,
+            value: parseFloat(productFormData.price),
+            currency: productFormData.currency
+          })
+        }
       }
-      setShowProductForm(false); setProductFormData({ vendorTin: '', agriProductId: '', unit: '' }); setEditingProductId(null); loadData()
+      setShowProductForm(false); setProductFormData({ vendorTin: '', unit: '', valuePerUnit: '', price: '', currency: 'VND' }); setEditingProductId(null); loadData()
     } catch (e: any) { setError(e.response?.data?.message || e.message) } finally { setLoading(false) }
   }
 
   const handleEditProduct = (vp: VendorProduct) => {
-    setProductFormData({ vendorTin: vp.vendorTin, agriProductId: vp.agricultureProductId.toString(), unit: vp.unit })
+    setProductFormData({ 
+      vendorTin: vp.vendorTin, 
+      unit: vp.unit, 
+      valuePerUnit: vp.valuePerUnit?.toString() || '',
+      price: vp.price?.toString() || '',
+      currency: vp.currency || 'VND'
+    })
     setEditingProductId(vp.id)
     setShowProductForm(true)
   }
@@ -241,7 +266,7 @@ export default function PricingTab() {
   const handleDiscountSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true)
     try {
-      await axios.post(`${baseUrl}/api/pricing/discounts`, {
+      const payload = {
         name: discountFormData.name,
         percentage: parseFloat(discountFormData.percentage),
         minValue: discountFormData.minValue ? parseFloat(discountFormData.minValue) : undefined,
@@ -250,11 +275,37 @@ export default function PricingTab() {
         isStackable: discountFormData.isStackable,
         startDate: discountFormData.startDate,
         expiredDate: discountFormData.expiredDate
-      })
+      }
+      if (editingDiscountId) {
+        await axios.patch(`${baseUrl}/api/pricing/discounts/${editingDiscountId}`, payload)
+      } else {
+        await axios.post(`${baseUrl}/api/pricing/discounts`, payload)
+      }
       setShowDiscountForm(false); 
       setDiscountFormData({ name: '', percentage: '', minValue: '', maxDiscountAmount: '', priority: '0', isStackable: false, startDate: '', expiredDate: '' }); 
+      setEditingDiscountId(null);
       loadData()
     } catch (e: any) { setError(e.response?.data?.message || e.message) } finally { setLoading(false) }
+  }
+
+  const formatDateForInput = (dateString: string) => {
+    if (!dateString) return ''
+    return dateString.split('T')[0]
+  }
+
+  const handleEditDiscount = (d: Discount) => {
+    setDiscountFormData({
+      name: d.name,
+      percentage: d.percentage.toString(),
+      minValue: d.minValue?.toString() || '',
+      maxDiscountAmount: d.maxDiscountAmount?.toString() || '',
+      priority: d.priority.toString(),
+      isStackable: d.isStackable,
+      startDate: formatDateForInput(d.startDate),
+      expiredDate: formatDateForInput(d.expiredDate)
+    })
+    setEditingDiscountId(d.id)
+    setShowDiscountForm(true)
   }
 
   const handleDeleteDiscount = async (id: number) => {
@@ -274,7 +325,6 @@ export default function PricingTab() {
       {/* Sub-Tabs Switcher */}
       <div style={{ display: 'flex', padding: 6, gap: 4, borderRadius: 12, width: 'fit-content', background: 'white', marginBottom: 24 }}>
         <button onClick={() => setSubTab('products')} style={tabBtn(subTab === 'products')}>📦 Vendor Products</button>
-        <button onClick={() => setSubTab('prices')} style={tabBtn(subTab === 'prices')}>💰 Price List</button>
         <button onClick={() => setSubTab('discounts')} style={tabBtn(subTab === 'discounts')}>🏷️ Discounts</button>
       </div>
 
@@ -285,15 +335,17 @@ export default function PricingTab() {
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
             <div><h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Vendor Products</h2><p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: 13 }}>Mapping agriculture products to vendors with units</p></div>
-            <button onClick={() => { setShowProductForm(!showProductForm); if(!showProductForm) { setEditingProductId(null); setProductFormData({ vendorTin: '', agriProductId: '', unit: '' }) } }} style={{ padding: '10px 20px', background: showProductForm ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 12px rgba(102,126,234,0.3)' }}>{showProductForm ? 'Cancel' : '+ Add Mapping'}</button>
+            <button onClick={() => { setShowProductForm(!showProductForm); if(!showProductForm) { setEditingProductId(null); setProductFormData({ vendorTin: '', unit: '', valuePerUnit: '', price: '', currency: 'VND' }) } }} style={{ padding: '10px 20px', background: showProductForm ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 12px rgba(102,126,234,0.3)' }}>{showProductForm ? 'Cancel' : '+ Add Mapping'}</button>
           </div>
 
           {showProductForm && (
             <form onSubmit={handleProductSubmit} style={{ background: 'white', padding: 24, borderRadius: 16, marginBottom: 24, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: 20 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Vendor *</label><select style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} value={productFormData.vendorTin} onChange={e => setProductFormData({...productFormData, vendorTin: e.target.value})} disabled={!!editingProductId} required><option value="">Select Vendor</option>{vendors.map(v => <option key={v.tin} value={v.tin}>{v.name}</option>)}</select></div>
-                <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Product *</label><select style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} value={productFormData.agriProductId} onChange={e => setProductFormData({...productFormData, agriProductId: e.target.value})} disabled={!!editingProductId} required><option value="">Select Product</option>{agriProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Unit *</label><input type="text" style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} value={productFormData.unit} onChange={e => setProductFormData({...productFormData, unit: e.target.value})} placeholder="e.g. kg, box, ton" required /></div>
+                <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Value/Unit (Quantity)</label><input type="number" step="1" min="0" style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} value={productFormData.valuePerUnit} onChange={e => setProductFormData({...productFormData, valuePerUnit: e.target.value})} placeholder="e.g. 10" /></div>
+                <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Price</label><input type="number" step="0.01" style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} value={productFormData.price} onChange={e => setProductFormData({...productFormData, price: e.target.value})} placeholder="e.g. 50000" /></div>
+                <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Currency</label><select style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} value={productFormData.currency} onChange={e => setProductFormData({...productFormData, currency: e.target.value})}><option value="VND">VND</option><option value="USD">USD</option></select></div>
               </div>
               <button type="submit" style={{ marginTop: 20, padding: '12px 24px', background: '#667eea', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>{editingProductId ? 'Update' : 'Create'} Mapping</button>
             </form>
@@ -301,89 +353,40 @@ export default function PricingTab() {
 
           <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead><tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}><th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>ID</th><th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Vendor</th><th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Product</th><th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Unit</th><th style={{ padding: 16, textAlign: 'right', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Actions</th></tr></thead>
+              <thead><tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}><th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>VP ID</th><th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Product Names</th><th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Vendor</th><th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Value/Unit</th><th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Unit</th><th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Price</th><th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Currency</th><th style={{ padding: 16, textAlign: 'right', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Actions</th></tr></thead>
               <tbody>
-                {vendorProducts.map(vp => (
+                {vendorProducts.map(vp => {
+                  console.log('VP:', vp.id, 'Batches:', vp.batches);
+                  return (
                   <tr key={vp.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: 16, fontWeight: 600 }}>#{vp.id}</td>
+                    <td style={{ padding: 16, fontWeight: 700, color: '#000' }}>#{vp.id}</td>
+                    <td style={{ padding: 16, fontSize: 13 }}>{vp.batches && vp.batches.length > 0 ? vp.batches.map(b => b.productName || b.seedBatch || `Batch #${b.id}`).join(', ') : '-'}</td>
                     <td style={{ padding: 16, fontSize: 13 }}>{vp.vendorName}</td>
-                    <td style={{ padding: 16, fontSize: 13 }}>{vp.productName}</td>
+                    <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>{vp.valuePerUnit != null ? vp.valuePerUnit.toLocaleString('vi-VN') : '-'}</td>
                     <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>{vp.unit}</td>
+                    <td style={{ padding: 16, fontSize: 13 }}>{vp.price ? vp.price.toLocaleString() : '-'}</td>
+                    <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>{vp.currency || '-'}</td>
                     <td style={{ padding: 16, textAlign: 'right' }}>
                       <button onClick={() => handleEditProduct(vp)} style={{ marginRight: 8, padding: '6px 12px', background: '#dbeafe', color: '#1e40af', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Edit</button>
                       <button onClick={() => handleDeleteProduct(vp.id)} style={{ padding: '6px 12px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Delete</button>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </>
       )}
 
-      {/* --- TAB 2: PRICES --- */}
-      {subTab === 'prices' && (
-        <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-            <div><h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Price List</h2><p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: 13 }}>Base prices for vendor products</p></div>
-            <button onClick={() => { setShowPriceForm(!showPriceForm); if(!showPriceForm) { setEditingPriceId(null); setPriceFormData({ vendorProductId: '', value: '', currency: 'VND' }) }; loadMasterData() }} style={{ padding: '10px 20px', background: showPriceForm ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 12px rgba(102,126,234,0.3)' }}>{showPriceForm ? 'Cancel' : '+ Set Price'}</button>
-          </div>
 
-          {showPriceForm && (
-            <form onSubmit={handlePriceSubmit} style={{ background: 'white', padding: 24, borderRadius: 16, marginBottom: 24, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: 20 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Vendor Product *</label>
-                  <select style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} value={priceFormData.vendorProductId} onChange={e => setPriceFormData({...priceFormData, vendorProductId: e.target.value})} disabled={!!editingPriceId} required>
-                    <option value="">Select Vendor Product</option>
-                    {vendorProducts.map(vp => (
-                      <option key={vp.id} value={vp.id}>{vp.vendorName} - {vp.productName} ({vp.unit})</option>
-                    ))}
-                  </select>
-                </div>
-                <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Value *</label><input type="number" style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} value={priceFormData.value} onChange={e => setPriceFormData({...priceFormData, value: e.target.value})} required /></div>
-                <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Currency</label><select style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} value={priceFormData.currency} onChange={e => setPriceFormData({...priceFormData, currency: e.target.value})}><option value="VND">VND</option><option value="USD">USD</option></select></div>
-              </div>
-              <button type="submit" style={{ marginTop: 20, padding: '12px 24px', background: '#667eea', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>{editingPriceId ? 'Update' : 'Save'} Price</button>
-            </form>
-          )}
-
-          <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                  <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Product</th>
-                  <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Vendor</th>
-                  <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Price</th>
-                  <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Currency</th>
-                  <th style={{ padding: 16, textAlign: 'right', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {prices.map((p, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: 16, fontWeight: 600, fontSize: 13 }}>{p.productName || `#${p.vendorProductId}`}</td>
-                    <td style={{ padding: 16, fontSize: 13 }}>{p.vendorName || '-'}</td>
-                    <td style={{ padding: 16, fontSize: 13 }}>{p.value.toLocaleString()}</td>
-                    <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>{p.currency}</td>
-                    <td style={{ padding: 16, textAlign: 'right' }}>
-                      <button onClick={() => handleEditPrice(p)} style={{ marginRight: 8, padding: '6px 12px', background: '#dbeafe', color: '#1e40af', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Edit</button>
-                      <button onClick={() => handleDeletePrice(p.vendorProductId)} style={{ padding: '6px 12px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Delete</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
 
       {/* --- TAB 3: DISCOUNTS --- */}
       {subTab === 'discounts' && (
         <>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
             <div><h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Discounts</h2><p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: 13 }}>Manage discount rules and campaigns</p></div>
-            <button onClick={() => setShowDiscountForm(!showDiscountForm)} style={{ padding: '10px 20px', background: showDiscountForm ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 12px rgba(102,126,234,0.3)' }}>{showDiscountForm ? 'Cancel' : '+ Add Discount'}</button>
+            <button onClick={() => { setShowDiscountForm(!showDiscountForm); if(!showDiscountForm) { setEditingDiscountId(null); setDiscountFormData({ name: '', percentage: '', minValue: '', maxDiscountAmount: '', priority: '0', isStackable: false, startDate: '', expiredDate: '' }) } }} style={{ padding: '10px 20px', background: showDiscountForm ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 12px rgba(102,126,234,0.3)' }}>{showDiscountForm ? 'Cancel' : '+ Add Discount'}</button>
           </div>
 
           {showDiscountForm && (
@@ -401,13 +404,14 @@ export default function PricingTab() {
                   <label htmlFor="stackable" style={{ fontWeight: 600 }}>Is Stackable?</label>
                 </div>
               </div>
-              <button type="submit" style={{ marginTop: 20, padding: '12px 24px', background: '#667eea', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Save Discount</button>
+              <button type="submit" style={{ marginTop: 20, padding: '12px 24px', background: '#667eea', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>{editingDiscountId ? 'Update' : 'Save'} Discount</button>
             </form>
           )}
 
           <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead><tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>ID</th>
                 <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Name</th>
                 <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>%</th>
                 <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Dates</th>
@@ -417,6 +421,7 @@ export default function PricingTab() {
               <tbody>
                 {discounts.map(d => (
                   <tr key={d.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    <td style={{ padding: 16, fontWeight: 700, color: '#000', fontSize: 13 }}>#{d.id}</td>
                     <td style={{ padding: 16, fontWeight: 600, fontSize: 13 }}>{d.name}</td>
                     <td style={{ padding: 16, fontSize: 13 }}>{d.percentage}%</td>
                     <td style={{ padding: 16, fontSize: 13, color: '#6b7280' }}>{new Date(d.startDate).toLocaleDateString()} - {new Date(d.expiredDate).toLocaleDateString()}</td>
@@ -428,6 +433,7 @@ export default function PricingTab() {
                       >
                         🔗 Apply
                       </button>
+                      <button onClick={() => handleEditDiscount(d)} style={{ marginRight: 8, padding: '6px 12px', background: '#dbeafe', color: '#1e40af', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Edit</button>
                        <button onClick={() => handleDeleteDiscount(d.id)} style={{ padding: '6px 12px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Delete</button>
                     </td>
                   </tr>
@@ -452,7 +458,7 @@ export default function PricingTab() {
                       <option value="">-- Choose Product --</option>
                       {availableProducts.map((vp) => (
                         <option key={vp.id} value={vp.id}>
-                          {vp.vendorName} - {vp.productName} ({vp.unit})
+                          #{vp.id} - {vp.productName || 'N/A'} - {vp.vendorName} ({vp.unit})
                         </option>
                       ))}
                     </select>
@@ -470,6 +476,7 @@ export default function PricingTab() {
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                       <thead style={{ background: '#f3f4f6' }}>
                         <tr>
+                          <th style={{ padding: 8, textAlign: 'left' }}>VP ID</th>
                           <th style={{ padding: 8, textAlign: 'left' }}>Product</th>
                           <th style={{ padding: 8, textAlign: 'left' }}>Vendor</th>
                           <th style={{ padding: 8, textAlign: 'right' }}>Action</th>
@@ -478,7 +485,8 @@ export default function PricingTab() {
                       <tbody>
                         {linkedProducts.map((lp) => (
                           <tr key={lp.vendorProductId} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                            <td style={{ padding: 8 }}>{lp.productName} ({lp.unit})</td>
+                            <td style={{ padding: 8, fontWeight: 600, color: '#667eea' }}>#{lp.vendorProductId}</td>
+                            <td style={{ padding: 8 }}>{lp.productName || '-'} ({lp.unit})</td>
                             <td style={{ padding: 8, color: '#6b7280' }}>{lp.vendorName}</td>
                             <td style={{ padding: 8, textAlign: 'right' }}>
                               <button onClick={() => handleUnlinkProduct(lp.vendorProductId)} style={{ color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}>

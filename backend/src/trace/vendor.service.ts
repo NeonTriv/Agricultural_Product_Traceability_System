@@ -21,7 +21,7 @@ export class VendorService {
 
   async getAllVendors() {
     const vendors = await this.vendorRepo.find({
-      relations: ['distributors', 'retails'],
+      relations: ['distributors', 'retails', 'province', 'province.country'],
     });
 
     return vendors.map((v) => {
@@ -38,6 +38,11 @@ export class VendorService {
         name: v.name,
         address: v.address,
         contactInfo: v.contactInfo,
+        longitude: v.longitude,
+        latitude: v.latitude,
+        provinceId: v.provinceId,
+        provinceName: v.province?.name,
+        countryName: v.province?.country?.name,
         type,
         distributorType: v.distributors?.[0]?.type,
         retailFormat: v.retails?.[0]?.format,

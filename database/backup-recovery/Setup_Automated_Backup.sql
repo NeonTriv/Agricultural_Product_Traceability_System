@@ -113,14 +113,15 @@ EXEC msdb.dbo.sp_add_jobstep
     @step_name = N'Run Full Backup',
     @subsystem = N'TSQL',
     @command = N'
-DECLARE @Path NVARCHAR(500) = N''C:\Backup\'';
+DECLARE @Path NVARCHAR(500) = N''D:\\Backup\\'';
 DECLARE @File NVARCHAR(500) = @Path + ''Traceability_FULL_'' + CONVERT(NVARCHAR, GETDATE(), 112) + ''_'' + REPLACE(CONVERT(NVARCHAR, GETDATE(), 108), '':'', '''') + ''.bak'';
 
 BACKUP DATABASE [Traceability] TO DISK = @File
 WITH FORMAT, COMPRESSION, STATS = 10, CHECKSUM;
 
 -- Cleanup: Delete full backups older than 30 days
-EXEC master.dbo.xp_delete_file 0, @Path, N''bak'', N''2025-11-14T00:00:00'';
+DECLARE @Cutoff NVARCHAR(50) = CONVERT(NVARCHAR(50), DATEADD(DAY, -30, GETDATE()), 126);
+EXEC master.dbo.xp_delete_file 0, @Path, N''bak'', @Cutoff;
 ',
     @database_name = N'master',
     @on_success_action = 1;
@@ -135,7 +136,7 @@ EXEC msdb.dbo.sp_add_jobschedule
 
 EXEC msdb.dbo.sp_add_jobserver @job_id = @JobId1, @server_name = N'(local)';
 
-PRINT '    ✓ Created Job_DailyFullBackup (runs at 00:00)';
+PRINT 'Created Job_DailyFullBackup (at 00:00)';
 
 -- ============================================================================
 -- JOB 2: DIFFERENTIAL BACKUP - EVERY 6 HOURS
@@ -157,14 +158,15 @@ EXEC msdb.dbo.sp_add_jobstep
     @step_name = N'Run Differential Backup',
     @subsystem = N'TSQL',
     @command = N'
-DECLARE @Path NVARCHAR(500) = N''C:\Backup\'';
+DECLARE @Path NVARCHAR(500) = N''D:\\Backup\\'';
 DECLARE @File NVARCHAR(500) = @Path + ''Traceability_DIFF_'' + CONVERT(NVARCHAR, GETDATE(), 112) + ''_'' + REPLACE(CONVERT(NVARCHAR, GETDATE(), 108), '':'', '''') + ''.bak'';
 
 BACKUP DATABASE [Traceability] TO DISK = @File
 WITH DIFFERENTIAL, FORMAT, COMPRESSION, STATS = 10, CHECKSUM;
 
 -- Cleanup: Delete diff backups older than 7 days
-EXEC master.dbo.xp_delete_file 0, @Path, N''bak'', N''2025-12-07T00:00:00'';
+DECLARE @Cutoff NVARCHAR(50) = CONVERT(NVARCHAR(50), DATEADD(DAY, -7, GETDATE()), 126);
+EXEC master.dbo.xp_delete_file 0, @Path, N''bak'', @Cutoff;
 ',
     @database_name = N'master',
     @on_success_action = 1;
@@ -181,7 +183,7 @@ EXEC msdb.dbo.sp_add_jobschedule
 
 EXEC msdb.dbo.sp_add_jobserver @job_id = @JobId2, @server_name = N'(local)';
 
-PRINT '    ✓ Created Job_DiffBackup_6Hours (runs every 6 hours)';
+PRINT ' Created Job_DiffBackup_6Hours (run 6 hours)';
 
 -- ============================================================================
 -- JOB 3: TRANSACTION LOG - EVERY 15 MINUTES
@@ -203,14 +205,15 @@ EXEC msdb.dbo.sp_add_jobstep
     @step_name = N'Run Log Backup',
     @subsystem = N'TSQL',
     @command = N'
-DECLARE @Path NVARCHAR(500) = N''C:\Backup\'';
+DECLARE @Path NVARCHAR(500) = N''D:\\Backup\\'';
 DECLARE @File NVARCHAR(500) = @Path + ''Traceability_LOG_'' + CONVERT(NVARCHAR, GETDATE(), 112) + ''_'' + REPLACE(CONVERT(NVARCHAR, GETDATE(), 108), '':'', '''') + ''.trn'';
 
 BACKUP LOG [Traceability] TO DISK = @File
 WITH FORMAT, COMPRESSION, CHECKSUM;
 
 -- Cleanup: Delete log backups older than 3 days
-EXEC master.dbo.xp_delete_file 0, @Path, N''trn'', N''2025-12-11T00:00:00'';
+DECLARE @Cutoff NVARCHAR(50) = CONVERT(NVARCHAR(50), DATEADD(DAY, -3, GETDATE()), 126);
+EXEC master.dbo.xp_delete_file 0, @Path, N''trn'', @Cutoff;
 ',
     @database_name = N'master',
     @on_success_action = 1;
@@ -227,7 +230,7 @@ EXEC msdb.dbo.sp_add_jobschedule
 
 EXEC msdb.dbo.sp_add_jobserver @job_id = @JobId3, @server_name = N'(local)';
 
-PRINT '    ✓ Created Job_LogBackup_15Min (runs every 15 minutes)';
+PRINT ' Created Job_LogBackup_15Min (runs 15 minutes)';
 
 PRINT '';
 

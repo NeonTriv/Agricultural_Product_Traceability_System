@@ -261,7 +261,7 @@ const handleDeleteFarm = async (id: number) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
             <div>
                <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Farms List</h2>
-               <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: 14 }}>Registered production units</p>
+               <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: 13 }}>Registered production units</p>
             </div>
             <button onClick={() => { setShowForm(!showForm); setEditingFarm(null); setFormData({ name: '', ownerName: '', contactInfo: '', addressDetail: '', longitude: '', latitude: '', countryId: '', provinceId: '' }) }}
               style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 12px rgba(102,126,234,0.3)' }}>
@@ -323,10 +323,9 @@ const handleDeleteFarm = async (id: number) => {
                     <td style={{ padding: 16, fontWeight: 600 }}>{farm.name}</td>
                     <td style={{ padding: 16, fontSize: 13 }}>{farm.ownerName || '-'}</td>
                     <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>{farm.contactInfo || '-'}</td>
-                    <td style={{ padding: 16 }}>
-                      <span style={{ padding: '4px 12px', background: '#e0e7ff', color: '#4338ca', borderRadius: 999, fontSize: 13, fontWeight: 600 }}>
-                        {farm.provinceName || 'Unknown'}, {farm.countryName}
-                      </span>
+                    <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>
+                      <div>{farm.provinceName || 'Unknown'}, {farm.countryName || '-'}</div>
+                      {farm.longitude && farm.latitude && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>📍 {farm.latitude.toFixed(2)}, {farm.longitude.toFixed(2)}</div>}
                     </td>
                     <td style={{ padding: 16, textAlign: 'right' }}>
                       <button onClick={() => handleEditClick(farm)} style={{ marginRight: 8, padding: '6px 12px', background: '#dbeafe', color: '#1e40af', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Edit</button>

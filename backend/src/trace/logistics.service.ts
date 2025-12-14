@@ -36,6 +36,8 @@ export class LogisticsService extends BaseService<Shipment> {
       vTin: c.vTin,
       name: c.vendor?.name,
       addressDetail: c.vendor?.address,
+      longitude: c.vendor?.longitude,
+      latitude: c.vendor?.latitude,
       provinceId: c.vendor?.provinceId,
       provinceName: c.vendor?.province?.name,
       countryName: c.vendor?.province?.country?.name,
@@ -58,6 +60,8 @@ export class LogisticsService extends BaseService<Shipment> {
       vTin: carrier.vTin,
       name: carrier.vendor?.name,
       addressDetail: carrier.vendor?.address,
+      longitude: carrier.vendor?.longitude,
+      latitude: carrier.vendor?.latitude,
       provinceId: carrier.vendor?.provinceId,
       provinceName: carrier.vendor?.province?.name,
       countryName: carrier.vendor?.province?.country?.name,
@@ -248,6 +252,7 @@ export class LogisticsService extends BaseService<Shipment> {
       id: leg.id,
       shipmentId: leg.shipmentId,
       driverName: leg.driverName,
+      regNo: leg.regNo,
       temperatureProfile: leg.temperatureProfile,
       startLocation: leg.startLocation,
       toLocation: leg.toLocation,
@@ -273,6 +278,7 @@ export class LogisticsService extends BaseService<Shipment> {
       id: leg.id,
       shipmentId: leg.shipmentId,
       driverName: leg.driverName,
+      regNo: leg.regNo,
       temperatureProfile: leg.temperatureProfile,
       startLocation: leg.startLocation,
       toLocation: leg.toLocation,
@@ -287,6 +293,7 @@ export class LogisticsService extends BaseService<Shipment> {
   async createTransportLeg(data: {
     shipmentId: number;
     driverName?: string;
+    regNo?: string;
     temperatureProfile?: string;
     startLocation: string;
     toLocation: string;
@@ -297,6 +304,7 @@ export class LogisticsService extends BaseService<Shipment> {
     const leg = this.transportLegRepo.create({
       shipmentId: data.shipmentId,
       driverName: data.driverName,
+      regNo: data.regNo,
       temperatureProfile: data.temperatureProfile,
       startLocation: data.startLocation,
       toLocation: data.toLocation,
@@ -314,6 +322,7 @@ export class LogisticsService extends BaseService<Shipment> {
     data: {
       shipmentId?: number;
       driverName?: string;
+      regNo?: string;
       temperatureProfile?: string;
       startLocation?: string;
       toLocation?: string;
@@ -330,6 +339,7 @@ export class LogisticsService extends BaseService<Shipment> {
 
     if (data.shipmentId) leg.shipmentId = data.shipmentId;
     if (data.driverName !== undefined) leg.driverName = data.driverName;
+    if (data.regNo !== undefined) leg.regNo = data.regNo;
     if (data.temperatureProfile !== undefined) leg.temperatureProfile = data.temperatureProfile;
     if (data.startLocation) leg.startLocation = data.startLocation;
     if (data.toLocation) leg.toLocation = data.toLocation;

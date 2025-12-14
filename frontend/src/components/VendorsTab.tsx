@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
-interface Vendor { tin: string; name: string; address: string; contactInfo?: string; type: 'vendor' | 'distributor' | 'retail' | 'both'; distributorType?: string; retailFormat?: string; provinceId?: number; provinceName?: string; isCarrier?: boolean }
+interface Vendor { tin: string; name: string; address: string; contactInfo?: string; type: 'vendor' | 'distributor' | 'retail' | 'both'; distributorType?: string; retailFormat?: string; provinceId?: number; provinceName?: string; countryName?: string; longitude?: number; latitude?: number; isCarrier?: boolean }
 interface Province { id: number; name: string; countryId: number }
 interface Country { id: number; name: string }
 interface VendorProduct { id: number; unit: string; vendorTin: string; vendorName?: string; agricultureProductId: number; productName?: string }
@@ -165,7 +165,7 @@ export default function VendorsTab() {
         </div>
         <button onClick={() => setShowForm(!showForm)}
           style={{ padding: '10px 20px', background: showForm ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 12px rgba(102,126,234,0.3)' }}>
-          {showForm ? 'Cancel' : '+ Add Vendor'}
+          {showForm ? 'Close Form' : '+ Add Vendor'}
         </button>
       </div>
 
@@ -221,39 +221,33 @@ export default function VendorsTab() {
                 <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>TIN</th>
                 <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Name</th>
                 <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Address</th>
+                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Location</th>
                 <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Contact</th>
                 <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Type</th>
-                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Carrier</th>
                 <th style={{ padding: 16, textAlign: 'right', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Actions</th>
               </tr></thead>
               <tbody>
-                {vendors.map(v => {
-                  const isCarrier = carriers.some(c => c.tin === v.tin)
-                  return (
+                {vendors.map(v => (
                   <tr key={v.tin} style={{ borderBottom: '1px solid #f3f4f6' }}>
                     <td style={{ padding: 16, fontFamily: 'monospace', fontWeight: 600, fontSize: 13 }}>{v.tin}</td>
                     <td style={{ padding: 16, fontSize: 13 }}>{v.name}</td>
                     <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>{v.address}</td>
+                    <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>
+                      <div>{v.provinceName && v.countryName ? `${v.provinceName}, ${v.countryName}` : '-'}</div>
+                      {v.longitude && v.latitude && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>📍 {v.latitude.toFixed(2)}, {v.longitude.toFixed(2)}</div>}
+                    </td>
                     <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>{v.contactInfo}</td>
                     <td style={{ padding: 16 }}>
                       <span style={{ padding: '4px 12px', background: v.type === 'distributor' ? '#dbeafe' : v.type === 'retail' ? '#d1fae5' : v.type === 'both' ? '#fef3c7' : '#f3f4f6', color: v.type === 'distributor' ? '#1e40af' : v.type === 'retail' ? '#065f46' : v.type === 'both' ? '#92400e' : '#374151', borderRadius: 4, fontSize: 12, fontWeight: 600, textTransform: 'capitalize' }}>
                         {v.type}
                       </span>
                     </td>
-                    <td style={{ padding: 16 }}>
-                      {isCarrier ? (
-                        <span style={{ padding: '4px 12px', background: '#fef3c7', color: '#92400e', borderRadius: 4, fontSize: 12, fontWeight: 600 }}>🚚 Carrier</span>
-                      ) : (
-                        <span style={{ color: '#9ca3af', fontSize: 12 }}>-</span>
-                      )}
-                    </td>
                     <td style={{ padding: 16, textAlign: 'right' }}>
                       <button onClick={() => { const prov = provinces.find(p => p.id === (v.provinceId || 0)); const countryId = prov ? prov.countryId.toString() : ''; setEditingVendor(v); setFormData({ tin: v.tin, name: v.name, address: v.address, contactInfo: v.contactInfo || '', vendorType: v.type, distributorType: v.distributorType || '', retailFormat: v.retailFormat || '', countryId, provinceId: v.provinceId ? v.provinceId.toString() : '' }); setShowForm(true) }} style={{ marginRight: 8, padding: '6px 12px', background: '#dbeafe', color: '#1e40af', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Edit</button>
                       <button onClick={() => handleDelete(v.tin)} style={{ padding: '6px 12px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Delete</button>
                     </td>
                   </tr>
-                  )
-                })}
+                ))}
               </tbody>
             </table>
           </div>

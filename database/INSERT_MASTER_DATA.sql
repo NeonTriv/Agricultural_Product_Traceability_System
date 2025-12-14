@@ -156,25 +156,30 @@ DECLARE @ap1 INT = (SELECT ID FROM AGRICULTURE_PRODUCT WHERE Name = 'Golden Jasm
 DECLARE @ap2 INT = (SELECT ID FROM AGRICULTURE_PRODUCT WHERE Name = 'Highland Robusta Beans');
 DECLARE @ap3 INT = (SELECT ID FROM AGRICULTURE_PRODUCT WHERE Name = 'Sweet Yellow Mango');
 
--- Vendor Products (6 rows)
+-- Vendor Products
 INSERT INTO VENDOR_PRODUCT (Vendor_TIN, Unit, ValuePerUnit) VALUES 
-('VEN-001', 'kg', 1.50),
-('VEN-001', '5kg bag', 7.00),
-('VEN-003', '500g pack', 5.00),
-('VEN-002', 'kg', 2.50), 
-('DIST-001', 'ton', 1200.00), 
-('DIST-002', 'ton', 4000.00); 
+('VEN-001', 'kg', 1),
+('VEN-001', '5kg bag', 5),
+('VEN-003', '500g pack', 500),
+('VEN-002', 'kg', 1), 
+('DIST-001', 'ton', 1000), 
+('DIST-002', 'ton', 1000); 
 
--- Prices 
-INSERT INTO PRICE (V_ID, Value, Currency)
-SELECT ID, ValuePerUnit, 'USD' FROM VENDOR_PRODUCT;
+-- Prices - 
+INSERT INTO PRICE (V_ID, Value, Currency) VALUES
+(1, 50000, 'VND'),    
+(2, 240000, 'VND'),   
+(3, 25000, 'VND'),   
+(4, 75000, 'VND'),    
+(5, 18000000, 'VND'), 
+(6, 65000000, 'VND');
 
 -- ============================================================================
 -- 5. DISCOUNTS & MAPPING
 -- ============================================================================
 PRINT '5. Inserting Discounts...';
 
--- Discounts (4 rows)
+-- Discounts 
 INSERT INTO DISCOUNT (Name, Percentage, Min_Value, Max_Discount_Amount, Priority, Is_Stackable, Start_Date, Expired_Date) VALUES 
 ('Summer Sale 2025', 10.00, 50.00, 10.00, 1, 1, GETDATE(), DATEADD(MONTH, 3, GETDATE())),
 ('New Customer Promo', 15.00, 0.00, 5.00, 2, 0, GETDATE(), DATEADD(YEAR, 1, GETDATE())),
@@ -200,12 +205,12 @@ PRINT '6. Inserting Batches...';
 DECLARE @farmId1 INT = (SELECT ID FROM FARM WHERE Name = 'Mekong Green Fields');
 DECLARE @farmId2 INT = (SELECT ID FROM FARM WHERE Name = 'Highland Coffee Estate');
 
-INSERT INTO BATCH (Harvest_Date, Created_By, Grade, Seed_Batch, Qr_Code_URL, Farm_ID, AP_ID) VALUES 
-('2024-11-01 07:00:00 +07:00', 'Farmer John', 'A', 'SEED-RICE-001', 'QR-001', @farmId1, @ap1),
-('2024-11-05 08:00:00 +07:00', 'Farmer John', 'B', 'SEED-RICE-002', 'QR-002', @farmId1, @ap1),
-('2024-10-20 09:00:00 +07:00', 'Ms. Tran', 'Premium', 'SEED-COF-001', 'QR-003', @farmId2, @ap2),
-('2024-10-25 07:30:00 +07:00', 'Ms. Tran', 'Standard', 'SEED-COF-002', 'QR-004', @farmId2, @ap2),
-('2024-12-01 06:00:00 +07:00', 'Mr. Le', 'A', 'SEED-MANGO-001', 'QR-005', (SELECT ID FROM FARM WHERE Name = 'Organic Veggie Garden'), @ap3); 
+INSERT INTO BATCH (Harvest_Date, Created_By, Grade, Seed_Batch, Qr_Code_URL, Farm_ID, AP_ID, V_ID) VALUES 
+('2024-11-01 07:00:00 +07:00', 'Farmer John', 'A', 'SEED-RICE-001', 'QR-001', @farmId1, @ap1, 1),
+('2024-11-05 08:00:00 +07:00', 'Farmer John', 'B', 'SEED-RICE-002', 'QR-002', @farmId1, @ap1, 2),
+('2024-10-20 09:00:00 +07:00', 'Ms. Tran', 'Premium', 'SEED-COF-001', 'QR-003', @farmId2, @ap2, 3),
+('2024-10-25 07:30:00 +07:00', 'Ms. Tran', 'Standard', 'SEED-COF-002', 'QR-004', @farmId2, @ap2, 4),
+('2024-12-01 06:00:00 +07:00', 'Mr. Le', 'A', 'SEED-MANGO-001', 'QR-005', (SELECT ID FROM FARM WHERE Name = 'Organic Veggie Garden'), @ap3, 5); 
 
 -- Processing 
 DECLARE @b1 INT = (SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-001');
@@ -259,6 +264,89 @@ INSERT INTO TRANSPORLEG (Shipment_ID, Driver_Name, Reg_No, Temperature_Profile, 
 (@s1, 'Driver Jerry', '29H-567.89', 'Ambient', 'Thu Duc Warehouse', 'BigC Supermarket', DATEADD(DAY, -2, GETDATE()), DATEADD(DAY, -1, GETDATE()), 'LOG-001'),
 (@s2, 'Driver Mike', '49C-999.00', 'Cool (18C)', 'Highland Roastery', 'Aeon Mall', DATEADD(DAY, -1, GETDATE()), GETDATE(), 'LOG-002'),
 ((SELECT TOP 1 ID FROM SHIPMENT WHERE Status = 'Pending'), 'Driver Dave', '51D-333.44', 'Frozen', 'Farm', 'Airport', NULL, NULL, 'LOG-002');
+
+-- ============================================================================
+-- 8. ADDITIONAL DATA FOR TESTING
+-- ============================================================================
+PRINT '8. Inserting Additional Test Data...';
+
+-- More Countries & Provinces
+DECLARE @thId INT = (SELECT ID FROM COUNTRY WHERE Name = 'Thailand');
+DECLARE @jpId INT = (SELECT ID FROM COUNTRY WHERE Name = 'Japan');
+DECLARE @brId INT = (SELECT ID FROM COUNTRY WHERE Name = 'Brazil');
+
+INSERT INTO PROVINCE (Name, C_ID) VALUES 
+('Bangkok', @thId),
+('Chiang Mai', @thId),
+('Tokyo', @jpId),
+('Sao Paulo', @brId),
+('Hai Phong', @vnId),
+('Da Nang', @vnId),
+('Kien Giang', @vnId),
+('An Giang', @vnId);
+
+-- More Farms
+DECLARE @kgId INT = (SELECT ID FROM PROVINCE WHERE Name = 'Kien Giang');
+DECLARE @agId INT = (SELECT ID FROM PROVINCE WHERE Name = 'An Giang');
+DECLARE @dnId INT = (SELECT ID FROM PROVINCE WHERE Name = 'Da Nang');
+
+INSERT INTO FARM (Name, Owner_Name, Contact_Info, Address_detail, Longitude, Latitude, P_ID) VALUES 
+('Pepper Paradise', 'Mr. Hung', '0913777888', 'Phu Quoc Island', 104.00, 10.20, @kgId),
+('Rice Excellence Farm', 'Ms. Mai', '0914888999', 'Cho Moi, An Giang', 105.50, 10.45, @agId),
+('Coastal Aqua Farm', 'Mr. Binh', '0915999000', 'Hoa Hai, Da Nang', 108.25, 16.05, @dnId);
+
+-- More Batches
+DECLARE @f7 INT = (SELECT ID FROM FARM WHERE Name = 'Pepper Paradise');
+DECLARE @f8 INT = (SELECT ID FROM FARM WHERE Name = 'Rice Excellence Farm');
+DECLARE @ap_pepper INT = (SELECT ID FROM AGRICULTURE_PRODUCT WHERE Name = 'Phu Quoc Black Pepper');
+DECLARE @ap_rice INT = (SELECT ID FROM AGRICULTURE_PRODUCT WHERE Name = 'Royal ST25 Rice');
+
+INSERT INTO BATCH (Harvest_Date, Created_By, Grade, Seed_Batch, Qr_Code_URL, Farm_ID, AP_ID, V_ID) VALUES 
+('2024-11-15 06:30:00 +07:00', 'Mr. Hung', 'Premium', 'SEED-PEPPER-001', 'QR-006', @f7, @ap_pepper, 6),
+('2024-11-20 07:00:00 +07:00', 'Ms. Mai', 'A+', 'SEED-ST25-003', 'QR-007', @f8, @ap_rice, 2),
+('2024-12-05 08:00:00 +07:00', 'Farmer John', 'A', 'SEED-RICE-003', 'QR-008', @farmId1, @ap1, 1),
+('2024-12-10 07:30:00 +07:00', 'Ms. Tran', 'Premium', 'SEED-COF-003', 'QR-009', @farmId2, @ap2, 3),
+('2024-11-25 06:00:00 +07:00', 'Mr. Le', 'A', 'SEED-LETTUCE-001', 'QR-010', (SELECT ID FROM FARM WHERE Name = 'Organic Veggie Garden'), (SELECT ID FROM AGRICULTURE_PRODUCT WHERE Name = 'Fresh Green Lettuce'), 5);
+
+-- More Processing
+DECLARE @b6 INT = (SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-006');
+DECLARE @b7 INT = (SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-007');
+DECLARE @fac3 INT = (SELECT ID FROM PROCESSING_FACILITY WHERE Name = 'Fresh Pack Center');
+
+INSERT INTO PROCESSING (Packaging_Date, Weight_per_unit, Processed_By, Packaging_Type, Processing_Date, Facility_ID, Batch_ID) VALUES 
+('2024-11-17 14:00:00 +07:00', 0.50, 'Worker A', 'Glass Jar', '2024-11-16 09:00:00 +07:00', (SELECT ID FROM PROCESSING_FACILITY WHERE Name = 'Saigon Export Factory'), @b6),
+('2024-11-22 15:00:00 +07:00', 25.00, 'Worker B', 'Premium Sack', '2024-11-21 08:00:00 +07:00', @fac1, @b7),
+('2024-12-07 16:00:00 +07:00', 50.00, 'Worker C', 'Jute Bag', '2024-12-06 09:00:00 +07:00', @fac1, (SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-008'));
+
+-- More Stored In
+INSERT INTO STORED_IN (B_ID, W_ID, Quantity, Start_Date) VALUES 
+(@b6, (SELECT ID FROM WAREHOUSE WHERE Address_detail LIKE '%Port%'), 150.00, '2024-11-18 10:00:00 +07:00'),
+(@b7, @wh1, 800.00, '2024-11-23 09:00:00 +07:00'),
+((SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-008'), @wh1, 600.00, '2024-12-08 08:00:00 +07:00'),
+((SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-009'), (SELECT ID FROM WAREHOUSE WHERE Address_detail LIKE '%Coffee%'), 250.00, '2024-12-11 07:00:00 +07:00');
+
+-- More Shipments
+INSERT INTO SHIPMENT (Status, Destination, Start_Location, Distributor_TIN) VALUES 
+('In-Transit', 'WinMart Plus', 'Fresh Pack Center', 'DIST-001'),
+('Delivered', 'Aeon Mall', 'Saigon Export Factory', 'DIST-002'),
+('In-Transit', 'BigC Supermarket', 'Thu Duc Warehouse', 'DIST-001'),
+('Pending', 'WinMart Plus', 'Coffee Depot', 'DIST-002');
+
+-- Link More Batches to Shipments
+DECLARE @s3 INT = (SELECT TOP 1 ID FROM SHIPMENT WHERE Destination = 'WinMart Plus' AND Status = 'In-Transit');
+DECLARE @s4 INT = (SELECT TOP 1 ID FROM SHIPMENT WHERE Destination = 'Aeon Mall' AND Status = 'Delivered');
+
+INSERT INTO SHIP_BATCH (S_ID, B_ID) VALUES 
+(@s3, (SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-008')),
+(@s4, @b6),
+((SELECT TOP 1 ID FROM SHIPMENT WHERE Status = 'Pending' AND Destination = 'WinMart Plus'), (SELECT ID FROM BATCH WHERE Qr_Code_URL = 'QR-009'));
+
+-- More Transport Legs
+INSERT INTO TRANSPORLEG (Shipment_ID, Driver_Name, Reg_No, Temperature_Profile, Start_Location, To_Location, D_Time, A_Time, CarrierCompany_TIN) VALUES 
+(@s3, 'Driver Alex', '51A-111.22', 'Ambient', 'Fresh Pack Center', 'Thu Duc Warehouse', DATEADD(DAY, -2, GETDATE()), DATEADD(DAY, -1, GETDATE()), 'LOG-001'),
+(@s3, 'Driver Bob', '29B-222.33', 'Ambient', 'Thu Duc Warehouse', 'WinMart Plus', DATEADD(HOUR, -12, GETDATE()), GETDATE(), 'LOG-001'),
+(@s4, 'Driver Charlie', '79C-444.55', 'Cool (15C)', 'Saigon Export Factory', 'Aeon Mall', DATEADD(DAY, -3, GETDATE()), DATEADD(DAY, -2, GETDATE()), 'LOG-002'),
+((SELECT TOP 1 ID FROM SHIPMENT WHERE Status = 'In-Transit' AND Destination = 'BigC Supermarket'), 'Driver Dan', '50D-555.66', 'Ambient', 'Thu Duc Warehouse', 'BigC Supermarket', DATEADD(HOUR, -6, GETDATE()), NULL, 'LOG-001');
 
 PRINT '============================================================================';
 PRINT 'ALL DATA INSERTED SUCCESSFULLY!';
