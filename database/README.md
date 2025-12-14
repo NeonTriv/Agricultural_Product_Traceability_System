@@ -38,7 +38,7 @@ sqlcmd -S localhost -d Traceability -i DEMO_PRESENTATION.sql
 ### Indexes & Performance
 | File | Lines | Purpose |
 |------|-------|---------|
-| `indexes/create_indexes_LEADER_SCHEMA.sql` | 404 | Performance indexes for all tables |
+| `indexes/create_indexes_LEADER_SCHEMA.sql` | 217 | Performance indexes for all tables (idempotent) |
 | `tests/performance_tests_LEADER_SCHEMA.sql` | 272 | Performance benchmarking queries |
 
 ### Data Files
@@ -99,6 +99,28 @@ sqlcmd -S localhost -d Traceability -i DEMO_PRESENTATION.sql
 - `PROCESS_STEP` (Processing steps)
 - `FARM_CERTIFICATIONS` (Farm certifications)
 
+## 🤖 Automation Features
+
+### Idempotent Indexing (Safe to Re-run)
+```bash
+# Safe to run multiple times - won't cause errors
+sqlcmd -S localhost -d Traceability -i indexes/create_indexes_LEADER_SCHEMA.sql
+```
+- Uses `IF NOT EXISTS` pattern
+- Perfect for CI/CD pipelines
+- Updates statistics automatically
+
+### Automated Backups (Set & Forget)
+```bash
+# One-time setup - creates SQL Server Agent jobs
+sqlcmd -S localhost -E -i backup-recovery/Setup_Automated_Backup.sql
+```
+**What happens:**
+- ✅ Full Backup: Daily at 00:00 (retention: 30 days)
+- ✅ Differential: Every 6 hours (retention: 7 days)
+- ✅ Transaction Log: Every 15 minutes (retention: 3 days)
+- ✅ Auto-cleanup of old backups
+
 ## Common Tasks
 
 ### Reset Database (Development)
@@ -111,22 +133,22 @@ EXEC sp_executesql N'$(cat CLEAR_ALL_DATA.sql)';
 EXEC sp_executesql N'$(cat INSERT_MASTER_DATA.sql)';
 ```
 
-### Backup Database
+### Manual Backup (One-Time)
 ```bash
 # Full backup
 sqlcmd -S localhost -d Traceability -i backup-recovery/scripts/manual_backup.sql
 
 # Transaction log backup
 sqlcmd -S localhost -d Traceability -i backup-recovery/scripts/transaction_log_backup.sql
+
+# Differential backup
+sqlcmd -S localhost -d Traceability -i backup-recovery/scripts/differential_backup.sql
 ```
 
 ### Restore Database
 ```bash
-# Full restore
-sqlcmd -S localhost -d master -i backup-recovery/scripts/restore_full.sql
-
-# Point-in-time restore
-sqlcmd -S localhost -d master -i backup-recovery/scripts/restore_point_in_time.sql
+# Restore procedure with transaction logs
+sqlcmd -S localhost -d master -i backup-recovery/scripts/testcase1_full_backup_restore.sql
 ```
 
 ### Generate Big Data (Testing)
