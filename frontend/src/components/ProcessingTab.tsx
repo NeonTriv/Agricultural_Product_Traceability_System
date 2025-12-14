@@ -166,7 +166,7 @@ export default function ProcessingTab() {
             </div>
             <button onClick={() => { setShowFacilityForm(!showFacilityForm); setEditingFacility(null); setFacilityFormData({ name: '', addressDetail: '', contactInfo: '', licenseNumber: '', longitude: '', latitude: '', countryId: '', provinceId: '' }) }}
               style={{ padding: '10px 20px', background: showFacilityForm ? '#9ca3af' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 12px rgba(102,126,234,0.3)' }}>
-              {showFacilityForm ? 'Cancel' : '+ Add Facility'}
+              {showFacilityForm ? 'Close Form' : '+ Add Facility'}
             </button>
           </div>
 
@@ -226,7 +226,6 @@ export default function ProcessingTab() {
                 <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Name</th>
                 <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>License</th>
                 <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Location</th>
-                <th style={{ padding: 16, textAlign: 'left', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Coordinates</th>
                 <th style={{ padding: 16, textAlign: 'right', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Actions</th>
               </tr></thead>
               <tbody>
@@ -234,8 +233,10 @@ export default function ProcessingTab() {
                   <tr key={f.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                     <td style={{ padding: 16, fontWeight: 600 }}>{f.name}</td>
                     <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>{f.licenseNumber}</td>
-                    <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>{f.provinceName || '-'} {f.countryName ? `(${f.countryName})` : ''}</td>
-                    <td style={{ padding: 16, color: '#6b7280', fontSize: 13, fontFamily: 'monospace' }}>{f.latitude ? `${f.latitude.toFixed(4)}, ${f.longitude?.toFixed(4)}` : '-'}</td>
+                    <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>
+                      <div>{f.provinceName || '-'}, {f.countryName || '-'}</div>
+                      {f.longitude && f.latitude && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>📍 {f.latitude.toFixed(2)}, {f.longitude.toFixed(2)}</div>}
+                    </td>
                     <td style={{ padding: 16, textAlign: 'right' }}>
                       <button onClick={() => handleFacilityEdit(f)} style={{ marginRight: 8, padding: '6px 12px', background: '#dbeafe', color: '#1e40af', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Edit</button>
                       <button onClick={() => handleDeleteFacility(f.id)} style={{ padding: '6px 12px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Delete</button>

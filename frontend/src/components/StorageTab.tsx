@@ -383,8 +383,18 @@ export default function StorageTab() {
                       <span style={{ padding: '4px 12px', background: '#dbeafe', color: '#1e40af', borderRadius: 999, fontSize: 13, fontWeight: 600 }}>{s.quantity}</span>
                     </td>
                     <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>
-                      {s.startDate ? new Date(s.startDate).toLocaleDateString('vi-VN') : '-'}
-                      {s.endDate && ` → ${new Date(s.endDate).toLocaleDateString('vi-VN')}`}
+                      {s.startDate ? (
+                        <>
+                          <span>{new Date(s.startDate).toLocaleDateString('vi-VN')}</span>
+                          {s.endDate && (
+                            <>
+                              <span style={{ margin: '0 4px' }}>→</span>
+                              <span>{new Date(s.endDate).toLocaleDateString('vi-VN')}</span>
+                            </>
+                          )}
+                          {!s.endDate && <span style={{ marginLeft: 4, color: '#10b981' }}>→ Ongoing</span>}
+                        </>
+                      ) : '-'}
                     </td>
                     <td style={{ padding: 16, textAlign: 'right' }}>
                       <button onClick={() => { setEditingStoredIn(s); setStoredInFormData({ batchId: s.batchId.toString(), warehouseId: s.warehouseId.toString(), quantity: s.quantity.toString(), startDate: s.startDate ? new Date(s.startDate).toISOString().slice(0, 10) : '', endDate: s.endDate ? new Date(s.endDate).toISOString().slice(0, 10) : '' }); setShowStoredInForm(true) }} style={{ marginRight: 8, padding: '6px 12px', background: '#dbeafe', color: '#1e40af', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Edit</button>

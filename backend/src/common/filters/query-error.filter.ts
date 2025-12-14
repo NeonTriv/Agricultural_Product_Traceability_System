@@ -21,15 +21,11 @@ export class QueryErrorFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const message = exception.message;
 
-    // Log the full error for debugging
     this.logger.error(`QueryFailedError: ${message}`);
-
-    // Try to provide helpful messages for common FK violations
     let userMessage = message;
 
     // Check for FK constraint violations
     if (message.includes('REFERENCE constraint')) {
-      // Extract table and column info if possible
       if (message.includes('STORED_IN')) {
         userMessage = `Cannot delete: Item is stored in warehouse. Please remove from storage first (Storage > Stored Items).`;
       } else if (message.includes('PROCESSING')) {

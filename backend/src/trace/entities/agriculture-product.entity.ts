@@ -1,6 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Type } from './type.entity';
-import { VendorProduct } from './vendor-product.entity';
 
 /**
  * AGRICULTURE_PRODUCT Entity
@@ -24,7 +23,4 @@ export class AgricultureProduct {
   @ManyToOne(() => Type, (type) => type.products)
   @JoinColumn({ name: 'T_ID' })
   type: Type;
-
-  @OneToMany(() => VendorProduct, (vendorProduct) => vendorProduct.agricultureProduct)
-  vendorProducts: VendorProduct[];
 }

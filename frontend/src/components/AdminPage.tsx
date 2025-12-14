@@ -18,15 +18,15 @@ const MOCK_ADMIN = {
 // Tab configuration
 type TabKey = 'batches' | 'provinces' | 'farms' | 'vendors' | 'processing' | 'logistics' | 'storage' | 'pricing'
 
-const ADMIN_TABS: { key: TabKey; label: string; labelVi: string }[] = [
-  { key: 'batches', label: 'Batches', labelVi: 'Lô hàng' },
-  { key: 'farms', label: 'Farms', labelVi: 'Trang trại' },
-  { key: 'provinces', label: 'Provinces', labelVi: 'Tỉnh thành' },
-  { key: 'vendors', label: 'Vendors', labelVi: 'Nhà cung cấp' },
-  { key: 'processing', label: 'Processing', labelVi: 'Chế biến' },
-  { key: 'logistics', label: 'Logistics', labelVi: 'Vận chuyển' },
-  { key: 'storage', label: 'Storage', labelVi: 'Kho lưu trữ' },
-  { key: 'pricing', label: 'Pricing', labelVi: 'Giá cả' },
+const ADMIN_TABS: { key: TabKey; label: string }[] = [
+  { key: 'batches', label: 'Batches' },
+  { key: 'farms', label: 'Farms' },
+  { key: 'provinces', label: 'Provinces' },
+  { key: 'vendors', label: 'Vendors' },
+  { key: 'processing', label: 'Processing' },
+  { key: 'logistics', label: 'Logistics' },
+  { key: 'storage', label: 'Storage' },
+  { key: 'pricing', label: 'Pricing' },
 ]
 
 export default function AdminPage() {
@@ -249,7 +249,11 @@ export default function AdminPage() {
         alignItems: 'center',
         marginBottom: 24,
         padding: '16px 0',
-        borderBottom: '2px solid #e5e7eb'
+        borderBottom: '2px solid #e5e7eb',
+        position: 'sticky',
+        top: 0,
+        background: 'white',
+        zIndex: 50
       }}>
         <div style={{ display: 'flex', gap: 16 }}>
           <a
@@ -301,7 +305,12 @@ export default function AdminPage() {
         gap: 8,
         marginBottom: 24,
         borderBottom: '2px solid #e5e7eb',
-        overflowX: 'auto'
+        overflowX: 'auto',
+        position: 'sticky',
+        top: 70,
+        background: 'white',
+        zIndex: 40,
+        paddingTop: 8
       }}>
         {ADMIN_TABS.map(tab => (
           <button
@@ -321,7 +330,7 @@ export default function AdminPage() {
               whiteSpace: 'nowrap'
             }}
           >
-            {tab.label} / {tab.labelVi}
+            {tab.label}
           </button>
         ))}
       </div>

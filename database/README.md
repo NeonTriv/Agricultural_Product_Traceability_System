@@ -3,51 +3,71 @@
 ## Overview
 This directory contains all SQL scripts for the agricultural traceability database system.
 
-## Quick Start
+## Quick Start 
 
-### Option 1: Fresh Setup (Recommended)
+### Automated Setup (Recommended)
 ```bash
-# 1. Create database and schema
+npm run init
+```
+This will automatically:
+1. Create database & schema
+2. Insert master reference data
+3. Create performance indexes
+4. Setup security views & roles
+5. Configure database users
+
+**That's it!** Your system is ready to use.
+
+---
+
+## Manual Setup (If needed)
+
+### Step 1: Create Schema
+```bash
 sqlcmd -S localhost -d master -i BTL_LEADER_SCHEMA.sql
-
-# 2. Add indexes for performance
-sqlcmd -S localhost -d Traceability -i indexes/create_indexes_LEADER_SCHEMA.sql
-
-# 3. Insert master reference data (required)
-sqlcmd -S localhost -d Traceability -i INSERT_MASTER_DATA.sql
-
-# 4. (Optional) Add demo data for presentation
-sqlcmd -S localhost -d Traceability -i DEMO_PRESENTATION.sql
 ```
 
-### Option 2: Automated Setup
+### Step 2: Insert Master Data (Required)
 ```bash
-# Run the automated setup script
-./setup_database.bat  # Windows
-# or
-./setup_database.sh   # Linux/Mac
+sqlcmd -S localhost -d Traceability -i INSERT_MASTER_DATA.sql
+```
+
+### Step 3: Create Performance Indexes
+```bash
+sqlcmd -S localhost -d Traceability -i create_indexes_LEADER_SCHEMA.sql
+```
+
+### Step 4: Setup Security
+```bash
+sqlcmd -S localhost -d Traceability -i security/setup\ view\ and\ role.sql
 ```
 
 ## File Structure
 
 ### Core Schema
-| File | Lines | Purpose |
-|------|-------|---------|
-| `BTL_LEADER_SCHEMA.sql` | 252 | Main database schema - creates all tables and relationships |
+| File | Purpose |
+|------|---------|
+| `BTL_LEADER_SCHEMA.sql` | Main database schema - creates all tables and relationships |
 
 ### Indexes & Performance
-| File | Lines | Purpose |
-|------|-------|---------|
-| `indexes/create_indexes_LEADER_SCHEMA.sql` | 217 | Performance indexes for all tables (idempotent) |
-| `tests/performance_tests_LEADER_SCHEMA.sql` | 272 | Performance benchmarking queries |
+| File | Purpose |
+|------|---------|
+| `create_indexes_LEADER_SCHEMA.sql` | Performance indexes for QR lookup, farms, vendors (idempotent) |
+| `tests/performance_tests_LEADER_SCHEMA.sql` | Performance benchmarking queries |
 
 ### Data Files
-| File | Lines | Purpose |
-|------|-------|---------|
-| `INSERT_MASTER_DATA.sql` | 265 | **Required** - Countries, provinces, categories (Vietnam data) |
-| `INSERT_TEST_DATA_SIMPLE.sql` | 147 | Simple test data - 5 products, 3 farms |
-| `DEMO_PRESENTATION.sql` | 315 | Rich demo data for presentations |
-| `CLEAR_ALL_DATA.sql` | 131 | Clear all data while preserving schema |
+| File | Purpose |
+|------|---------|
+| `INSERT_MASTER_DATA.sql` | **Required** - Countries, provinces, categories, farms, vendors |
+| `CLEAR_ALL_DATA.sql` | Clear all data while preserving schema |
+
+### Security & Monitoring
+| File | Purpose |
+|------|---------|
+| `security/setup view and role.sql` | Security views & role-based access control |
+| `backup-recovery/Setup_Automated_Backup.sql` | Automated backup jobs (optional) |
+| `SYSTEM_HEALTH_CHECK_LITE.sql` | Database health verification |
+
 
 ### Utility Scripts
 | Directory | Files | Purpose |

@@ -206,7 +206,11 @@ export default function TracePage() {
         alignItems: 'center',
         marginBottom: 24,
         padding: '16px 0',
-        borderBottom: '2px solid #e5e7eb'
+        borderBottom: '2px solid #e5e7eb',
+        position: 'sticky',
+        top: 0,
+        background: 'white',
+        zIndex: 50
       }}>
         <div style={{ display: 'flex', gap: 16 }}>
           <a

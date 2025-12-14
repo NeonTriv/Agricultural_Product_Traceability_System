@@ -28,31 +28,66 @@ export class PricingService extends BaseService<VendorProduct> {
   // Vendor Product CRUD (using BaseService)
   async getAllVendorProducts() {
     const vendorProducts = await this.findAll({
-      relations: ['agricultureProduct', 'vendor'],
+      relations: ['vendor'],
       order: { id: 'ASC' },
     });
 
-    return vendorProducts.map((vp) => ({
-      id: vp.id,
-      unit: vp.unit,
-      vendorTin: vp.vendorTin,
-      vendorName: vp.vendor?.name,
-      agricultureProductId: vp.agricultureProductId,
-      productName: vp.agricultureProduct?.name,
-    }));
+    // Attach batch info for reverse tracking (1:N batches per vendor product)
+    const results = [] as Array<{
+      id: number;
+      unit: string;
+      vendorTin: string;
+      vendorName?: string;
+      productName?: string | null;
+      valuePerUnit?: number;
+      price?: number;
+      currency?: string;
+      batches: Array<{ id: number; seedBatch: string | null; productName?: string | null }>;
+    }>;
+
+    for (const vp of vendorProducts) {
+      const batches = await this.batchRepo
+        .createQueryBuilder('batch')
+        .leftJoinAndSelect('batch.agricultureProduct', 'ap')
+        .where('batch.vendorProductId = :vpId', { vpId: vp.id })
+        .orderBy('batch.id', 'ASC')
+        .getMany();
+
+
+      // Get price info for this vendor product
+      const price = await this.priceRepo.findOne({
+        where: { vendorProductId: vp.id },
+      });
+
+      // Get product name from first batch (all batches of same VP should have same product)
+      const productName = batches.length > 0 ? batches[0].agricultureProduct?.name : null;
+
+      console.log(`[VP #${vp.id}] Final productName: ${productName || 'NULL'}`);
+
+      results.push({
+        id: vp.id,
+        unit: vp.unit,
+        vendorTin: vp.vendorTin,
+        vendorName: vp.vendor?.name,
+        productName: productName,
+        valuePerUnit: vp.valuePerUnit,
+        price: price?.value,
+        currency: price?.currency,
+        batches: batches.map((b: any) => ({ id: b.id, seedBatch: b.seedBatch, productName: b.agricultureProduct?.name })),
+      });
+    }
+    return results;
   }
 
   async createVendorProduct(data: {
     unit: string;
     vendorTin: string;
-    agricultureProductId: number;
   }) {
     const vendorProduct = await this.create({
       unit: data.unit,
       vendorTin: data.vendorTin,
-      agricultureProductId: data.agricultureProductId,
     });
-    return { success: true, id: vendorProduct.id };
+    return vendorProduct;
   }
 
   async updateVendorProduct(id: number, data: { unit?: string }) {
@@ -97,7 +132,7 @@ export class PricingService extends BaseService<VendorProduct> {
   // Price CRUD
   async getAllPrices() {
     const prices = await this.priceRepo.find({
-      relations: ['vendorProduct', 'vendorProduct.agricultureProduct', 'vendorProduct.vendor'],
+      relations: ['vendorProduct', 'vendorProduct.vendor'],
       order: { vendorProductId: 'ASC' },
     });
 
@@ -105,7 +140,6 @@ export class PricingService extends BaseService<VendorProduct> {
       vendorProductId: p.vendorProductId,
       value: p.value,
       currency: p.currency,
-      productName: p.vendorProduct?.agricultureProduct?.name,
       vendorName: p.vendorProduct?.vendor?.name,
       unit: p.vendorProduct?.unit,
     }));
@@ -114,7 +148,7 @@ export class PricingService extends BaseService<VendorProduct> {
   async getPrice(vendorProductId: number) {
     const price = await this.priceRepo.findOne({
       where: { vendorProductId },
-      relations: ['vendorProduct', 'vendorProduct.agricultureProduct', 'vendorProduct.vendor'],
+      relations: ['vendorProduct', 'vendorProduct.vendor'],
     });
 
     if (!price) {
@@ -125,7 +159,6 @@ export class PricingService extends BaseService<VendorProduct> {
       vendorProductId: price.vendorProductId,
       value: price.value,
       currency: price.currency,
-      productName: price.vendorProduct?.agricultureProduct?.name,
       vendorName: price.vendorProduct?.vendor?.name,
       unit: price.vendorProduct?.unit,
     };
@@ -289,7 +322,6 @@ export class PricingService extends BaseService<VendorProduct> {
       // Step 1: Create Vendor Product
       const vpResult = await this.createVendorProduct({
         vendorTin: data.vendorTin,
-        agricultureProductId: data.agricultureProductId,
         unit: data.unit,
       });
 
@@ -346,15 +378,35 @@ export class PricingService extends BaseService<VendorProduct> {
   async getProductsByDiscount(discountId: number) {
     const relations = await this.phdRepo.find({
       where: { discountId },
-      relations: ['vendorProduct', 'vendorProduct.agricultureProduct', 'vendorProduct.vendor'],
+      relations: ['vendorProduct', 'vendorProduct.vendor'],
     });
 
-    return relations.map((r) => ({
-      vendorProductId: r.vendorProductId,
-      productName: (r.vendorProduct as any)?.agricultureProduct?.name,
-      vendorName: (r.vendorProduct as any)?.vendor?.name,
-      unit: (r.vendorProduct as any)?.unit,
-    }));
+    // Get product names from batches for each vendor product
+    const results: Array<{
+      vendorProductId: number;
+      vendorName?: string;
+      productName?: string;
+      unit?: string;
+    }> = [];
+    
+    for (const r of relations) {
+      const batch = await this.batchRepo
+        .createQueryBuilder('batch')
+        .select(['batch.id', 'ap.name'])
+        .leftJoin('batch.agricultureProduct', 'ap')
+        .where('batch.vendorProductId = :vpId', { vpId: r.vendorProductId })
+        .orderBy('batch.id', 'ASC')
+        .getOne();
+
+      results.push({
+        vendorProductId: r.vendorProductId,
+        vendorName: (r.vendorProduct as any)?.vendor?.name,
+        productName: (batch as any)?.agricultureProduct?.name || null,
+        unit: (r.vendorProduct as any)?.unit,
+      });
+    }
+
+    return results;
   }
 
   async unlinkProductHasDiscount(vendorProductId: number, discountId: number) {

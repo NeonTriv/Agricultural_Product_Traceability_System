@@ -17,6 +17,9 @@ export class TransportLeg {
   @Column({ name: 'Driver_Name', type: 'nvarchar', length: 100, nullable: true })
   driverName: string;
 
+  @Column({ name: 'Reg_No', type: 'nvarchar', length: 100, nullable: true })
+  regNo: string;
+
   @Column({ name: 'Temperature_Profile', type: 'nvarchar', length: 'MAX', nullable: true })
   temperatureProfile: string;
 

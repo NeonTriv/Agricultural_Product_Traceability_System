@@ -1,8 +1,11 @@
 ﻿USE Traceability;
 GO
 
+PRINT 'Setting Up Security Views & Roles..';
+PRINT '';
+
 -- ============================================================================
--- CHUẨN BỊ CÁC VIEW 
+-- PHẦN 1: CHUẨN BỊ CÁC VIEW 
 -- ============================================================================
 
 -- View BATCH
@@ -19,6 +22,7 @@ FROM dbo.BATCH b
 LEFT JOIN dbo.FARM f ON b.Farm_ID = f.ID
 LEFT JOIN dbo.AGRICULTURE_PRODUCT ap ON b.AP_ID = ap.ID;
 GO
+PRINT '   v_BATCH view created';
 
 -- View FARM
 IF OBJECT_ID('dbo.v_FARM', 'V') IS NOT NULL DROP VIEW dbo.v_FARM;
@@ -31,25 +35,7 @@ SELECT
 FROM dbo.FARM f
 LEFT JOIN dbo.PROVINCE p ON f.P_ID = p.ID;
 GO
-
--- View TRANSPORT
-IF OBJECT_ID('dbo.v_TRANSPORT', 'V') IS NOT NULL DROP VIEW dbo.v_TRANSPORT;
-GO
-CREATE VIEW v_TRANSPORT AS
-SELECT 
-    s.Status, 
-    s.Destination, 
-    tl.Start_Location, 
-    tl.To_Location, 
-    tl.D_Time, 
-    tl.A_Time, 
-    tl.Temperature_Profile, 
-    cc_vendor.Name AS Carrier_Company
-FROM dbo.TRANSPORLEG tl
-JOIN dbo.SHIPMENT s ON tl.Shipment_ID = s.ID
-JOIN dbo.CARRIERCOMPANY cc ON tl.CarrierCompany_TIN = cc.V_TIN
-JOIN dbo.VENDOR cc_vendor ON cc.V_TIN = cc_vendor.TIN;
-GO
+PRINT '   v_FARM view created';
 
 -- View PRODUCT
 IF OBJECT_ID('dbo.v_PRODUCT', 'V') IS NOT NULL DROP VIEW dbo.v_PRODUCT;
@@ -64,48 +50,102 @@ FROM dbo.AGRICULTURE_PRODUCT ap
 JOIN dbo.[TYPE] t ON ap.T_ID = t.ID
 JOIN dbo.CATEGORY c ON t.C_ID = c.ID;
 GO
+PRINT '   v_PRODUCT view created';
+
+-- View VENDOR_PRICE
+IF OBJECT_ID('dbo.v_VENDOR_PRICE', 'V') IS NOT NULL DROP VIEW dbo.v_VENDOR_PRICE;
+GO
+CREATE VIEW v_VENDOR_PRICE AS
+SELECT 
+    v.Name AS Vendor_Name,
+    vp.Unit,
+    vp.ValuePerUnit,
+    p.Value AS Price,
+    p.Currency
+FROM dbo.VENDOR_PRODUCT vp
+JOIN dbo.VENDOR v ON vp.Vendor_TIN = v.TIN
+LEFT JOIN dbo.PRICE p ON vp.ID = p.V_ID;
+GO
+PRINT '   v_VENDOR_PRICE view created';
+
+PRINT '';
 
 -- ============================================================================
 -- PHẦN 2: THIẾT LẬP ADMIN
 -- ============================================================================
 
--- Tạo Login
-IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = 'AdminLogin')
-    CREATE LOGIN [AdminLogin] WITH PASSWORD=N'AdminPass@123', CHECK_EXPIRATION=OFF, CHECK_POLICY=OFF;
-
--- Tạo User
-IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'AdminUser')
-    CREATE USER [AdminUser] FOR LOGIN [AdminLogin];
-
--- CẤP QUYỀN: Add vào db_owner
--- Admin sẽ có toàn quyền SELECT, INSERT, UPDATE, DELETE trên MỌI BẢNG
-ALTER ROLE [db_owner] ADD MEMBER [AdminUser];
+USE master;
 GO
+
+IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = 'AdminLogin')
+BEGIN
+    CREATE LOGIN [AdminLogin] WITH PASSWORD=N'AdminPass@123', CHECK_EXPIRATION=OFF, CHECK_POLICY=OFF;
+    PRINT '   AdminLogin created';
+END
+ELSE
+    PRINT '   AdminLogin already exists';
+
+USE Traceability;
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'AdminUser')
+BEGIN
+    CREATE USER [AdminUser] FOR LOGIN [AdminLogin];
+    ALTER ROLE [db_owner] ADD MEMBER [AdminUser];
+    PRINT '   AdminUser created (db_owner role)';
+END
+ELSE
+    PRINT '   AdminUser already exists';
 
 -- ============================================================================
 -- PHẦN 3: THIẾT LẬP CUSTOMER
 -- ============================================================================
 
--- Tạo Login
+USE master;
+GO
+
 IF NOT EXISTS (SELECT * FROM sys.server_principals WHERE name = 'CustomerLogin')
+BEGIN
     CREATE LOGIN [CustomerLogin] WITH PASSWORD=N'CustomerPass@123', CHECK_EXPIRATION=OFF, CHECK_POLICY=OFF;
+    PRINT '   CustomerLogin created';
+END
+ELSE
+    PRINT '   CustomerLogin already exists';
 
--- Tạo User
+USE Traceability;
+GO
+
 IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'CustomerUser')
+BEGIN
     CREATE USER [CustomerUser] FOR LOGIN [CustomerLogin];
+    PRINT '   CustomerUser created';
+END
+ELSE
+    PRINT '   CustomerUser already exists';
 
--- Tạo Role riêng cho khách
+-- Create Role
 IF NOT EXISTS (SELECT * FROM sys.database_principals WHERE name = 'ROLE_CUSTOMER' AND type = 'R')
+BEGIN
     CREATE ROLE [ROLE_CUSTOMER];
+    ALTER ROLE [ROLE_CUSTOMER] ADD MEMBER [CustomerUser];
+    PRINT '   ROLE_CUSTOMER created';
+END
+ELSE
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM sys.database_role_members WHERE role_principal_id IN (SELECT principal_id FROM sys.database_principals WHERE name = 'ROLE_CUSTOMER') AND member_principal_id IN (SELECT principal_id FROM sys.database_principals WHERE name = 'CustomerUser'))
+    BEGIN
+        ALTER ROLE [ROLE_CUSTOMER] ADD MEMBER [CustomerUser];
+        PRINT '   CustomerUser added to ROLE_CUSTOMER';
+    END
+END
 
-ALTER ROLE [ROLE_CUSTOMER] ADD MEMBER [CustomerUser];
-
--- Lệnh này đảm bảo Customer KHÔNG BAO GIỜ thấy được bảng gốc
+-- Grant permissions
 DENY SELECT, INSERT, UPDATE, DELETE ON SCHEMA :: dbo TO [ROLE_CUSTOMER];
-
--- Chỉ cấp quyền xem trên các View đã lọc
 GRANT SELECT ON dbo.v_BATCH TO [ROLE_CUSTOMER];
 GRANT SELECT ON dbo.v_FARM TO [ROLE_CUSTOMER];
-GRANT SELECT ON dbo.v_TRANSPORT TO [ROLE_CUSTOMER];
 GRANT SELECT ON dbo.v_PRODUCT TO [ROLE_CUSTOMER];
-GO
+GRANT SELECT ON dbo.v_VENDOR_PRICE TO [ROLE_CUSTOMER];
+PRINT '   View permissions granted to ROLE_CUSTOMER';
+
+PRINT '';
+PRINT ' Security Setup Complete                                     ';

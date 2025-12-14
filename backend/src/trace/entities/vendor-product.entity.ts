@@ -1,6 +1,5 @@
 import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Vendor } from './vendor.entity';
-import { AgricultureProduct } from './agriculture-product.entity';
 import { Price } from './price.entity';
 import { ProductHasDiscount } from './product-has-discount.entity';
 
@@ -16,20 +15,16 @@ export class VendorProduct {
   @Column({ name: 'Unit', type: 'nvarchar', length: 50 })
   unit: string;
 
+  @Column({ name: 'ValuePerUnit', type: 'decimal', precision: 10, scale: 2, nullable: true })
+  valuePerUnit: number;
+
   @Column({ name: 'Vendor_TIN', type: 'varchar', length: 20 })
   vendorTin: string;
-
-  @Column({ name: 'AP_ID', type: 'int' })
-  agricultureProductId: number;
 
   // Relationships
   @ManyToOne(() => Vendor, (vendor) => vendor.vendorProducts)
   @JoinColumn({ name: 'Vendor_TIN' })
   vendor: Vendor;
-
-  @ManyToOne(() => AgricultureProduct, (product) => product.vendorProducts)
-  @JoinColumn({ name: 'AP_ID' })
-  agricultureProduct: AgricultureProduct;
 
   @OneToMany(() => Price, (price) => price.vendorProduct)
   prices: Price[];

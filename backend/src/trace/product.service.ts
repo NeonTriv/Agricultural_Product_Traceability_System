@@ -81,15 +81,10 @@ export class ProductService extends BaseService<AgricultureProduct> {
   async deleteAgricultureProduct(id: number) {
     // Check dependencies
     const batchCount = await this.batchRepo.count({ where: { agricultureProductId: id } });
-    const vendorProductCount = await this.vendorProductRepo.count({ where: { agricultureProductId: id } });
 
-    if (batchCount > 0 || vendorProductCount > 0) {
-      const details: string[] = [];
-      if (batchCount > 0) details.push(`${batchCount} batch(es)`);
-      if (vendorProductCount > 0) details.push(`${vendorProductCount} vendor product(s)`);
-
+    if (batchCount > 0) {
       throw new BadRequestException(
-        `Cannot delete Agriculture Product: It is linked to ${details.join(' and ')}. ` +
+        `Cannot delete Agriculture Product: It is linked to ${batchCount} batch(es). ` +
         `Please remove them first (Batches tab).`
       );
     }

@@ -19,7 +19,7 @@ export class ProcessingService {
   // Processing Facilities methods
   async getAllFacilities() {
     const facilities = await this.facilityRepo.find({
-      relations: ['processings', 'province'],
+      relations: ['processings', 'province', 'province.country'],
       order: { id: 'DESC' },
     });
 
@@ -33,6 +33,7 @@ export class ProcessingService {
       latitude: f.latitude,
       provinceId: f.provinceId,
       provinceName: f.province?.name,
+      countryName: f.province?.country?.name,
       processingCount: f.processings?.length || 0,
     }));
   }
@@ -40,7 +41,7 @@ export class ProcessingService {
   async getFacility(id: number) {
     const facility = await this.facilityRepo.findOne({
       where: { id },
-      relations: ['processings', 'province'],
+      relations: ['processings', 'province', 'province.country'],
     });
 
     if (!facility) {
@@ -57,6 +58,7 @@ export class ProcessingService {
       latitude: facility.latitude,
       provinceId: facility.provinceId,
       provinceName: facility.province?.name,
+      countryName: facility.province?.country?.name,
       processingCount: facility.processings?.length || 0,
     };
   }

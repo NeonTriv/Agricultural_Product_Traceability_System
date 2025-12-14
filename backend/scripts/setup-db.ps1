@@ -90,7 +90,7 @@ Write-Host "   DATABASE SETUP STARTED"
 Write-Host "==========================================`n"
 
 
-Write-Host "[1/5] Resetting Database '$AppDb'..."
+Write-Host "[1/7] Resetting Database '$AppDb'..."
 $dropQuery = "
     IF DB_ID('$AppDb') IS NOT NULL 
     BEGIN 
@@ -101,7 +101,7 @@ $dropQuery = "
 "
 Run-Sql -Query $dropQuery
 
-Write-Host "[2/5] Importing Schema..."
+Write-Host "[2/7] Importing Schema..."
 if (-not (Test-Path $SchemaFile)) {
     Write-Error "Schema file not found at: $SchemaFile"
     exit 1
@@ -115,7 +115,7 @@ Set-Content -Path $tempSqlFile -Value $finalSchema -Encoding UTF8
 Run-SqlFile -FilePath $tempSqlFile
 Remove-Item $tempSqlFile -Force
 
-Write-Host "[3/5] Importing Master Data..."
+Write-Host "[3/7] Importing Master Data..."
 $masterDataFile = "$PSScriptRoot\..\..\database\INSERT_MASTER_DATA.sql"
 if (Test-Path $masterDataFile) {
     $tempDataFile = "$PSScriptRoot\temp_data.sql"
@@ -129,7 +129,7 @@ if (Test-Path $masterDataFile) {
     Write-Warning "Master data file not found. Skipping."
 }
 
-Write-Host "[4/5] Creating App User '$AppLogin'..."
+Write-Host "[4/7] Creating App User '$AppLogin'..."
 $userQuery = "
     USE [master];
     IF EXISTS (SELECT 1 FROM sys.server_principals WHERE name = '$AppLogin')
@@ -151,7 +151,7 @@ $userQuery = "
 "
 Run-Sql -Query $userQuery
 
-Write-Host "[5/5] Verifying Login..."
+Write-Host "[5/7] Verifying Login..."
 $verifyParams = @("-S", $SqlServer, "-U", $AppLogin, "-P", $AppPassword, "-d", $AppDb, "-Q", "SELECT 'OK'")
 $verifyResult = & sqlcmd @verifyParams 2>&1
 
@@ -163,3 +163,33 @@ if ($verifyResult -match "OK") {
     Write-Host "Tip: Ensure SQL Server is in 'Mixed Mode Authentication'." -ForegroundColor Yellow
     exit 1
 }
+
+Write-Host "`n[6/7] Creating Indexes & Security..."
+$setupFile = "$PSScriptRoot\..\..\database\create_indexes_LEADER_SCHEMA.sql"
+if (Test-Path $setupFile) {
+    try {
+        Write-Host "Creating performance indexes..." -ForegroundColor Cyan
+        Run-SqlFile -FilePath $setupFile
+        Write-Host "Indexes created successfully!" -ForegroundColor Green
+    } catch {
+        Write-Warning "Index creation had issues, but continuing..."
+    }
+} else {
+    Write-Warning "Index script not found. Skipping."
+}
+
+Write-Host "`n[7/7] Setting Up Security Views & Roles..."
+$securityFile = "$PSScriptRoot\..\..\database\security\setup view and role.sql"
+if (Test-Path $securityFile) {
+    try {
+        Write-Host "Creating security views and roles..." -ForegroundColor Cyan
+        Run-SqlFile -FilePath $securityFile
+        Write-Host "Security setup completed!" -ForegroundColor Green
+    } catch {
+        Write-Warning "Security setup had issues, but continuing..."
+    }
+} else {
+    Write-Warning "Security script not found. Skipping."
+}
+
+Write-Host "`nCOMPLETE - All database systems initialized!`n" -ForegroundColor Green

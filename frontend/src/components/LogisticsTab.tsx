@@ -8,6 +8,8 @@ interface CarrierCompany {
   vTin: string
   name: string
   addressDetail?: string
+  longitude?: number
+  latitude?: number
   contactInfo?: string
   provinceId?: number
   provinceName?: string
@@ -21,8 +23,6 @@ interface Country { id: number; name: string }
 interface Shipment {
   id: number
   status: string
-  departuredTime?: string
-  arrivalTime?: string
   destination?: string
   startLocation?: string
   distributorTin: string
@@ -34,9 +34,12 @@ interface TransportLeg {
   id: number
   shipmentId: number
   driverName?: string
+  regNo?: string
   temperatureProfile?: string
   startLocation: string
   toLocation: string
+  departureTime?: string
+  arrivalTime?: string
   carrierCompanyTin: string
   carrierCompanyName?: string
   shipmentDestination?: string
@@ -73,7 +76,7 @@ export default function LogisticsTab() {
   const [editingShipment, setEditingShipment] = useState<Shipment | null>(null)
 
   const [showTransportLegForm, setShowTransportLegForm] = useState(false)
-  const [transportLegFormData, setTransportLegFormData] = useState({ shipmentId: '', driverName: '', temperatureProfile: '', startLocation: '', toLocation: '', carrierCompanyTin: '' })
+  const [transportLegFormData, setTransportLegFormData] = useState({ shipmentId: '', driverName: '', regNo: '', temperatureProfile: '', startLocation: '', toLocation: '', departureTime: '', arrivalTime: '', carrierCompanyTin: '' })
   const [editingTransportLeg, setEditingTransportLeg] = useState<TransportLeg | null>(null)
 
   // --- Helpers ---
@@ -201,10 +204,10 @@ export default function LogisticsTab() {
   const handleTransportLegSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true)
     try {
-      const payload = { shipmentId: parseInt(transportLegFormData.shipmentId), driverName: transportLegFormData.driverName, temperatureProfile: transportLegFormData.temperatureProfile, startLocation: transportLegFormData.startLocation, toLocation: transportLegFormData.toLocation, carrierCompanyTin: transportLegFormData.carrierCompanyTin }
+      const payload = { shipmentId: parseInt(transportLegFormData.shipmentId), driverName: transportLegFormData.driverName, regNo: transportLegFormData.regNo, temperatureProfile: transportLegFormData.temperatureProfile, startLocation: transportLegFormData.startLocation, toLocation: transportLegFormData.toLocation, departureTime: transportLegFormData.departureTime || undefined, arrivalTime: transportLegFormData.arrivalTime || undefined, carrierCompanyTin: transportLegFormData.carrierCompanyTin }
       if (editingTransportLeg) await axios.patch(`${baseUrl}/api/logistics/transport-legs/${editingTransportLeg.id}`, payload)
       else await axios.post(`${baseUrl}/api/logistics/transport-legs`, payload)
-      resetForms(); setTransportLegFormData({ shipmentId: '', driverName: '', temperatureProfile: '', startLocation: '', toLocation: '', carrierCompanyTin: '' }); fetchTransportLegs()
+      resetForms(); setTransportLegFormData({ shipmentId: '', driverName: '', regNo: '', temperatureProfile: '', startLocation: '', toLocation: '', departureTime: '', arrivalTime: '', carrierCompanyTin: '' }); fetchTransportLegs()
     } catch (err: any) { setError(err.response?.data?.message || err.message) } finally { setLoading(false) }
   }
 
@@ -277,12 +280,8 @@ export default function LogisticsTab() {
                     <td style={{ padding: 16, fontWeight: 500 }}>{c.name}</td>
                     <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>{c.addressDetail || '-'}</td>
                     <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>
-                      {c.provinceName || c.countryName ? (
-                        <>
-                          <div>{[c.provinceName, c.countryName].filter(Boolean).join(', ')}</div>
-                          {c.addressDetail && <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 2 }}>📍 {c.addressDetail}</div>}
-                        </>
-                      ) : '-'}
+                      <div>{c.provinceName && c.countryName ? `${c.provinceName}, ${c.countryName}` : '-'}</div>
+                      {c.longitude && c.latitude && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>📍 {c.latitude.toFixed(2)}, {c.longitude.toFixed(2)}</div>}
                     </td>
                     <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>{c.contactInfo || '-'}</td>
                     <td style={{ padding: 16, textAlign: 'right' }}>
@@ -346,7 +345,6 @@ export default function LogisticsTab() {
                 <th style={{ padding: 16, textAlign: 'left', color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Destination</th>
                 <th style={{ padding: 16, textAlign: 'left', color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Start Location</th>
                 <th style={{ padding: 16, textAlign: 'left', color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Distributor</th>
-                <th style={{ padding: 16, textAlign: 'left', color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Times</th>
                 <th style={{ padding: 16, textAlign: 'right', color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Actions</th>
               </tr></thead>
               <tbody>
@@ -357,10 +355,6 @@ export default function LogisticsTab() {
                     <td style={{ padding: 16, color: '#374151', fontSize: 14 }}>{s.destination || '-'}</td>
                     <td style={{ padding: 16, color: '#374151', fontSize: 14 }}>{s.startLocation || '-'}</td>
                     <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>{s.distributorName || s.distributorTin}</td>
-                    <td style={{ padding: 16, fontSize: 13, color: '#6b7280' }}>
-                      {s.departuredTime && <div>Dep: {new Date(s.departuredTime).toLocaleString('vi-VN')}</div>}
-                      {s.arrivalTime && <div>Arr: {new Date(s.arrivalTime).toLocaleString('vi-VN')}</div>}
-                    </td>
                     <td style={{ padding: 16, textAlign: 'right' }}>
                       <button onClick={() => { setEditingShipment(s); setShipmentFormData({ status: s.status, destination: s.destination || '', startLocation: s.startLocation || '', distributorTin: s.distributorTin }); setShowShipmentForm(true) }} style={{ marginRight: 8, padding: '6px 12px', background: '#dbeafe', color: '#1e40af', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Edit</button>
                       <button onClick={() => handleDeleteShipment(s.id)} style={{ padding: '6px 12px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Delete</button>
@@ -381,7 +375,7 @@ export default function LogisticsTab() {
               <h2 style={{ fontSize: 24, fontWeight: 700, margin: 0, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Transport Legs</h2>
               <p style={{ margin: '4px 0 0 0', color: '#6b7280', fontSize: 14 }}>Manage transport routes and drivers</p>
             </div>
-            <button onClick={() => { setShowTransportLegForm(!showTransportLegForm); setEditingTransportLeg(null); setTransportLegFormData({ shipmentId: '', driverName: '', temperatureProfile: '', startLocation: '', toLocation: '', carrierCompanyTin: '' }) }}
+            <button onClick={() => { setShowTransportLegForm(!showTransportLegForm); setEditingTransportLeg(null); setTransportLegFormData({ shipmentId: '', driverName: '', regNo: '', temperatureProfile: '', startLocation: '', toLocation: '', departureTime: '', arrivalTime: '', carrierCompanyTin: '' }) }}
               style={{ padding: '10px 20px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, boxShadow: '0 4px 12px rgba(102,126,234,0.3)' }}>
               {showTransportLegForm ? 'Close Form' : '+ Add Leg'}
             </button>
@@ -393,9 +387,12 @@ export default function LogisticsTab() {
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13 }}>Shipment ID *</label><select style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8 }} value={transportLegFormData.shipmentId} onChange={e => setTransportLegFormData({ ...transportLegFormData, shipmentId: e.target.value })} required><option value="">-- Select Shipment --</option>{shipments.map(s => <option key={s.id} value={s.id}>Shipment #{s.id} - {s.destination}</option>)}</select></div>
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13 }}>Carrier Company *</label><select style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8 }} value={transportLegFormData.carrierCompanyTin} onChange={e => setTransportLegFormData({ ...transportLegFormData, carrierCompanyTin: e.target.value })} required><option value="">-- Select Carrier --</option>{carriers.map(c => <option key={c.vTin} value={c.vTin}>{c.name}</option>)}</select></div>
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13 }}>Driver</label><input style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8 }} value={transportLegFormData.driverName} onChange={e => setTransportLegFormData({ ...transportLegFormData, driverName: e.target.value })} placeholder="Driver name" /></div>
+                <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13 }}>Vehicle Registration Number</label><input style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8 }} value={transportLegFormData.regNo} onChange={e => setTransportLegFormData({ ...transportLegFormData, regNo: e.target.value })} placeholder="e.g., 51A-12345" /></div>
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13 }}>Temperature Profile</label><input style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8 }} value={transportLegFormData.temperatureProfile} onChange={e => setTransportLegFormData({ ...transportLegFormData, temperatureProfile: e.target.value })} placeholder="e.g., 2-8°C" /></div>
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13 }}>From (Start Location) *</label><input style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8 }} value={transportLegFormData.startLocation} onChange={e => setTransportLegFormData({ ...transportLegFormData, startLocation: e.target.value })} required /></div>
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13 }}>To (End Location) *</label><input style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8 }} value={transportLegFormData.toLocation} onChange={e => setTransportLegFormData({ ...transportLegFormData, toLocation: e.target.value })} required /></div>
+                <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13 }}>Departure Time</label><input type="datetime-local" style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8 }} value={transportLegFormData.departureTime} onChange={e => setTransportLegFormData({ ...transportLegFormData, departureTime: e.target.value })} /></div>
+                <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13 }}>Arrival Time</label><input type="datetime-local" style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8 }} value={transportLegFormData.arrivalTime} onChange={e => setTransportLegFormData({ ...transportLegFormData, arrivalTime: e.target.value })} /></div>
               </div>
               <button type="submit" style={{ marginTop: 20, padding: '12px 24px', background: '#667eea', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>{editingTransportLeg ? 'Update Leg' : 'Create Leg'}</button>
             </form>
@@ -407,8 +404,10 @@ export default function LogisticsTab() {
                 <th style={{ padding: 16, textAlign: 'left', color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Leg ID</th>
                 <th style={{ padding: 16, textAlign: 'left', color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Shipment</th>
                 <th style={{ padding: 16, textAlign: 'left', color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Route</th>
+                <th style={{ padding: 16, textAlign: 'left', color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Schedule</th>
                 <th style={{ padding: 16, textAlign: 'left', color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Carrier</th>
                 <th style={{ padding: 16, textAlign: 'left', color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Driver</th>
+                <th style={{ padding: 16, textAlign: 'left', color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Vehicle</th>
                 <th style={{ padding: 16, textAlign: 'right', color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Actions</th>
               </tr></thead>
               <tbody>
@@ -417,10 +416,12 @@ export default function LogisticsTab() {
                     <td style={{ padding: 16, fontWeight: 600, fontSize: 14 }}>#{t.id}</td>
                     <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>Shipment #{t.shipmentId}</td>
                     <td style={{ padding: 16, color: '#374151', fontSize: 13 }}>{t.startLocation} → {t.toLocation}</td>
+                    <td style={{ padding: 16, fontSize: 12, color: '#6b7280' }}>{t.departureTime || t.arrivalTime ? (<><div>{t.departureTime ? (<><strong>FROM</strong> {new Date(t.departureTime).toLocaleString('vi-VN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</>) : '-'}</div><div style={{ marginTop: 2 }}>{t.arrivalTime ? (<><strong>TO</strong> {new Date(t.arrivalTime).toLocaleString('vi-VN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</>) : '-'}</div></>) : '-'}</td>
                     <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>{carriers.find(c => c.vTin === t.carrierCompanyTin)?.name || '-'}</td>
                     <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>{t.driverName || '-'}</td>
+                    <td style={{ padding: 16, color: '#6b7280', fontSize: 13, fontFamily: 'monospace', fontWeight: 600 }}>{t.regNo || '-'}</td>
                     <td style={{ padding: 16, textAlign: 'right' }}>
-                      <button onClick={() => { setEditingTransportLeg(t); setTransportLegFormData({ shipmentId: t.shipmentId.toString(), driverName: t.driverName || '', temperatureProfile: t.temperatureProfile || '', startLocation: t.startLocation, toLocation: t.toLocation, carrierCompanyTin: t.carrierCompanyTin }); setShowTransportLegForm(true) }} style={{ marginRight: 8, padding: '6px 12px', background: '#dbeafe', color: '#1e40af', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Edit</button>
+                      <button onClick={() => { setEditingTransportLeg(t); setTransportLegFormData({ shipmentId: t.shipmentId.toString(), driverName: t.driverName || '', regNo: t.regNo || '', temperatureProfile: t.temperatureProfile || '', startLocation: t.startLocation, toLocation: t.toLocation, departureTime: t.departureTime ? new Date(t.departureTime).toISOString().slice(0, 16) : '', arrivalTime: t.arrivalTime ? new Date(t.arrivalTime).toISOString().slice(0, 16) : '', carrierCompanyTin: t.carrierCompanyTin }); setShowTransportLegForm(true) }} style={{ marginRight: 8, padding: '6px 12px', background: '#dbeafe', color: '#1e40af', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Edit</button>
                       <button onClick={() => handleDeleteTransportLeg(t.id)} style={{ padding: '6px 12px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Delete</button>
                     </td>
                   </tr>
