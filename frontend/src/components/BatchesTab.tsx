@@ -181,9 +181,17 @@ export default function BatchesTab() {
   const handleEditBatch = (b: BatchDisplay) => {
     setEditingBatchId(b.id)
     setBatchEditData(b)
+    // Find matching category, type, and product
+    const matchingProduct = products.find(p => p.name === b.productName)
+    const matchingType = matchingProduct ? types.filter(t => categories.find(c => c.id === matchingProduct.categoryId)?.id === matchingProduct.categoryId).find(t => t.id === matchingProduct.typeId) : null
+    const matchingCategory = matchingProduct ? categories.find(c => c.id === matchingProduct.categoryId) : null
+    
     setFormData({
       ...formData,
-      farmId: '', 
+      categoryId: matchingCategory?.id.toString() || '',
+      typeId: matchingType?.id.toString() || '',
+      productId: matchingProduct?.id.toString() || '',
+      farmId: b.farmId?.toString() || '',
       harvestDate: b.harvestDate.split('T')[0],
       grade: b.grade,
       seedBatch: '',

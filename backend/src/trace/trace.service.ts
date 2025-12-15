@@ -45,7 +45,7 @@ export class TraceService {
       .leftJoinAndSelect('farm.certifications', 'cert')
       .leftJoinAndSelect('batch.agricultureProduct', 'product')
       .leftJoinAndSelect('product.type', 'type')
-      .leftJoinAndSelect('product.vendorProducts', 'vendorProduct')
+      .leftJoinAndSelect('batch.vendorProduct', 'vendorProduct')
       .leftJoinAndSelect('vendorProduct.vendor', 'vendor')
       .leftJoinAndSelect('vendorProduct.prices', 'price')
       .leftJoinAndSelect('vendorProduct.productHasDiscounts', 'productDiscount')

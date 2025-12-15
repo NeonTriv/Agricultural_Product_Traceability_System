@@ -266,7 +266,7 @@ export default function ProcessingTab() {
           {showStepForm && (
             <form onSubmit={handleStepSubmit} style={{ background: 'white', padding: 24, borderRadius: 16, marginBottom: 24, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', gap: 20 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Processing Operation *</label><select style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} value={stepFormData.processingId} onChange={e => setStepFormData({ ...stepFormData, processingId: e.target.value })} required><option value="">Select Operation</option>{operations.map(op => <option key={op.id} value={op.id}>#{op.id} - {op.facilityName} ({op.productName || `Batch ${op.batchId}`})</option>)}</select></div>
+                <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Processing Operation *</label><select style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} value={stepFormData.processingId} onChange={e => setStepFormData({ ...stepFormData, processingId: e.target.value })} required><option value="">Select Operation</option>{[...operations].sort((a, b) => a.id - b.id).map(op => <option key={op.id} value={op.id}>#{op.id} - {op.facilityName} ({op.productName || `Batch ${op.batchId}`})</option>)}</select></div>
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Step Description *</label><input type="text" style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} value={stepFormData.step} onChange={e => setStepFormData({ ...stepFormData, step: e.target.value })} placeholder="e.g., Washing, Cutting, Packaging" required /></div>
               </div>
               <button type="submit" style={{ marginTop: 20, padding: '12px 24px', background: '#10b981', color: 'white', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>Add Step</button>
@@ -283,7 +283,7 @@ export default function ProcessingTab() {
                 <th style={{ padding: 16, textAlign: 'right', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Actions</th>
               </tr></thead>
               <tbody>
-                {processSteps.map((s, idx) => (
+                {[...processSteps].sort((a, b) => a.processingId - b.processingId).map((s, idx) => (
                   <tr key={idx} style={{ borderBottom: '1px solid #f3f4f6' }}>
                     <td style={{ padding: 16, fontWeight: 600 }}>#{s.processingId}</td>
                     <td style={{ padding: 16, fontSize: 13 }}>{s.facilityName || '-'}</td>
@@ -340,7 +340,7 @@ export default function ProcessingTab() {
                 <th style={{ padding: 16, textAlign: 'right', fontWeight: 600, color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Actions</th>
               </tr></thead>
               <tbody>
-                {operations.map(op => (
+                {[...operations].sort((a, b) => a.id - b.id).map(op => (
                   <tr key={op.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                     <td style={{ padding: 16, fontWeight: 600 }}>#{op.id}</td>
                     <td style={{ padding: 16, fontSize: 13 }}>{op.facilityName || op.facilityId}</td>
