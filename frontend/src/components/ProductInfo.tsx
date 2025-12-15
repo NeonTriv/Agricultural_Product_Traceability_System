@@ -588,17 +588,17 @@ export default function ProductInfo() {
                 {data.price && data.price.amount && (
                   <div style={{
                     padding: 24,
-                    background: 'linear-gradient(135deg, #dcfce7 0%, #86efac 100%)',
+                    background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
                     borderRadius: 12,
-                    border: '2px solid #10b981',
+                    border: '2px solid #86efac',
                     gridColumn: '1 / -1',
                     textAlign: 'center'
                   }}>
-                    <span style={{ color: '#166534', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 8 }}>
+                    <span style={{ color: '#15803d', fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', display: 'block', marginBottom: 8 }}>
                       Price
                     </span>
                     <div style={{
-                      color: '#166534',
+                      color: '#15803d',
                       fontWeight: 800,
                       fontSize: 32,
                       letterSpacing: '-0.5px'
@@ -617,7 +617,7 @@ export default function ProductInfo() {
                 <div style={{ marginTop: 24 }}>
                   <div style={{ 
                     fontSize: 12, 
-                    color: '#dc2626', 
+                    color: '#0891b2', 
                     fontWeight: 700,
                     letterSpacing: '1px',
                     textTransform: 'uppercase',
@@ -629,27 +629,27 @@ export default function ProductInfo() {
                     {data.discounts.map((discount) => (
                       <div key={discount.id} style={{
                         padding: 16,
-                        background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+                        background: 'linear-gradient(135deg, #cffafe 0%, #a5f3fc 100%)',
                         borderRadius: 12,
-                        border: '2px solid #dc2626'
+                        border: '2px solid #06b6d4'
                       }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <div>
-                            <div style={{ color: '#991b1b', fontWeight: 700, fontSize: 16 }}>{discount.name || 'Discount'}</div>
+                            <div style={{ color: '#0e7490', fontWeight: 700, fontSize: 16 }}>{discount.name || 'Discount'}</div>
                             {discount.percentage && (
-                              <div style={{ color: '#dc2626', fontWeight: 800, fontSize: 24, marginTop: 4 }}>
+                              <div style={{ color: '#0891b2', fontWeight: 800, fontSize: 24, marginTop: 4 }}>
                                 -{discount.percentage}%
                               </div>
                             )}
                             {discount.minValue && (
-                              <div style={{ color: '#7f1d1d', fontSize: 12, marginTop: 4 }}>
+                              <div style={{ color: '#155e75', fontSize: 12, marginTop: 4 }}>
                                 Min: {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(discount.minValue)}
                               </div>
                             )}
                           </div>
                           <div style={{ textAlign: 'right' }}>
                             {discount.startDate && discount.expiredDate && (
-                              <div style={{ color: '#7f1d1d', fontSize: 11 }}>
+                              <div style={{ color: '#155e75', fontSize: 11 }}>
                                 Valid: {new Date(discount.startDate).toLocaleDateString('vi-VN')} - {new Date(discount.expiredDate).toLocaleDateString('vi-VN')}
                               </div>
                             )}
