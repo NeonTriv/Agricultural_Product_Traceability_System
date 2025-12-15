@@ -44,7 +44,7 @@ export class Batch {
   @JoinColumn({ name: 'Farm_ID' })
   farm: Farm;
 
-  @ManyToOne(() => AgricultureProduct, (product) => product.id)
+  @ManyToOne(() => AgricultureProduct, (product) => product.batches)
   @JoinColumn({ name: 'AP_ID' })
   agricultureProduct: AgricultureProduct;
 

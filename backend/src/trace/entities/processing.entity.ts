@@ -1,6 +1,7 @@
-import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Batch } from './batch.entity';
 import { ProcessingFacility } from './processing-facility.entity';
+import { ProcessStep } from './process-step.entity';
 
 /**
  * PROCESSING Entity
@@ -40,4 +41,7 @@ export class Processing {
   @ManyToOne(() => Batch, (batch) => batch.processings)
   @JoinColumn({ name: 'Batch_ID' })
   batch: Batch;
+
+  @OneToMany(() => ProcessStep, (step) => step.processing)
+  steps: ProcessStep[];
 }
