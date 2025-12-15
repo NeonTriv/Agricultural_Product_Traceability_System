@@ -2,6 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMan
 import { Vendor } from './vendor.entity';
 import { Price } from './price.entity';
 import { ProductHasDiscount } from './product-has-discount.entity';
+import { Batch } from './batch.entity';
 
 /**
  * VENDOR_PRODUCT Entity
@@ -32,4 +33,7 @@ export class VendorProduct {
   // Explicit relation to linking table for discounts
   @OneToMany(() => ProductHasDiscount, (phd) => phd.vendorProduct)
   productHasDiscounts: ProductHasDiscount[];
+
+  @OneToMany(() => Batch, (batch) => batch.vendorProduct)
+  batches: Batch[];
 }

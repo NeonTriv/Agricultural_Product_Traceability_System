@@ -27,44 +27,24 @@ export class PricingService extends BaseService<VendorProduct> {
 
   // Vendor Product CRUD (using BaseService)
   async getAllVendorProducts() {
-    const vendorProducts = await this.findAll({
-      relations: ['vendor'],
-      order: { id: 'ASC' },
-    });
+    const vendorProducts = await this.repository
+      .createQueryBuilder('vp')
+      .leftJoinAndSelect('vp.vendor', 'vendor')
+      .leftJoinAndSelect('vp.batches', 'batch')
+      .leftJoinAndSelect('batch.agricultureProduct', 'ap')
+      .leftJoinAndSelect('vp.prices', 'price')
+      .orderBy('vp.id', 'ASC')
+      .addOrderBy('batch.id', 'ASC')
+      .getMany();
 
-    // Attach batch info for reverse tracking (1:N batches per vendor product)
-    const results = [] as Array<{
-      id: number;
-      unit: string;
-      vendorTin: string;
-      vendorName?: string;
-      productName?: string | null;
-      valuePerUnit?: number;
-      price?: number;
-      currency?: string;
-      batches: Array<{ id: number; seedBatch: string | null; productName?: string | null }>;
-    }>;
-
-    for (const vp of vendorProducts) {
-      const batches = await this.batchRepo
-        .createQueryBuilder('batch')
-        .leftJoinAndSelect('batch.agricultureProduct', 'ap')
-        .where('batch.vendorProductId = :vpId', { vpId: vp.id })
-        .orderBy('batch.id', 'ASC')
-        .getMany();
-
-
-      // Get price info for this vendor product
-      const price = await this.priceRepo.findOne({
-        where: { vendorProductId: vp.id },
-      });
-
-      // Get product name from first batch (all batches of same VP should have same product)
+    return vendorProducts.map((vp) => {
+      const batches = vp.batches || [];
+      const price = vp.prices?.[0];
       const productName = batches.length > 0 ? batches[0].agricultureProduct?.name : null;
 
       console.log(`[VP #${vp.id}] Final productName: ${productName || 'NULL'}`);
 
-      results.push({
+      return {
         id: vp.id,
         unit: vp.unit,
         vendorTin: vp.vendorTin,
@@ -73,10 +53,13 @@ export class PricingService extends BaseService<VendorProduct> {
         valuePerUnit: vp.valuePerUnit,
         price: price?.value,
         currency: price?.currency,
-        batches: batches.map((b: any) => ({ id: b.id, seedBatch: b.seedBatch, productName: b.agricultureProduct?.name })),
-      });
-    }
-    return results;
+        batches: batches.map((b: any) => ({
+          id: b.id,
+          seedBatch: b.seedBatch,
+          productName: b.agricultureProduct?.name,
+        })),
+      };
+    });
   }
 
   async createVendorProduct(data: {

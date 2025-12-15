@@ -1,5 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Type } from './type.entity';
+import { Batch } from './batch.entity';
 
 /**
  * AGRICULTURE_PRODUCT Entity
@@ -23,4 +24,7 @@ export class AgricultureProduct {
   @ManyToOne(() => Type, (type) => type.products)
   @JoinColumn({ name: 'T_ID' })
   type: Type;
+
+  @OneToMany(() => Batch, (batch) => batch.agricultureProduct)
+  batches: Batch[];
 }
