@@ -67,6 +67,7 @@ export type Vendor = {
 export type Distributor = {
   vendor?: Vendor
   unit?: string
+  valuePerUnit?: number
 }
 
 export type Price = {

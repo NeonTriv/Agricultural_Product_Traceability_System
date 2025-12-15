@@ -94,27 +94,6 @@ export default function ProductInfo() {
           >
             ← Back to Home
           </a>
-          <a
-            href="/admin"
-            style={{
-              padding: '8px 16px',
-              color: '#6b7280',
-              textDecoration: 'none',
-              fontWeight: 600,
-              borderRadius: 8,
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = '#f3f4f6'
-              e.currentTarget.style.color = '#667eea'
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = 'transparent'
-              e.currentTarget.style.color = '#6b7280'
-            }}
-          >
-            Admin Panel
-          </a>
         </div>
 
         {/* Hero Header */}
@@ -579,7 +558,7 @@ export default function ProductInfo() {
                         border: '1px solid #e5e7eb'
                       }}>
                         <span style={{ color: '#6b7280', fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Unit</span>
-                        <div style={{ color: '#111827', fontWeight: 700, marginTop: 8, fontSize: 16 }}>📦 {data.distributor.unit}</div>
+                        <div style={{ color: '#111827', fontWeight: 700, marginTop: 8, fontSize: 16 }}>📦 {data.distributor.valuePerUnit ? `${data.distributor.valuePerUnit} ${data.distributor.unit}` : data.distributor.unit}</div>
                       </div>
                     )}
                   </>

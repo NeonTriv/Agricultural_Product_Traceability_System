@@ -80,6 +80,7 @@ export class VendorDto {
 export class DistributorDto {
   vendor?: VendorDto;
   unit?: string;
+  valuePerUnit?: number;
 }
 
 export class PriceDto {
