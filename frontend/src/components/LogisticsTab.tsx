@@ -348,7 +348,7 @@ export default function LogisticsTab() {
                 <th style={{ padding: 16, textAlign: 'right', color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Actions</th>
               </tr></thead>
               <tbody>
-                {shipments.map(s => (
+                {[...shipments].sort((a, b) => a.id - b.id).map(s => (
                   <tr key={s.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                     <td style={{ padding: 16, fontWeight: 600 }}>#{s.id}</td>
                     <td style={{ padding: 16 }}>{statusBadge(s.status)}</td>
@@ -384,7 +384,7 @@ export default function LogisticsTab() {
           {showTransportLegForm && (
             <form onSubmit={handleTransportLegSubmit} style={{ background: 'white', padding: 24, borderRadius: 16, marginBottom: 24, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1px solid #e5e7eb' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13 }}>Shipment ID *</label><select style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8 }} value={transportLegFormData.shipmentId} onChange={e => setTransportLegFormData({ ...transportLegFormData, shipmentId: e.target.value })} required><option value="">-- Select Shipment --</option>{shipments.map(s => <option key={s.id} value={s.id}>Shipment #{s.id} - {s.destination}</option>)}</select></div>
+                <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13 }}>Shipment ID *</label><select style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8 }} value={transportLegFormData.shipmentId} onChange={e => setTransportLegFormData({ ...transportLegFormData, shipmentId: e.target.value })} required><option value="">-- Select Shipment --</option>{[...shipments].sort((a, b) => a.id - b.id).map(s => <option key={s.id} value={s.id}>Shipment #{s.id} - {s.destination}</option>)}</select></div>
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13 }}>Carrier Company *</label><select style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8 }} value={transportLegFormData.carrierCompanyTin} onChange={e => setTransportLegFormData({ ...transportLegFormData, carrierCompanyTin: e.target.value })} required><option value="">-- Select Carrier --</option>{carriers.map(c => <option key={c.vTin} value={c.vTin}>{c.name}</option>)}</select></div>
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13 }}>Driver</label><input style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8 }} value={transportLegFormData.driverName} onChange={e => setTransportLegFormData({ ...transportLegFormData, driverName: e.target.value })} placeholder="Driver name" /></div>
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13 }}>Vehicle Registration Number</label><input style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8 }} value={transportLegFormData.regNo} onChange={e => setTransportLegFormData({ ...transportLegFormData, regNo: e.target.value })} placeholder="e.g., 51A-12345" /></div>
@@ -411,7 +411,7 @@ export default function LogisticsTab() {
                 <th style={{ padding: 16, textAlign: 'right', color: '#6b7280', fontSize: 12, textTransform: 'uppercase' }}>Actions</th>
               </tr></thead>
               <tbody>
-                {transportLegs.map(t => (
+                {[...transportLegs].sort((a, b) => a.id - b.id).map(t => (
                   <tr key={t.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                     <td style={{ padding: 16, fontWeight: 600, fontSize: 14 }}>#{t.id}</td>
                     <td style={{ padding: 16, color: '#6b7280', fontSize: 13 }}>Shipment #{t.shipmentId}</td>

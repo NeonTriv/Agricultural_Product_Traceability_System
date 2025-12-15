@@ -207,7 +207,7 @@ export class TraceService {
       contactInfo: vp.vendor.contactInfo,
     };
 
-    return { vendor, unit: vp.unit };
+    return { vendor, unit: vp.unit, valuePerUnit: vp.valuePerUnit ? Number(vp.valuePerUnit) : undefined };
   }
 
   private mapPrice(batch: Batch): PriceDto | undefined {

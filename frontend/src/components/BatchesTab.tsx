@@ -25,7 +25,7 @@ interface Type { id: number; variety: string; categoryId: number }
 interface AgriProduct { id: number; name: string; typeId: number; imageUrl?: string }
 interface VendorProduct { id: number; vendorName: string; productName: string; unit: string }
 interface Farm { id: number; name: string }
-interface BatchDisplay { id: number; productName: string; farmName: string; qrCodeUrl: string; harvestDate: string; grade: string; province?: string; country?: string; vendorProductId?: number }
+interface BatchDisplay { id: number; productName: string; farmName: string; qrCodeUrl: string; harvestDate: string; grade: string; province?: string; country?: string; vendorProductId?: number; farmId?: number }
 
 export default function BatchesTab() {
   const [categories, setCategories] = useState<Category[]>([])
@@ -77,7 +77,7 @@ export default function BatchesTab() {
       setVendorProducts(Array.isArray(vpRes.data) ? vpRes.data : [])
       setFarms(Array.isArray(farmRes.data) ? farmRes.data : [])
       setBatches((Array.isArray(batchRes.data) ? batchRes.data : []).map((b: any) => ({
-        id: b.batchId || b.id, productName: b.productName, farmName: b.farmName || 'Unknown', qrCodeUrl: b.qrCodeUrl || `QR-${b.id}`, harvestDate: b.harvestDate, grade: b.grade || 'A', province: b.province, country: b.country
+        id: b.batchId || b.id, productName: b.productName, farmName: b.farmName || 'Unknown', qrCodeUrl: b.qrCodeUrl || `QR-${b.id}`, harvestDate: b.harvestDate, grade: b.grade || 'A', province: b.province, country: b.country, vendorProductId: b.vendorProductId, farmId: b.farmId
       })))
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
@@ -185,17 +185,20 @@ export default function BatchesTab() {
     const matchingProduct = products.find(p => p.name === b.productName)
     const matchingType = matchingProduct ? types.filter(t => categories.find(c => c.id === matchingProduct.categoryId)?.id === matchingProduct.categoryId).find(t => t.id === matchingProduct.typeId) : null
     const matchingCategory = matchingProduct ? categories.find(c => c.id === matchingProduct.categoryId) : null
+    // Find matching farm and vendor product
+    const matchingFarm = farms.find(f => f.name === b.farmName)
+    const matchingVendorProduct = b.vendorProductId ? vendorProducts.find(vp => vp.id === b.vendorProductId) : null
     
     setFormData({
       ...formData,
       categoryId: matchingCategory?.id.toString() || '',
       typeId: matchingType?.id.toString() || '',
       productId: matchingProduct?.id.toString() || '',
-      farmId: b.farmId?.toString() || '',
+      farmId: matchingFarm?.id.toString() || '',
       harvestDate: b.harvestDate.split('T')[0],
       grade: b.grade,
       seedBatch: '',
-      vendorProductId: b.vendorProductId?.toString() || ''
+      vendorProductId: matchingVendorProduct?.id.toString() || ''
     })
     setShowForm(true)
   }
