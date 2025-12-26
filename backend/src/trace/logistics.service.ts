@@ -301,6 +301,13 @@ export class LogisticsService extends BaseService<Shipment> {
     arrivalTime?: string;
     carrierCompanyTin: string;
   }) {
+    const dep = data.departureTime ? new Date(data.departureTime) : null;
+    const arr = data.arrivalTime ? new Date(data.arrivalTime) : null;
+
+    if (dep && arr && arr <= dep) {
+      throw new BadRequestException('Arrival time must be later than departure time');
+    }
+
     const leg = this.transportLegRepo.create({
       shipmentId: data.shipmentId,
       driverName: data.driverName,
@@ -308,8 +315,8 @@ export class LogisticsService extends BaseService<Shipment> {
       temperatureProfile: data.temperatureProfile,
       startLocation: data.startLocation,
       toLocation: data.toLocation,
-      departureTime: data.departureTime ? new Date(data.departureTime) : null,
-      arrivalTime: data.arrivalTime ? new Date(data.arrivalTime) : null,
+      departureTime: dep,
+      arrivalTime: arr,
       carrierCompanyTin: data.carrierCompanyTin,
     });
 
@@ -343,8 +350,17 @@ export class LogisticsService extends BaseService<Shipment> {
     if (data.temperatureProfile !== undefined) leg.temperatureProfile = data.temperatureProfile;
     if (data.startLocation) leg.startLocation = data.startLocation;
     if (data.toLocation) leg.toLocation = data.toLocation;
-    if (data.departureTime !== undefined) leg.departureTime = data.departureTime ? new Date(data.departureTime) : null;
-    if (data.arrivalTime !== undefined) leg.arrivalTime = data.arrivalTime ? new Date(data.arrivalTime) : null;
+
+    const newDeparture = data.departureTime !== undefined ? (data.departureTime ? new Date(data.departureTime) : null) : leg.departureTime;
+    const newArrival = data.arrivalTime !== undefined ? (data.arrivalTime ? new Date(data.arrivalTime) : null) : leg.arrivalTime;
+
+    if (newDeparture && newArrival && newArrival <= newDeparture) {
+      throw new BadRequestException('Arrival time must be later than departure time');
+    }
+
+    leg.departureTime = newDeparture as Date | null;
+    leg.arrivalTime = newArrival as Date | null;
+
     if (data.carrierCompanyTin) leg.carrierCompanyTin = data.carrierCompanyTin;
 
     await this.transportLegRepo.save(leg);

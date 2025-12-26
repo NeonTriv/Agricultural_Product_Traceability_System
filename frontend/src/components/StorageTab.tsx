@@ -190,8 +190,17 @@ export default function StorageTab() {
         endDate: storedInFormData.endDate || undefined
       }
 
+      // Frontend validation: ensure dates make sense and quantity is non-negative
+      if (payload.quantity !== undefined && isNaN(payload.quantity)) throw new Error('Quantity is required')
+      if (payload.quantity < 0) throw new Error('Quantity must be non-negative')
+      if (payload.startDate && payload.endDate) {
+        const sd = new Date(payload.startDate)
+        const ed = new Date(payload.endDate)
+        if (ed < sd) throw new Error('End Date must be the same or later than Start Date')
+      }
+
       if (editingStoredIn) {
-        // Edit mode: Chỉ update quantity/date, không đổi batch/warehouse (PK)
+        // Edit mode: update quantity/date, do not change batch/warehouse (PK)
         await axios.patch(`${baseUrl}/api/storage/stored-in/${editingStoredIn.batchId}/${editingStoredIn.warehouseId}`, payload)
       } else {
         // Create mode

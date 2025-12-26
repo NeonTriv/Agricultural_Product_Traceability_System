@@ -125,6 +125,14 @@ export class StorageService extends BaseService<Warehouse> {
     startDate?: string;
     endDate?: string;
   }) {
+    // Basic validation to avoid DB CHECK failures (end date must be >= start date)
+    if (data.startDate && data.endDate) {
+      const sd = new Date(data.startDate)
+      const ed = new Date(data.endDate)
+      if (ed < sd) throw new BadRequestException('End date must be the same or later than Start date')
+    }
+    if (data.quantity !== undefined && data.quantity < 0) throw new BadRequestException('Quantity must be non-negative')
+
     const storedIn = this.storedInRepo.create({
       ...data,
       startDate: data.startDate ? new Date(data.startDate) : null,
@@ -143,6 +151,14 @@ export class StorageService extends BaseService<Warehouse> {
     const storedIn = await this.storedInRepo.findOneOrFail({
       where: { batchId, warehouseId },
     });
+
+    // Validate quantity
+    if (data.quantity !== undefined && data.quantity < 0) throw new BadRequestException('Quantity must be non-negative')
+
+    // Compute tentative dates to validate ordering
+    const newStart = data.startDate !== undefined ? (data.startDate ? new Date(data.startDate) : null) : storedIn.startDate
+    const newEnd = data.endDate !== undefined ? (data.endDate ? new Date(data.endDate) : null) : storedIn.endDate
+    if (newStart && newEnd && newEnd < newStart) throw new BadRequestException('End date must be the same or later than Start date')
 
     if (data.quantity !== undefined) storedIn.quantity = data.quantity;
     if (data.startDate !== undefined) storedIn.startDate = data.startDate ? new Date(data.startDate) : null;

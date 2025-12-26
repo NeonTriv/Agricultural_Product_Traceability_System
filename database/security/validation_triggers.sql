@@ -25,25 +25,14 @@ INSTEAD OF INSERT, UPDATE
 AS
 BEGIN
     SET NOCOUNT ON;
-    
-    -- Validate QR Code format (must start with 'QR-')
-    IF EXISTS (
-        SELECT 1 FROM inserted 
-        WHERE Qr_Code_URL NOT LIKE 'QR-%' AND Qr_Code_URL NOT LIKE 'http%'
-    )
-    BEGIN
-        RAISERROR('Invalid QR Code format. Must start with ''QR-'' or ''http''', 16, 1);
-        ROLLBACK TRANSACTION;
-        RETURN;
-    END
-    
+       
     -- Validate Harvest Date 
     IF EXISTS (
         SELECT 1 FROM inserted 
         WHERE Harvest_Date > SYSDATETIMEOFFSET()
     )
     BEGIN
-        RAISERROR('Harvest Date cannot be in the future', 16, 1);
+        THROW 50000, N'Harvest Date cannot be in the future', 1;
         ROLLBACK TRANSACTION;
         RETURN;
     END
@@ -54,7 +43,7 @@ BEGIN
         WHERE Grade IS NOT NULL AND Grade NOT IN ('A', 'B', 'C', 'Premium')
     )
     BEGIN
-        RAISERROR('Grade must be A, B, C, Premium', 16, 1);
+        THROW 50000, N'Grade must be A, B, C, Premium', 1;
         ROLLBACK TRANSACTION;
         RETURN;
     END
@@ -108,7 +97,7 @@ BEGIN
         WHERE i.Processing_Date < b.Harvest_Date
     )
     BEGIN
-        RAISERROR('Processing Date cannot be before Harvest Date', 16, 1);
+        THROW 50000, N'Processing Date cannot be before Harvest Date', 1;
         ROLLBACK TRANSACTION;
         RETURN;
     END
@@ -119,7 +108,7 @@ BEGIN
         WHERE Processing_Date IS NOT NULL AND Packaging_Date <= Processing_Date
     )
     BEGIN
-        RAISERROR('Packaging Date must be after Processing Date', 16, 1);
+        THROW 50000, N'Packaging Date must be after Processing Date', 1;
         ROLLBACK TRANSACTION;
         RETURN;
     END
@@ -170,7 +159,7 @@ BEGIN
         WHERE Currency NOT IN ('VND', 'USD', 'EUR', 'JPY')
     )
     BEGIN
-        RAISERROR('❌ Invalid currency. Allowed: VND, USD, EUR, JPY', 16, 1);
+        THROW 50000, N'Invalid currency. Allowed: VND, USD, EUR, JPY', 1;
         ROLLBACK TRANSACTION;
         RETURN;
     END
@@ -216,7 +205,7 @@ BEGIN
         AND i.Start_Date < CAST(GETDATE() AS DATE)
     )
     BEGIN
-        RAISERROR('Cannot create discount with start date in the past', 16, 1);
+        THROW 50000, N'Cannot create discount with start date in the past', 1;
         ROLLBACK TRANSACTION;
         RETURN;
     END
@@ -227,7 +216,7 @@ BEGIN
         WHERE DATEDIFF(DAY, Start_Date, Expired_Date) < 1
     )
     BEGIN
-        RAISERROR('Discount must be valid for at least 1 day', 16, 1);
+        THROW 50000, N'Discount must be valid for at least 1 day', 1;
         ROLLBACK TRANSACTION;
         RETURN;
     END
@@ -238,7 +227,7 @@ BEGIN
         WHERE Priority NOT BETWEEN 0 AND 10
     )
     BEGIN
-        RAISERROR('Priority must be between 0 and 10', 16, 1);
+        THROW 50000, N'Priority must be between 0 and 10', 1;
         ROLLBACK TRANSACTION;
         RETURN;
     END
@@ -305,7 +294,7 @@ BEGIN
         SELECT TOP 1 @ErrorMsg = CONCAT('Warehouse ', W_ID, ' capacity exceeded: ', CurrentTotal, ' / ', Capacity)
         FROM @OverCapacity;
         
-        RAISERROR(@ErrorMsg, 16, 1);
+        THROW 50000, @ErrorMsg, 1;
         ROLLBACK TRANSACTION;
         RETURN;
     END
@@ -360,7 +349,7 @@ BEGIN
           )
     )
     BEGIN
-        RAISERROR('Shipment cannot be created or updated to non-Pending without at least one transport leg', 16, 1);
+        THROW 50000, N'Shipment cannot be created or updated to non-Pending without at least one transport leg', 1;
         ROLLBACK TRANSACTION;
         RETURN;
     END
@@ -410,7 +399,7 @@ BEGIN
         WHERE x.Remaining = 0 AND s.Status <> 'Cancelled'
     )
     BEGIN
-        RAISERROR('Cannot remove the last transport leg for a non-cancelled shipment', 16, 1);
+        THROW 50000, N'Cannot remove the last transport leg for a non-cancelled shipment', 1;
         ROLLBACK TRANSACTION;
         RETURN;
     END
