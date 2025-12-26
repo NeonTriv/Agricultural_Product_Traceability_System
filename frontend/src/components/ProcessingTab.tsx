@@ -70,7 +70,6 @@ export default function ProcessingTab() {
   // --- Handlers ---
   const handleFacilityEdit = (f: ProcessingFacility) => {
     setEditingFacility(f)
-    // Logic tìm country dựa trên province
     const prov = provinces.find(p => p.id === f.provinceId)
     setFacilityFormData({
       name: f.name,
@@ -130,8 +129,6 @@ export default function ProcessingTab() {
   }
   const handleDeleteOperation = async (id: number) => { setDeleteConfirm({ show: true, type: 'operation', id, stepName: '' }) }
   const confirmDeleteOperation = async () => { if (!deleteConfirm.id) return; setLoading(true); try { await axios.delete(`${baseUrl}/api/processing/operations/${deleteConfirm.id}`); fetchOperations(); setDeleteConfirm({ show: false, type: 'facility', id: null, stepName: '' }) } catch (err: any) { const msg = err.response?.data?.message || err.message; setErrorModal({ show: true, title: '⚠️ Cannot Delete Operation', message: msg }); setDeleteConfirm({ show: false, type: 'facility', id: null, stepName: '' }) } finally { setLoading(false) } }
-
-  // Logic lọc tỉnh theo quốc gia
   const filteredProvinces = provinces.filter(p => p.countryId.toString() === facilityFormData.countryId)
 
   // Style button chuẩn

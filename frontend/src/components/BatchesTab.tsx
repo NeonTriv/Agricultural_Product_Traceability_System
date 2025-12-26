@@ -22,7 +22,7 @@ const primaryBtnStyle = {
 
 interface Category { id: number; name: string }
 interface Type { id: number; variety: string; categoryId: number }
-interface AgriProduct { id: number; name: string; typeId: number; imageUrl?: string }
+interface AgriProduct { id: number; name: string; typeId: number; categoryId?: number; imageUrl?: string }
 interface VendorProduct { id: number; vendorName: string; productName: string; unit: string }
 interface Farm { id: number; name: string }
 interface BatchDisplay { id: number; productName: string; farmName: string; qrCodeUrl: string; harvestDate: string; grade: string; province?: string; country?: string; vendorProductId?: number; farmId?: number }

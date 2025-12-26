@@ -5,14 +5,12 @@ import { LogisticsService } from './logistics.service';
 export class LogisticsController {
   constructor(private readonly logisticsService: LogisticsService) {}
 
-  // Distributors endpoints
   @Get('distributors')
   @HttpCode(HttpStatus.OK)
   async getAllDistributors() {
     return this.logisticsService.getAllDistributors();
   }
 
-  // Carrier Companies endpoints
   @Get('carriers')
   @HttpCode(HttpStatus.OK)
   async getAllCarriers() {
@@ -61,7 +59,6 @@ export class LogisticsController {
     return this.logisticsService.deleteCarrier(tin);
   }
 
-  // Shipments endpoints
   @Get('shipments')
   @HttpCode(HttpStatus.OK)
   async getAllShipments() {
@@ -109,7 +106,6 @@ export class LogisticsController {
     return this.logisticsService.deleteShipment(parseInt(id));
   }
 
-  // Transport Legs endpoints
   @Get('transport-legs')
   @HttpCode(HttpStatus.OK)
   async getAllTransportLegs() {

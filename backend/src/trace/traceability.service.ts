@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Batch } from './entities/batch.entity';
 
 @Injectable()
@@ -8,10 +8,100 @@ export class TraceabilityService {
   constructor(
     @InjectRepository(Batch)
     private readonly batchRepo: Repository<Batch>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async getFullTraceability(qrCodeUrl: string) {
-    // Find batch by QR code
+    // reduces N+1 queries
+    try {
+      const result = await this.dataSource.query(
+        'EXEC sp_GetTraceabilityFull_JSON @QrCodeURL = @0',
+        [qrCodeUrl]
+      );
+
+      if (result?.[0]?.Status === 404) {
+        throw new NotFoundException(result[0].Message);
+      }
+
+      const data = result?.[0];
+      if (!data) {
+        throw new NotFoundException(`Batch with QR code "${qrCodeUrl}" not found`);
+      }
+
+      // Parse nested JSON fields
+      const overview = data.Overview ? JSON.parse(data.Overview) : null;
+      const certifications = data.Certifications ? JSON.parse(data.Certifications) : [];
+      const processingLogs = data.ProcessingLogs ? JSON.parse(data.ProcessingLogs) : [];
+      const storageLogs = data.StorageLogs ? JSON.parse(data.StorageLogs) : [];
+      const distributionLogs = data.DistributionLogs ? JSON.parse(data.DistributionLogs) : [];
+
+      return {
+        overview: overview ? {
+          qrCode: overview.QrCodeUrl,
+          harvestDate: overview.HarvestDate,
+          grade: overview.Grade,
+          seedBatch: overview.SeedBatch,
+          createdBy: overview.CreatedBy,
+          productName: overview.ProductName,
+          productImage: overview.ImageUrl,
+          variety: overview.Variety,
+          category: overview.Category,
+          farmName: overview.FarmName,
+          farmOwner: overview.FarmOwner,
+          farmContact: overview.FarmContact,
+          farmLocation: overview.Region,
+        } : null,
+
+        certifications: certifications.map((cert: any) => ({
+          certification: cert.CertificationName,
+        })),
+
+        processing: processingLogs.map((proc: any) => ({
+          facilityName: proc.FacilityName,
+          facilityAddress: proc.FacilityAddress,
+          facilityLicense: proc.LicenseNumber,
+          processingDate: proc.ProcessingDate,
+          packagingDate: proc.PackagingDate,
+          packagingType: proc.PackagingType,
+          weightPerUnit: proc.WeightPerUnit,
+          processedBy: proc.ProcessedBy,
+        })),
+
+        storage: storageLogs.map((storage: any) => ({
+          warehouseAddress: storage.WarehouseAddress,
+          storeCondition: storage.StorageCondition,
+          quantity: storage.QuantityStored,
+          checkInDate: storage.CheckInDate,
+          checkOutDate: storage.CheckOutDate,
+        })),
+
+        shipping: distributionLogs.map((dist: any) => ({
+          status: dist.ShipmentStatus,
+          destination: dist.Destination,
+          driverName: dist.DriverName,
+          temperature: dist.TemperatureProfile,
+          route: dist.Route,
+          carrierCompany: dist.CarrierCompany,
+          distributorName: dist.DistributorName,
+          distributorContact: dist.DistributorContact,
+          distributorType: dist.DistributorType,
+          retailFormat: dist.RetailFormat,
+        })),
+
+        pricing: [], // TODO: Add pricing query if needed
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      // Fallback to old method if SP fails
+      console.error('Stored procedure failed, using fallback method:', error);
+      return this.getFullTraceabilityFallback(qrCodeUrl);
+    }
+  }
+
+  // 🔄 FALLBACK: Keep old TypeORM method as backup
+  private async getFullTraceabilityFallback(qrCodeUrl: string) {
     const batch = await this.batchRepo.findOne({
       where: { qrCodeUrl },
       relations: [
@@ -42,7 +132,6 @@ export class TraceabilityService {
       throw new NotFoundException(`Batch with QR code "${qrCodeUrl}" not found`);
     }
 
-    // 1. THÔNG TIN TỔNG QUAN
     const overview = {
       qrCode: batch.qrCodeUrl,
       harvestDate: batch.harvestDate,
@@ -61,12 +150,10 @@ export class TraceabilityService {
         : null,
     };
 
-    // 2. CHỨNG CHỈ NÔNG TRẠI
     const certifications = batch.farm?.certifications?.map((cert) => ({
       certification: cert.farmCertifications,
     })) || [];
 
-    // 3. QUÁ TRÌNH CHẾ BIẾN & ĐÓNG GÓI
     const processing = batch.processings?.map((proc) => ({
       facilityName: proc.facility?.name,
       facilityAddress: proc.facility?.address,
@@ -79,23 +166,18 @@ export class TraceabilityService {
       processedBy: proc.processedBy,
     })) || [];
 
-    // 4. THÔNG TIN LƯU KHO
     const storage = batch.storedIn?.map((stored) => ({
       warehouseId: stored.warehouseId,
       storeCondition: stored.warehouse?.storeCondition,
       quantity: stored.quantity,
-      // warehouseAddress: stored.warehouse?.addressDetail, // Column does not exist in DB
-      // startDate: stored.startDate, // Column does not exist in DB
-      // endDate: stored.endDate, // Column does not exist in DB
     })) || [];
 
-    // 5. VẬN CHUYỂN & PHÂN PHỐI
     const shipping = batch.shipBatches?.map((shipBatch) => {
       const shipment = shipBatch.shipment;
-      const transportLeg = shipment?.transportLegs?.[0]; // Lấy leg đầu tiên
+      const transportLeg = shipment?.transportLegs?.[0];
       const distributor = shipment?.distributor;
       const vendor = distributor?.vendor;
-      const retail = vendor?.retails?.[0]; // Lấy retail đầu tiên
+      const retail = vendor?.retails?.[0];
 
       return {
         status: shipment?.status,
@@ -114,16 +196,13 @@ export class TraceabilityService {
       };
     }) || [];
 
-    // 6. GIÁ BÁN - Cần query riêng vì không có direct relationship từ Batch
-    const pricing = [];
-
     return {
       overview,
       certifications,
       processing,
       storage,
       shipping,
-      pricing,
+      pricing: [],
     };
   }
 }
