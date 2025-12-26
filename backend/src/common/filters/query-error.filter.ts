@@ -20,9 +20,19 @@ export class QueryErrorFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const message = exception.message;
-
     this.logger.error(`QueryFailedError: ${message}`);
     let userMessage = message;
+
+    const sqlMsgMatch = message.match(/Msg \d+, Level \d+,.*?\n(.+?)(\n|$)/);
+    if (sqlMsgMatch && sqlMsgMatch[1]) {
+      userMessage = sqlMsgMatch[1].trim();
+    } else if (message.includes('The transaction ended in the trigger')) {
+      const lines = message.split(/\r?\n/);
+      const idx = lines.findIndex(l => l.includes('The transaction ended in the trigger'));
+      if (idx > 0) {
+        userMessage = lines[idx - 1].trim();
+      }
+    }
 
     // constraint violations
     if (message.includes('REFERENCE constraint')) {

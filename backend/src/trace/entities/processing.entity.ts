@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
 import { Batch } from './batch.entity';
 import { ProcessingFacility } from './processing-facility.entity';
 import { ProcessStep } from './process-step.entity';
@@ -9,7 +9,7 @@ import { ProcessStep } from './process-step.entity';
  */
 @Entity('PROCESSING')
 export class Processing {
-  @PrimaryColumn({ name: 'ID', type: 'int' })
+  @PrimaryGeneratedColumn({ name: 'ID', type: 'int' })
   id: number;
 
   @Column({ name: 'Packaging_Date', type: 'datetimeoffset' })

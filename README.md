@@ -50,6 +50,6 @@ npm run dev
 - **Web admin:** `admin` / `admin123`
 - **Database user (see config.env):** `test` / `test`
 
-## Notes
+## Notes    
 - The `init` step creates the DB, applies schema, seeds data, sets up indexes, security, **and deploys stored procedures** so the system is production-ready.
 - If ports are taken, Vite will auto-select another; check the terminal output for the actual URL.

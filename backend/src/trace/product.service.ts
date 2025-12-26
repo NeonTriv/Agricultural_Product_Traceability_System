@@ -365,7 +365,7 @@ export class ProductService extends BaseService<AgricultureProduct> {
         vendorProductId: vendorProductId || null,
         harvestDate: new Date(payload.harvestDate),
         grade: payload.grade || null,
-        qrCodeUrl: `BATCH-${Date.now()}`,
+        qrCodeUrl: `QR-${Date.now()}`,
       };
 
       if (payload.seedBatch) (batchData as any).seedBatch = payload.seedBatch;

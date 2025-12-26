@@ -125,7 +125,7 @@ export default function VendorsTab() {
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingVendor, setEditingVendor] = useState<Vendor | null>(null)
-  const [formData, setFormData] = useState({ tin: '', name: '', address: '', contactInfo: '', vendorType: '' as any, distributorType: '', retailFormat: '', countryId: '', provinceId: '' })
+  const [formData, setFormData] = useState({ tin: '', name: '', address: '', contactInfo: '', vendorType: '' as any, distributorType: '', retailFormat: '', countryId: '', provinceId: '', latitude: '', longitude: '' })
   const [provinces, setProvinces] = useState<Province[]>([])
   const [countries, setCountries] = useState<Country[]>([])
   const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; itemId: string | null; itemName: string }>({ show: false, itemId: null, itemName: '' })
@@ -146,11 +146,13 @@ export default function VendorsTab() {
         vendorType: formData.vendorType || undefined,
         distributorType: formData.distributorType || undefined,
         retailFormat: formData.retailFormat || undefined,
-        provinceId: formData.provinceId ? parseInt(formData.provinceId) : undefined
+        provinceId: formData.provinceId ? parseInt(formData.provinceId) : undefined,
+        latitude: formData.latitude ? parseFloat(formData.latitude) : undefined,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : undefined
       }
       if (editingVendor) await axios.patch(`${baseUrl}/api/vendors/${editingVendor.tin}`, payload)
       else await axios.post(`${baseUrl}/api/vendors`, { tin: formData.tin, ...payload })
-      setShowForm(false); setEditingVendor(null); setFormData({ tin: '', name: '', address: '', contactInfo: '', vendorType: '', distributorType: '', retailFormat: '', countryId: '', provinceId: '' }); loadVendors()
+      setShowForm(false); setEditingVendor(null); setFormData({ tin: '', name: '', address: '', contactInfo: '', vendorType: '', distributorType: '', retailFormat: '', countryId: '', provinceId: '', latitude: '', longitude: '' }); loadVendors()
     } catch (e) { console.error(e) } finally { setLoading(false) }
   }
   const handleDelete = async (tin: string) => { setDeleteConfirm({ show: true, itemId: tin, itemName: 'Vendor' }) }
@@ -176,6 +178,8 @@ export default function VendorsTab() {
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Name *</label><input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} required /></div>
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Address *</label><input type="text" value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} required /></div>
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Contact</label><input type="text" value={formData.contactInfo} onChange={e => setFormData({ ...formData, contactInfo: e.target.value })} style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} /></div>
+                <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Latitude</label><input type="number" step="0.000001" value={formData.latitude} onChange={e => setFormData({ ...formData, latitude: e.target.value })} placeholder="e.g., 10.7769" style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} /></div>
+                <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Longitude</label><input type="number" step="0.000001" value={formData.longitude} onChange={e => setFormData({ ...formData, longitude: e.target.value })} placeholder="e.g., 106.7000" style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} /></div>
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Country</label><select value={formData.countryId} onChange={e => setFormData({ ...formData, countryId: e.target.value, provinceId: '' })} style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }}><option value="">Select Country</option>{countries.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
                 <div><label style={{ display: 'block', marginBottom: 6, fontWeight: 600, fontSize: 13, color: '#6b7280' }}>Province</label><select value={formData.provinceId} onChange={e => setFormData({ ...formData, provinceId: e.target.value })} style={{ width: '100%', padding: 10, border: '1px solid #d1d5db', borderRadius: 8, fontSize: 13 }} disabled={!formData.countryId}><option value="">Select Province</option>{provinces.filter(p => p.countryId.toString() === formData.countryId).map(p => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
                 <div>
@@ -243,7 +247,7 @@ export default function VendorsTab() {
                       </span>
                     </td>
                     <td style={{ padding: 16, textAlign: 'right' }}>
-                      <button onClick={() => { const prov = provinces.find(p => p.id === (v.provinceId || 0)); const countryId = prov ? prov.countryId.toString() : ''; setEditingVendor(v); setFormData({ tin: v.tin, name: v.name, address: v.address, contactInfo: v.contactInfo || '', vendorType: v.type, distributorType: v.distributorType || '', retailFormat: v.retailFormat || '', countryId, provinceId: v.provinceId ? v.provinceId.toString() : '' }); setShowForm(true) }} style={{ marginRight: 8, padding: '6px 12px', background: '#dbeafe', color: '#1e40af', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Edit</button>
+                      <button onClick={() => { const prov = provinces.find(p => p.id === (v.provinceId || 0)); const countryId = prov ? prov.countryId.toString() : ''; setEditingVendor(v); setFormData({ tin: v.tin, name: v.name, address: v.address, contactInfo: v.contactInfo || '', vendorType: v.type, distributorType: v.distributorType || '', retailFormat: v.retailFormat || '', countryId, provinceId: v.provinceId ? v.provinceId.toString() : '', latitude: v.latitude ? v.latitude.toString() : '', longitude: v.longitude ? v.longitude.toString() : '' }); setShowForm(true) }} style={{ marginRight: 8, padding: '6px 12px', background: '#dbeafe', color: '#1e40af', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Edit</button>
                       <button onClick={() => handleDelete(v.tin)} style={{ padding: '6px 12px', background: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}>Delete</button>
                     </td>
                   </tr>
