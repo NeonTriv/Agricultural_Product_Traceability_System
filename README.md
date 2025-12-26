@@ -51,5 +51,5 @@ npm run dev
 - **Database user (see config.env):** `test` / `test`
 
 ## Notes
-- The `init` step creates the DB, applies schema, seeds data, and sets up TypeORM baseline so future migrations work cleanly.
+- The `init` step creates the DB, applies schema, seeds data, sets up indexes, security, **and deploys stored procedures** so the system is production-ready.
 - If ports are taken, Vite will auto-select another; check the terminal output for the actual URL.

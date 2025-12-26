@@ -24,14 +24,14 @@ export class QueryErrorFilter implements ExceptionFilter {
     this.logger.error(`QueryFailedError: ${message}`);
     let userMessage = message;
 
-    // Check for FK constraint violations
+    // constraint violations
     if (message.includes('REFERENCE constraint')) {
       if (message.includes('STORED_IN')) {
-        userMessage = `Cannot delete: Item is stored in warehouse. Please remove from storage first (Storage > Stored Items).`;
+        userMessage = `Cannot delete: Item is stored in warehouse. Please delete from storage first (Storage > Stored Items).`;
       } else if (message.includes('PROCESSING')) {
         userMessage = `Cannot delete: Item has processing operations. Please delete them first (Processing > Operations).`;
       } else if (message.includes('SHIP_BATCH')) {
-        userMessage = `Cannot delete: Shipment contains batches. Please remove them first (Logistics > Shipments).`;
+        userMessage = `Cannot delete: Shipment contains batches. Please delete them first (Logistics > Shipments).`;
       } else if (message.includes('FARM')) {
         userMessage = `Cannot delete: Province has farms. Please delete them first (Farms tab).`;
       } else if (message.includes('WAREHOUSE')) {
@@ -43,7 +43,7 @@ export class QueryErrorFilter implements ExceptionFilter {
       }
     }
 
-    // Return as BadRequestException to the frontend
+    // BadRequestException to the frontend
     const badRequest = new BadRequestException(userMessage);
     response.status(badRequest.getStatus()).json({
       statusCode: badRequest.getStatus(),

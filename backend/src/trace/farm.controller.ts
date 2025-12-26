@@ -58,7 +58,6 @@ export class FarmController {
     return this.productService.deleteFarm(id);
   }
 
-  // Farm Certifications endpoints
   @Get(':id/certifications')
   @HttpCode(HttpStatus.OK)
   async getFarmCertifications(@Param('id') farmId: number) {

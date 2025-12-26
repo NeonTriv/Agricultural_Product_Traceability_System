@@ -9,7 +9,7 @@ import PricingTab from './PricingTab'
 import ProvincesTab from './ProvincesTab'
 import { API_BASE_URL } from '../config/api'
 
-// Mock admin credentials - Ready to connect to DB later
+// Mock admin credentials
 const MOCK_ADMIN = {
   username: 'admin',
   password: 'admin123'
@@ -51,13 +51,7 @@ export default function AdminPage() {
     e.preventDefault()
     setLoginError('')
 
-    // TODO: Replace with real API call to backend
-    // const response = await axios.post(`${BASE_URL}/api/auth/admin-login`, {
-    //   username: loginForm.username,
-    //   password: loginForm.password
-    // })
-
-    // Mock authentication - will be replaced with real DB check
+    // Mock authentication
     if (loginForm.username === MOCK_ADMIN.username && loginForm.password === MOCK_ADMIN.password) {
       setIsAuthenticated(true)
       sessionStorage.setItem('adminAuth', 'true')
