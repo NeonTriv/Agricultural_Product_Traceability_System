@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { LogisticsService } from './logistics.service';
+import { Roles } from '../common/auth/roles.decorator';
 
 @Controller('logistics')
 export class LogisticsController {
@@ -23,6 +24,7 @@ export class LogisticsController {
     return this.logisticsService.getCarrier(tin);
   }
 
+  @Roles('admin')
   @Post('carriers')
   @HttpCode(HttpStatus.CREATED)
   async createCarrier(
@@ -38,6 +40,7 @@ export class LogisticsController {
     return this.logisticsService.createCarrier(body);
   }
 
+  @Roles('admin')
   @Patch('carriers/:tin')
   @HttpCode(HttpStatus.OK)
   async updateCarrier(
@@ -53,6 +56,7 @@ export class LogisticsController {
     return this.logisticsService.updateCarrier(tin, body);
   }
 
+  @Roles('admin')
   @Delete('carriers/:tin')
   @HttpCode(HttpStatus.OK)
   async deleteCarrier(@Param('tin') tin: string) {
@@ -71,6 +75,7 @@ export class LogisticsController {
     return this.logisticsService.getShipment(parseInt(id));
   }
 
+  @Roles('admin')
   @Post('shipments')
   @HttpCode(HttpStatus.CREATED)
   async createShipment(
@@ -85,6 +90,7 @@ export class LogisticsController {
     return this.logisticsService.createShipment(body);
   }
 
+  @Roles('admin')
   @Patch('shipments/:id')
   @HttpCode(HttpStatus.OK)
   async updateShipment(
@@ -100,6 +106,7 @@ export class LogisticsController {
     return this.logisticsService.updateShipment(parseInt(id), body);
   }
 
+  @Roles('admin')
   @Delete('shipments/:id')
   @HttpCode(HttpStatus.OK)
   async deleteShipment(@Param('id') id: string) {
@@ -118,6 +125,7 @@ export class LogisticsController {
     return this.logisticsService.getTransportLeg(parseInt(id));
   }
 
+  @Roles('admin')
   @Post('transport-legs')
   @HttpCode(HttpStatus.CREATED)
   async createTransportLeg(
@@ -135,6 +143,7 @@ export class LogisticsController {
     return this.logisticsService.createTransportLeg(body);
   }
 
+  @Roles('admin')
   @Patch('transport-legs/:id')
   @HttpCode(HttpStatus.OK)
   async updateTransportLeg(
@@ -152,6 +161,7 @@ export class LogisticsController {
     return this.logisticsService.updateTransportLeg(parseInt(id), body);
   }
 
+  @Roles('admin')
   @Delete('transport-legs/:id')
   @HttpCode(HttpStatus.OK)
   async deleteTransportLeg(@Param('id') id: string) {

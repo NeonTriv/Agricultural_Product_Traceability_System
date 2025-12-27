@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { ProductService } from './product.service';
+import { Roles } from '../common/auth/roles.decorator';
 
 @Controller('farms')
 export class FarmController {
@@ -17,6 +18,7 @@ export class FarmController {
     return this.productService.getFarmById(id);
   }
 
+  @Roles('admin')
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createFarm(
@@ -34,6 +36,7 @@ export class FarmController {
     return this.productService.createFarm(body);
   }
 
+  @Roles('admin')
   @Put(':id')
   @HttpCode(HttpStatus.OK)
   async updateFarm(
@@ -52,6 +55,7 @@ export class FarmController {
     return this.productService.updateFarm(id, body);
   }
 
+  @Roles('admin')
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   async deleteFarm(@Param('id') id: number) {
@@ -64,6 +68,7 @@ export class FarmController {
     return this.productService.getFarmCertifications(farmId);
   }
 
+  @Roles('admin')
   @Post(':id/certifications')
   @HttpCode(HttpStatus.CREATED)
   async addFarmCertification(

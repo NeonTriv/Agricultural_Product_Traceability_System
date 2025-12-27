@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { StorageService } from './storage.service';
+import { Roles } from '../common/auth/roles.decorator';
 
 @Controller('storage')
 export class StorageController {
@@ -18,6 +19,7 @@ export class StorageController {
     return this.storageService.getWarehouse(parseInt(id));
   }
 
+  @Roles('admin')
   @Post('warehouses')
   @HttpCode(HttpStatus.CREATED)
   async createWarehouse(
@@ -35,6 +37,7 @@ export class StorageController {
     return this.storageService.createWarehouse(body);
   }
 
+  @Roles('admin')
   @Patch('warehouses/:id')
   @HttpCode(HttpStatus.OK)
   async updateWarehouse(
@@ -52,6 +55,7 @@ export class StorageController {
     return this.storageService.updateWarehouse(parseInt(id), body);
   }
 
+  @Roles('admin')
   @Delete('warehouses/:id')
   @HttpCode(HttpStatus.OK)
   async deleteWarehouse(@Param('id') id: string) {
@@ -74,6 +78,7 @@ export class StorageController {
     return this.storageService.getStoredIn(parseInt(batchId), parseInt(warehouseId));
   }
 
+  @Roles('admin')
   @Post('stored-in')
   @HttpCode(HttpStatus.CREATED)
   async createStoredIn(
@@ -89,6 +94,7 @@ export class StorageController {
     return this.storageService.createStoredIn(body);
   }
 
+  @Roles('admin')
   @Patch('stored-in/:batchId/:warehouseId')
   @HttpCode(HttpStatus.OK)
   async updateStoredIn(
@@ -108,6 +114,7 @@ export class StorageController {
     );
   }
 
+  @Roles('admin')
   @Delete('stored-in/:batchId/:warehouseId')
   @HttpCode(HttpStatus.OK)
   async deleteStoredIn(

@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { PricingService } from './pricing.service';
+import { Roles } from '../common/auth/roles.decorator';
 
 @Controller('pricing')
 export class PricingController {
@@ -11,6 +12,7 @@ export class PricingController {
     return this.pricingService.getAllVendorProducts();
   }
 
+  @Roles('admin')
   @Post('vendor-products')
   @HttpCode(HttpStatus.CREATED)
   async createVendorProduct(
@@ -24,6 +26,7 @@ export class PricingController {
     return this.pricingService.createVendorProduct(body);
   }
 
+  @Roles('admin')
   @Patch('vendor-products/:id')
   @HttpCode(HttpStatus.OK)
   async updateVendorProduct(
@@ -36,6 +39,7 @@ export class PricingController {
     return this.pricingService.updateVendorProduct(parseInt(id), body);
   }
 
+  @Roles('admin')
   @Delete('vendor-products/:id')
   @HttpCode(HttpStatus.OK)
   async deleteVendorProduct(@Param('id') id: string) {
@@ -54,6 +58,7 @@ export class PricingController {
     return this.pricingService.getPrice(parseInt(vendorProductId));
   }
 
+  @Roles('admin')
   @Post('prices')
   @HttpCode(HttpStatus.CREATED)
   async createPrice(
@@ -67,6 +72,7 @@ export class PricingController {
     return this.pricingService.createPrice(body);
   }
 
+  @Roles('admin')
   @Patch('prices/:vendorProductId')
   @HttpCode(HttpStatus.OK)
   async updatePrice(
@@ -80,6 +86,7 @@ export class PricingController {
     return this.pricingService.updatePrice(parseInt(vendorProductId), body);
   }
 
+  @Roles('admin')
   @Delete('prices/:vendorProductId')
   @HttpCode(HttpStatus.OK)
   async deletePrice(@Param('vendorProductId') vendorProductId: string) {
@@ -93,6 +100,7 @@ export class PricingController {
     return this.pricingService.getAllDiscounts();
   }
 
+  @Roles('admin')
   @Post('discounts')
   @HttpCode(HttpStatus.CREATED)
   async createDiscount(
@@ -116,6 +124,7 @@ export class PricingController {
     });
   }
 
+  @Roles('admin')
   @Patch('discounts/:id')
   @HttpCode(HttpStatus.OK)
   async updateDiscount(
@@ -142,6 +151,7 @@ export class PricingController {
     });
   }
 
+  @Roles('admin')
   @Delete('discounts/:id')
   @HttpCode(HttpStatus.OK)
   async deleteDiscount(@Param('id') id: string) {
@@ -149,6 +159,7 @@ export class PricingController {
   }
 
   // Link Product-Has-Discount
+  @Roles('admin')
   @Post('product-has-discount')
   @HttpCode(HttpStatus.CREATED)
   async linkProductHasDiscount(
@@ -162,6 +173,7 @@ export class PricingController {
   }
 
   // Alias endpoint to match frontend call
+  @Roles('admin')
   @Post('link-discount')
   @HttpCode(HttpStatus.CREATED)
   async linkDiscountAlias(
@@ -179,6 +191,7 @@ export class PricingController {
       return this.pricingService.getProductsByDiscount(id);
     }
 
+    @Roles('admin')
     @Delete('discounts/:id/products/:vpId')
     async unlinkProduct(
       @Param('id') discountId: number,
@@ -188,6 +201,7 @@ export class PricingController {
     }
 
   // Orchestration: Create Vendor Product with Price and Discounts
+  @Roles('admin')
   @Post('setup')
   @HttpCode(HttpStatus.CREATED)
   async createVendorProductWithPricingAndDiscounts(

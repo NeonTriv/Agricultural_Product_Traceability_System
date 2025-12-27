@@ -174,13 +174,13 @@ PRINT '6. Inserting Batches...';
 INSERT INTO BATCH (Harvest_Date, Created_By, Grade, Seed_Batch, Qr_Code_URL, Farm_ID, AP_ID, V_ID) VALUES 
 ('2024-11-01 07:00:00 +07:00', 'Farmer John', 'A', 'SEED-RICE-001', 'QR-001', 2, 1, 1),
 ('2024-11-05 08:00:00 +07:00', 'Farmer John', 'B', 'SEED-RICE-002', 'QR-002', 2, 1, 2),
-('2024-10-20 09:00:00 +07:00', 'Ms. Tran', 'Premium', 'SEED-COF-001', 'QR-003', 3, 3, 3),
+('2024-10-20 09:00:00 +07:00', 'Ms. Tran', 'A', 'SEED-COF-001', 'QR-003', 3, 3, 3),
 ('2024-10-25 07:30:00 +07:00', 'Ms. Tran', 'Standard', 'SEED-COF-002', 'QR-004', 3, 3, 4),
 ('2024-12-01 06:00:00 +07:00', 'Mr. Le', 'A', 'SEED-MANGO-001', 'QR-005', 4, 5, 5),
-('2024-11-15 06:30:00 +07:00', 'Mr. Hung', 'Premium', 'SEED-PEPPER-001', 'QR-006', 7, 8, 6),
+('2024-11-15 06:30:00 +07:00', 'Mr. Hung', 'A', 'SEED-PEPPER-001', 'QR-006', 7, 8, 6),
 ('2024-11-20 07:00:00 +07:00', 'Ms. Mai', 'A+', 'SEED-ST25-003', 'QR-007', 8, 2, 2),
 ('2024-12-05 08:00:00 +07:00', 'Farmer John', 'A', 'SEED-RICE-003', 'QR-008', 2, 1, 1),
-('2024-12-10 07:30:00 +07:00', 'Ms. Tran', 'Premium', 'SEED-COF-003', 'QR-009', 3, 3, 3),
+('2024-12-10 07:30:00 +07:00', 'Ms. Tran', 'A', 'SEED-COF-003', 'QR-009', 3, 3, 3),
 ('2024-11-25 06:00:00 +07:00', 'Mr. Le', 'A', 'SEED-LETTUCE-001', 'QR-010', 4, 7, 5); 
 
 -- Processing (FACILITY_ID: 1=Mekong Processing Hub, 2=Highland Roastery, 4=Saigon Export)

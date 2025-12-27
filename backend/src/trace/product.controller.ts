@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { ProductService } from './product.service';
+import { Roles } from '../common/auth/roles.decorator';
 
 @Controller('products')
 export class ProductController {
@@ -23,23 +24,27 @@ export class ProductController {
     return this.productService.getAllCategories();
   }
 
+  @Roles('admin')
   @Post('categories')
   @HttpCode(HttpStatus.CREATED)
   async createCategory(@Body() body: { name: string }) {
     return this.productService.createCategory(body.name);
   }
 
+  @Roles('admin')
   @Post('types')
   @HttpCode(HttpStatus.CREATED)
   async createType(@Body() body: { variety: string; categoryId: number }) {
     return this.productService.createType(body.variety, body.categoryId);
   }
 
+  @Roles('admin')
   @Post('agriculture-products')
   @HttpCode(HttpStatus.CREATED)
   async createAgricultureProduct(@Body() body: { name: string; typeId: number }) {
     return this.productService.createAgricultureProduct(body.name, body.typeId);
   }
+  @Roles('admin')
   @Patch('agriculture-products/:id')
   @HttpCode(HttpStatus.OK)
   async updateAgricultureProduct(
@@ -48,6 +53,7 @@ export class ProductController {
   ) {
     return this.productService.updateAgricultureProduct(parseInt(id), body);
   }
+  @Roles('admin')
   @Delete('agriculture-products/:id')
   @HttpCode(HttpStatus.OK)
   async deleteAgricultureProduct(@Param('id') id: string) {
@@ -66,6 +72,7 @@ export class ProductController {
     return this.productService.getAllCountries();
   }
 
+  @Roles('admin')
   @Post('countries')
   @HttpCode(HttpStatus.CREATED)
   async createCountry(
@@ -77,6 +84,7 @@ export class ProductController {
     return this.productService.createCountry(body);
   }
 
+  @Roles('admin')
   @Post('provinces')
   @HttpCode(HttpStatus.CREATED)
   async createProvince(
@@ -90,12 +98,14 @@ export class ProductController {
     return this.productService.createProvince(body);
   }
 
+  @Roles('admin')
   @Delete('provinces/:id')
   @HttpCode(HttpStatus.OK)
   async deleteProvince(@Param('id') id: string) {
     return this.productService.deleteProvince(parseInt(id));
   }
 
+  @Roles('admin')
   @Delete('countries/:id')
   @HttpCode(HttpStatus.OK)
   async deleteCountry(@Param('id') id: string) {
@@ -113,6 +123,7 @@ export class ProductController {
   async getAllBatches() {
     return this.productService.getAllBatches();
   }
+  @Roles('admin')
   @Patch('batches/:id')
   @HttpCode(HttpStatus.OK)
   async updateBatch(
@@ -121,6 +132,7 @@ export class ProductController {
   ) {
     return this.productService.updateBatch(parseInt(id), body);
   }
+  @Roles('admin')
   @Delete('batches/:id')
   @HttpCode(HttpStatus.OK)
   async deleteBatch(@Param('id') id: string) {
@@ -133,6 +145,7 @@ export class ProductController {
     return this.productService.getAllProducts();
   }
 
+  @Roles('admin')
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createProduct(
@@ -148,6 +161,7 @@ export class ProductController {
     return this.productService.createProduct(body);
   }
 
+  @Roles('admin')
   @Post('create-full-batch')
   @HttpCode(HttpStatus.CREATED)
   async createFullBatch(
@@ -168,6 +182,7 @@ export class ProductController {
     return this.productService.createFullBatch(body);
   }
 
+  @Roles('admin')
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
   async updateProduct(
@@ -185,6 +200,7 @@ export class ProductController {
     return this.productService.updateProduct(parseInt(id), body);
   }
 
+  @Roles('admin')
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
   async deleteProduct(@Param('id') id: string) {

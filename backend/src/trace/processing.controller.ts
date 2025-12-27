@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { ProcessingService } from './processing.service';
+import { Roles } from '../common/auth/roles.decorator';
 
 @Controller('processing')
 export class ProcessingController {
@@ -18,6 +19,7 @@ export class ProcessingController {
     return this.processingService.getFacility(parseInt(id));
   }
 
+  @Roles('admin')
   @Post('facilities')
   @HttpCode(HttpStatus.CREATED)
   async createFacility(
@@ -35,6 +37,7 @@ export class ProcessingController {
     return this.processingService.createFacility(body);
   }
 
+  @Roles('admin')
   @Patch('facilities/:id')
   @HttpCode(HttpStatus.OK)
   async updateFacility(
@@ -53,6 +56,7 @@ export class ProcessingController {
     return this.processingService.updateFacility(parseInt(id), body);
   }
 
+  @Roles('admin')
   @Delete('facilities/:id')
   @HttpCode(HttpStatus.OK)
   async deleteFacility(@Param('id') id: string) {
@@ -72,6 +76,7 @@ export class ProcessingController {
     return this.processingService.getOperation(parseInt(id));
   }
 
+  @Roles('admin')
   @Post('operations')
   @HttpCode(HttpStatus.CREATED)
   async createOperation(
@@ -89,6 +94,7 @@ export class ProcessingController {
     return this.processingService.createOperation(body);
   }
 
+  @Roles('admin')
   @Patch('operations/:id')
   @HttpCode(HttpStatus.OK)
   async updateOperation(
@@ -107,6 +113,7 @@ export class ProcessingController {
     return this.processingService.updateOperation(parseInt(id), body);
   }
 
+  @Roles('admin')
   @Delete('operations/:id')
   @HttpCode(HttpStatus.OK)
   async deleteOperation(@Param('id') id: string) {
@@ -120,6 +127,7 @@ export class ProcessingController {
     return this.processingService.getAllProcessSteps();
   }
 
+  @Roles('admin')
   @Post('process-steps')
   @HttpCode(HttpStatus.CREATED)
   async createProcessStep(
@@ -132,6 +140,7 @@ export class ProcessingController {
     return this.processingService.createProcessStep(body);
   }
 
+  @Roles('admin')
   @Delete('process-steps/:processingId/:step')
   @HttpCode(HttpStatus.OK)
   async deleteProcessStep(

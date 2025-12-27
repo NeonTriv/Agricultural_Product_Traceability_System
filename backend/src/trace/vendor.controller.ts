@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Patch, Delete, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
 import { VendorService } from './vendor.service';
+import { Roles } from '../common/auth/roles.decorator';
 
 @Controller('vendors')
 export class VendorController {
@@ -17,6 +18,7 @@ export class VendorController {
     return this.vendorService.getVendor(tin);
   }
 
+  @Roles('admin')
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async createVendor(
@@ -34,6 +36,7 @@ export class VendorController {
     return this.vendorService.createVendor(body);
   }
 
+  @Roles('admin')
   @Patch(':tin')
   @HttpCode(HttpStatus.OK)
   async updateVendor(
@@ -51,6 +54,7 @@ export class VendorController {
     return this.vendorService.updateVendor(tin, body);
   }
 
+  @Roles('admin')
   @Delete(':tin')
   @HttpCode(HttpStatus.OK)
   async deleteVendor(@Param('tin') tin: string) {
