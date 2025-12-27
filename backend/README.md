@@ -46,6 +46,25 @@ From repo root (start backend only):
 npm --workspace ./backend run start:dev
 ```
 
+5) JWT and secrets
+
+ - Set a `JWT_SECRET` environment variable before starting the backend. Example (PowerShell):
+
+```powershell
+$env:JWT_SECRET = 'replace_this_with_a_strong_secret'; npm --workspace ./backend run start:dev
+```
+
+ - For production, store `JWT_SECRET` in your secret manager or CI environment variables; do NOT commit it to source control.
+
+6) Database least-privilege reminder
+
+ - `setup-db` now creates a database role `app_readwrite` and grants `SELECT, INSERT, UPDATE, DELETE` on `dbo` schema; it then adds the app login to that role and removes `db_owner` membership.
+ - To run initial setup from repo root:
+
+```powershell
+npm run init
+```
+
 Notes
 - `app.module.ts` is configured with `synchronize: false` — do not enable this in production.
 - Use migrations to manage schema changes after initial setup.

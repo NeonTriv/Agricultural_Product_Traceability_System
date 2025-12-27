@@ -10,7 +10,7 @@ import { QueryFailedError } from 'typeorm';
 
 /**
  * Global exception filter for TypeORM QueryFailedError
- * Converts cryptic database constraint errors into user-friendly messages
+ * Converts database constraint errors into user-friendly messages
  */
 @Catch(QueryFailedError)
 export class QueryErrorFilter implements ExceptionFilter {

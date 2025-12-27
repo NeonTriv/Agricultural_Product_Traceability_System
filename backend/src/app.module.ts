@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { RolesGuard } from './common/auth/roles.guard';
+import { JwtAuthGuard } from './common/auth/jwt-auth.guard';
+import { AuthModule } from './common/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
@@ -79,10 +81,13 @@ import { User } from './trace/entities/user.entity';
       // logging: true,
     }),
     TraceModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
+    // Global JWT auth guard: require token by default. Public endpoints use @Public()
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
     // Global RBAC guard - chỉ kiểm tra khi endpoint có @Roles()
     { provide: APP_GUARD, useClass: RolesGuard },
   ],

@@ -129,6 +129,73 @@ if (Test-Path $masterDataFile) {
     Write-Warning "Master data file not found. Skipping."
 }
 
+Write-Host "[3.5/10] Creating application Users table if missing..."
+$usersFile = "$PSScriptRoot\..\..\database\create_users_table.sql"
+if (Test-Path $usersFile) {
+    try {
+        # Ensure the users SQL runs in the target app database
+        $tempUsersFile = "$PSScriptRoot\temp_users.sql"
+        $usersContent = Get-Content $usersFile -Raw -Encoding UTF8
+        $finalUsers = "USE [$AppDb];`r`n" + $usersContent
+        Set-Content -Path $tempUsersFile -Value $finalUsers -Encoding UTF8
+        Run-SqlFile -FilePath $tempUsersFile
+        Remove-Item $tempUsersFile -Force
+        Write-Host "Users table ensured." -ForegroundColor Green
+    } catch {
+        Write-Warning "Creating Users table failed, but continuing..."
+    }
+} else {
+    Write-Warning "Users table script not found at: $usersFile. Skipping."
+}
+
+Write-Host "[3.55/10] Seeding default admin user SQL if present..."
+$seedFile = "$PSScriptRoot\..\..\database\seed_admin_user.sql"
+if (Test-Path $seedFile) {
+    try {
+        # Run seed in target DB context
+        $tempSeedFile = "$PSScriptRoot\temp_seed.sql"
+        $seedContent = Get-Content $seedFile -Raw -Encoding UTF8
+        $finalSeed = "USE [$AppDb];`r`n" + $seedContent
+        Set-Content -Path $tempSeedFile -Value $finalSeed -Encoding UTF8
+        Run-SqlFile -FilePath $tempSeedFile
+        Remove-Item $tempSeedFile -Force
+        Write-Host "Admin seed applied (if missing)." -ForegroundColor Green
+    } catch {
+        Write-Warning "Admin seed failed, but continuing..."
+    }
+} else {
+    Write-Warning "Admin seed script not found at: $seedFile. Skipping."
+}
+
+Write-Host "[3.6/10] Ensuring default admin user exists in Users..."
+$adminName = 'admin'
+$adminPass = 'admin123'
+try {
+    $check = Run-Sql -Query "USE [$AppDb]; IF EXISTS (SELECT 1 FROM dbo.Users WHERE Username = '$adminName') SELECT 'EXISTS' ELSE SELECT 'MISSING';" -Database $AppDb
+    if ($check -match 'EXISTS') {
+        Write-Host "Admin user already exists. Skipping insertion." -ForegroundColor Gray
+    } else {
+        if (Get-Command node -ErrorAction SilentlyContinue) {
+            Write-Host "Generating bcrypt hash for admin password using Node..." -ForegroundColor Cyan
+            $rawHash = & node -e 'const b=require("bcryptjs");b.hash(process.argv[1],10).then(h=>console.log(h)).catch(e=>{console.error(e);process.exit(1)})' $adminPass 2>&1
+            $hash = $rawHash -join "`n"
+            $hash = $hash.Trim()
+            if (-not $hash) { throw "Failed to generate bcrypt hash." }
+            $hashEscaped = $hash -replace "'", "''"
+            $insertQ = "USE [$AppDb]; INSERT INTO dbo.Users (Username, PasswordHash, Role, CreatedAt) VALUES ('$adminName','$hashEscaped','admin', GETDATE());"
+            Run-Sql -Query $insertQ -Database $AppDb
+            Write-Host "Inserted admin user 'admin'." -ForegroundColor Green
+        } else {
+            Write-Warning "Node.js not found; cannot auto-generate bcrypt hash. To create admin manually, run the following in Node to get the hash:"
+            Write-Host "node -e ""const b=require('bcryptjs');b.hash('admin123',10).then(h=>console.log(h))""" -ForegroundColor Yellow
+            Write-Host "Then insert into dbo.Users using that hash." -ForegroundColor Yellow
+        }
+    }
+} catch {
+    Write-Warning "Auto-insert admin had issues, but continuing..."
+    Write-Warning $_
+}
+
 Write-Host "[4/10] Creating App User '$AppLogin'..."
 $userQuery = "
     USE [master];
@@ -145,9 +212,33 @@ $userQuery = "
     USE [$AppDb];
     IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = '$AppLogin')
     BEGIN
-        CREATE USER [$AppLogin] FOR LOGIN [$AppLogin];
+        CREATE USER [$AppLogin] FOR LOGIN [$AppLogin] WITH DEFAULT_SCHEMA = dbo;
+    END
+    ELSE
+    BEGIN
+        ALTER USER [$AppLogin] WITH DEFAULT_SCHEMA = dbo;
     END;
-    ALTER ROLE [db_owner] ADD MEMBER [$AppLogin];
+
+    -- Apply least-privilege: create app role and grant minimal rights
+    IF NOT EXISTS (SELECT 1 FROM sys.database_principals WHERE name = 'app_readwrite' AND type = 'R')
+    BEGIN
+        CREATE ROLE [app_readwrite];
+    END
+
+    -- Grant minimal CRUD privileges on dbo schema to role
+    GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::dbo TO [app_readwrite];
+
+    -- Add app login to that role (instead of db_owner)
+    IF NOT EXISTS (SELECT 1 FROM sys.database_role_members drm JOIN sys.database_principals rp ON drm.role_principal_id = rp.principal_id WHERE rp.name = 'app_readwrite' AND drm.member_principal_id IN (SELECT principal_id FROM sys.database_principals WHERE name = '$AppLogin'))
+    BEGIN
+        ALTER ROLE [app_readwrite] ADD MEMBER [$AppLogin];
+    END
+
+    -- Remove from db_owner if present
+    IF EXISTS (SELECT 1 FROM sys.database_role_members drm JOIN sys.database_principals rp ON drm.role_principal_id = rp.principal_id WHERE rp.name = 'db_owner' AND drm.member_principal_id IN (SELECT principal_id FROM sys.database_principals WHERE name = '$AppLogin'))
+    BEGIN
+        ALTER ROLE [db_owner] DROP MEMBER [$AppLogin];
+    END
 "
 Run-Sql -Query $userQuery
 

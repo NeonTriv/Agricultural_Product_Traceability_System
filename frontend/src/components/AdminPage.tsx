@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import axios from 'axios'
 import ProductManagementTab from './BatchesTab'
 import VendorsTab from './VendorsTab'
 import FarmsTab from './FarmsTab'
@@ -41,23 +42,36 @@ export default function AdminPage() {
   // Check if user is already logged in (from sessionStorage)
   useEffect(() => {
     const savedAuth = sessionStorage.getItem('adminAuth')
+    const token = sessionStorage.getItem('adminToken')
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+    }
     if (savedAuth === 'true') {
       setIsAuthenticated(true)
     }
   }, [])
 
   // Handle login
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoginError('')
 
-    // Mock authentication
-    if (loginForm.username === MOCK_ADMIN.username && loginForm.password === MOCK_ADMIN.password) {
-      setIsAuthenticated(true)
-      sessionStorage.setItem('adminAuth', 'true')
-      setLoginForm({ username: '', password: '' })
-    } else {
-      setLoginError('Invalid username or password')
+    // Real authentication: call backend /auth/login
+    try {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/login`, { username: loginForm.username, password: loginForm.password })
+      const token = res.data?.access_token || res.data?.accessToken || res.data?.token
+      if (token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+        sessionStorage.setItem('adminAuth', 'true')
+        sessionStorage.setItem('adminToken', token)
+        setIsAuthenticated(true)
+        setLoginForm({ username: '', password: '' })
+        setLoginError('')
+      } else {
+        setLoginError('Invalid credentials')
+      }
+    } catch (err: any) {
+      setLoginError(err.response?.data?.message || 'Login failed')
     }
   }
 
@@ -65,6 +79,8 @@ export default function AdminPage() {
   const handleLogout = () => {
     setIsAuthenticated(false)
     sessionStorage.removeItem('adminAuth')
+    sessionStorage.removeItem('adminToken')
+    delete axios.defaults.headers.common['Authorization']
   }
 
   // Login Screen
